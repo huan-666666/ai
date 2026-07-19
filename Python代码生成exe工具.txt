@@ -1,0 +1,23 @@
+pip install auto-py-to-exe
+auto-py-to-exe
+
+
+
+Nuitka是一个Python编译器，它可以将Python代码编译成C++代码，然后将其打包成可执行文件。
+
+使用Nuitka打包Python代码也很简单，只需要在命令行中输入以下命令：
+
+nuitka your_script.py
+
+
+
+Nuitka+pyinstaller
+Nuitka和pyinstaller可以结合使用，将Python代码编译成C++代码，然后使用pyinstaller将其打包成可执行文件。
+
+使用Nuitka+pyinstaller打包Python代码也很简单，只需要在命令行中输入以下命令：
+
+nuitka --standalone your_script.py
+pyinstaller your_script.spec
+这将生成一个可执行文件，可以在Windows、Linux和MacOS上运行。
+
+

@@ -1,0 +1,183 @@
+PyCharm 
+
+pyinstaller -w （名字）.py  打包exe
+
+Python生成可执行的.exe文件
+在Python开发中，有时需要将Python脚本转换成独立的可执行文件（.exe），这样可以在没有安装Python环境的计算机上运行。生成.exe文件的常用方法是使用PyInstaller工具。
+
+使用PyInstaller打包Python脚本
+
+PyInstaller是一个流行的第三方库，它可以将Python脚本及其依赖项打包成单个可执行文件。这个工具的优点是简单易用，可以生成与操作系统兼容的可执行文件。
+
+安装PyInstaller
+
+首先，需要安装PyInstaller。可以通过pip命令直接安装：
+cmd
+pip install pyinstaller
+复制
+如果遇到网络问题，可以使用国内的源来加速安装，例如使用豆瓣源或清华源。
+
+打包过程
+
+使用PyInstaller打包的基本步骤如下：
+
+打开命令行界面，切换到包含Python脚本的目录。
+
+执行PyInstaller打包命令，例如： pyinstaller -F -w -i chengzi.ico py_word.py 其中，-F表示生成单个可执行文件，-w表示不显示控制台窗口，-i后面跟图标文件可以自定义生成的.exe文件的图标。
+
+参数解释
+
+-F：创建独立的可执行文件。
+
+-w：在GUI界面中使用，不显示命令行窗口。
+
+-i：指定可执行文件的图标。
+
+打包后的操作
+
+打包完成后，会在dist目录下生成对应的.exe文件。可以直接运行这个文件来测试程序是否正常工作。如果文件过大，可以考虑使用conda创建虚拟环境来减小打包后的体积。
+
+虚拟环境压缩打包
+
+为了减小打包后的文件大小，可以使用conda创建一个虚拟环境，只安装打包所需的库。这样可以避免将不必要的模块打包进.exe文件，从而减小体积。
+
+创建虚拟环境
+
+使用conda创建虚拟环境的命令如下：
+
+conda create -n 虚拟环境名字 python==3.6
+复制
+创建并激活虚拟环境后，只安装必要的库，然后再次使用PyInstaller进行打包。
+
+打包示例
+
+在虚拟环境中，使用PyInstaller打包的命令可能如下：
+
+pyinstaller -F -w -i apple.ico py_word.py
+复制
+这样打包出来的文件大小会显著减小，例如从339M减小到29.8M。
+
+注意事项
+
+打包过程可能需要根据实际情况安装额外的库。
+
+打包后的.exe文件只能在与打包机器相同的操作系统环境下运行。
+
+如果需要在不同的平台上运行，必须针对每个平台分别进行打包。
+
+通过以上步骤，可以将Python脚本成功打包成可在没有Python环境的计算机上运行的.exe文件。这对于分享程序给不熟悉Python环境的用户非常有用。
+
+
+
+
+
+
+
+
+
+安装 auto-py-to-exe
+
+确保 Python 版本为 3.6 至 3.12。
+
+在命令行中运行以下命令安装：
+
+pip install auto-py-to-exe
+复制
+安装完成后，启动工具：
+
+auto-py-to-exe
+复制
+使用步骤
+
+1. 打开工具
+
+在命令行输入 auto-py-to-exe，会弹出一个图形化界面。
+
+2. 配置选项
+
+Script Location: 选择需要打包的 Python 脚本文件。
+
+Onefile/One Directory: One File: 打包为单个 .exe 文件。 One Directory: 打包为包含多个文件的目录。
+
+Console Window: Console Based: 显示控制台窗口（适用于命令行程序）。 Window Based: 隐藏控制台窗口（适用于 GUI 程序）。
+
+Icon: 可选，设置 .exe 文件的图标（需提供 .ico 文件）。
+
+Additional Files: 如果脚本依赖额外文件或模块，需在此处添加路径。
+
+3. 开始打包
+
+配置完成后，点击底部的 “CONVERT .PY TO .EXE” 按钮开始打包。
+
+4. 查看结果
+
+打包完成后，点击 “OPEN OUTPUT FOLDER” 查看生成的 .exe 文件。
+
+注意事项
+
+如果脚本依赖外部模块或文件，确保在配置中正确添加路径，否则可能会出现运行错误。
+
+对于复杂项目，可以先研究 PyInstaller 的高级配置，以便更好地利用 auto-py-to-exe 的功能。
+
+
+
+
+
+
+
+
+场景 1：安装 Python 算法相关库（最基础）
+如果是想使用第三方算法库（如经典算法、机器学习算法），先通过包管理器安装：
+1.1 通用算法库（经典数据结构 / 算法）
+bash
+运行
+# 安装经典算法库（包含排序、查找、图算法等）
+pip install algorithms
+# 或安装更轻量的算法合集
+pip install algo-python
+1.2 机器学习 / 深度学习算法库
+bash
+运行
+# 机器学习算法（sklearn包含大量分类、回归、聚类算法）
+pip install scikit-learn
+# 深度学习算法（TensorFlow/PyTorch）
+pip install tensorflow  # 或 pip install torch
+# 数值算法/优化算法
+pip install numpy scipy
+场景 2：在 Python 代码中添加 / 使用算法
+2.1 引入第三方算法库的算法
+以 algorithms 库为例，使用内置的经典算法：
+python
+运行
+# 1. 引入算法模块
+from algorithms.sort import quicksort
+from algorithms.search import binary_search
+
+# 2. 使用算法
+# 快速排序算法
+nums = [5, 2, 9, 1, 5, 6]
+sorted_nums = quicksort(nums)
+print("快速排序结果：", sorted_nums)  # 输出 [1, 2, 5, 5, 6, 9]
+
+# 二分查找算法（需先排序）
+target = 5
+index = binary_search(sorted_nums, target)
+print(f"元素 {target} 的索引：", index)  # 输出 2
+2.2 自定义添加算法（手写算法集成到代码）
+如果需要自定义算法（如自定义排序、贪心算法），直接编写函数并集成：
+python
+运行
+# 1. 定义自定义算法（示例：冒泡排序）
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr
+
+# 2. 在项目中添加/调用该算法
+if __name__ == "__main__":
+    data = [3, 1, 4, 1, 5, 9]
+    sorted_data = bubble_sort(data)
+    print("自定义冒泡排序结果：", sorted_data)  # 输出 [1, 1, 3, 4, 5, 9]
