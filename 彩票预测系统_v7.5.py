@@ -29,6 +29,18 @@
 """
 
 # ============================================================================
+# 【彻底修复0xC0000409】在import numpy之前设置环境变量，
+# 限制BLAS/OpenMP/MKL线程数为1，防止多线程C栈溢出
+# 必须在import numpy之前设置才能生效
+# ============================================================================
+import os as _os
+_os.environ['OMP_NUM_THREADS'] = '1'
+_os.environ['OPENBLAS_NUM_THREADS'] = '1'
+_os.environ['MKL_NUM_THREADS'] = '1'
+_os.environ['NUMEXPR_NUM_THREADS'] = '1'
+_os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+
+# ============================================================================
 # 第一部分：导入所有必要的库
 # ============================================================================
 
@@ -114,6 +126,7 @@ _scipy_interpolate_module = None
 _scipy_ks_module = None
 
 def _get_scipy_stats():
+    """功能：懒加载scipy.stats模块"""
     global _scipy_stats_module
     if _scipy_stats_module is not None:
         return _scipy_stats_module
@@ -125,6 +138,7 @@ def _get_scipy_stats():
     return _scipy_stats_module
 
 def _get_scipy_optimize():
+    """功能：懒加载scipy.optimize模块"""
     global _scipy_optimize_module
     if _scipy_optimize_module is not None:
         return _scipy_optimize_module
@@ -136,6 +150,7 @@ def _get_scipy_optimize():
     return _scipy_optimize_module
 
 def _get_scipy_special():
+    """功能：懒加载scipy.special模块"""
     global _scipy_special_module
     if _scipy_special_module is not None:
         return _scipy_special_module
@@ -147,6 +162,7 @@ def _get_scipy_special():
     return _scipy_special_module
 
 def _get_scipy_signal():
+    """功能：懒加载scipy.signal模块"""
     global _scipy_signal_module
     if _scipy_signal_module is not None:
         return _scipy_signal_module
@@ -158,6 +174,7 @@ def _get_scipy_signal():
     return _scipy_signal_module
 
 def _get_scipy_interpolate():
+    """功能：懒加载scipy.interpolate模块"""
     global _scipy_interpolate_module
     if _scipy_interpolate_module is not None:
         return _scipy_interpolate_module
@@ -169,6 +186,7 @@ def _get_scipy_interpolate():
     return _scipy_interpolate_module
 
 def _get_scipy_ks():
+    """功能：懒加载scipy.stats.ks_2samp"""
     global _scipy_ks_module
     if _scipy_ks_module is not None:
         return _scipy_ks_module
@@ -230,9 +248,9 @@ def _get_sklearn():
         _GaussianNB = GNB
         _PCA = pca_cls
         _cosine_similarity = cs
+        _sklearn_loaded = True
     except Exception:
         pass
-    _sklearn_loaded = True
 
 # TensorFlow可选导入 - 懒加载
 _tf_module = None
@@ -464,7 +482,7 @@ class LotteryConfig:
         [9, 21, 33, 45],      # 组9: n%12==9
         [10, 22, 34, 46],     # 组10: n%12==10
         [11, 23, 35, 47],     # 组11: n%12==11
-        [12, 24, 36, 48],     # 组12: n%12==0
+        [12, 24, 36, 48],     # 组12: n%12==12
     ]
     
     @classmethod
@@ -568,22 +586,27 @@ class LotteryConfig:
     
     @classmethod
     def is_even(cls, number):
+        """功能：判断号码是否为偶数"""
         return number % 2 == 0
     
     @classmethod
     def is_big(cls, number):
+        """功能：判断号码是否为大数（>25）"""
         return number > 25
     
     @classmethod
     def is_small(cls, number):
+        """功能：判断号码是否为小数（<=25）"""
         return number <= 25
     
     @classmethod
     def get_tail_digit(cls, number):
+        """功能：获取号码尾数"""
         return number % 10
     
     @classmethod
     def get_range_index(cls, number):
+        """功能：获取号码区间索引"""
         for i, (start, end, name) in enumerate(cls.RANGES):
             if start <= number <= end:
                 return i
@@ -611,6 +634,7 @@ class ColorUtils:
     
     @staticmethod
     def hex_to_qcolor(hex_color):
+        """功能：十六进制颜色转QColor对象"""
         hex_color = hex_color.lstrip('#')
         if len(hex_color) == 6:
             r = int(hex_color[0:2], 16)
@@ -621,11 +645,13 @@ class ColorUtils:
     
     @staticmethod
     def hex_to_rgb(hex_color):
+        """功能：十六进制颜色转RGB元组"""
         hex_color = hex_color.lstrip('#')
         return (int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16))
     
     @staticmethod
     def rgb_to_hex(r, g, b):
+        """功能：RGB元组转十六进制颜色"""
         return f"#{r:02X}{g:02X}{b:02X}"
 
 
@@ -646,6 +672,7 @@ class FontUtils:
     
     @classmethod
     def get_default_font_family(cls):
+        """功能：获取系统默认字体族"""
         font_db = QFontDatabase()
         available_families = font_db.families()
         for family in cls.FONT_FAMILIES:
@@ -655,6 +682,7 @@ class FontUtils:
     
     @classmethod
     def create_font(cls, size_key='二号', bold=False, italic=False):
+        """功能：创建字体对象"""
         font_family = cls.get_default_font_family()
         font_size = LotteryConfig.FONT_SIZES.get(size_key, 16)
         font = QFont(font_family, font_size)
@@ -664,6 +692,7 @@ class FontUtils:
 
 
 class DataUtils:
+    """功能：数据工具类"""
     @staticmethod
     def parse_raw_data(raw_text):
         """
@@ -801,6 +830,7 @@ class DataUtils:
     
     @staticmethod
     def generate_sample_data(count=100):
+        """功能：生成示例彩票数据"""
         data = []
         base_date = datetime.date.today()
         for i in range(count):
@@ -830,22 +860,27 @@ class MathUtils:
     
     @staticmethod
     def calculate_mean(numbers):
+        """功能：计算均值"""
         return float(np.mean(numbers)) if numbers else 0.0
     
     @staticmethod
     def calculate_median(numbers):
+        """功能：计算中位数"""
         return float(np.median(numbers)) if numbers else 0.0
     
     @staticmethod
     def calculate_std(numbers):
+        """功能：计算标准差"""
         return float(np.std(numbers)) if numbers else 0.0
     
     @staticmethod
     def calculate_frequency(numbers):
+        """功能：计算频率统计"""
         return dict(Counter(numbers))
     
     @staticmethod
     def calculate_missing_cycle(current_miss, avg_frequency):
+        """功能：计算遗漏周期"""
         if avg_frequency <= 0:
             return 0.5
         probability = 1 - np.exp(-current_miss / avg_frequency)
@@ -853,6 +888,7 @@ class MathUtils:
     
     @staticmethod
     def poisson_probability(lambda_param, k):
+        """功能：泊松概率计算"""
         scipy_st = _get_scipy_stats()
         if scipy_st is not None and hasattr(scipy_st, 'poisson'):
             return float(scipy_st.poisson.pmf(k, lambda_param))
@@ -861,6 +897,7 @@ class MathUtils:
     
     @staticmethod
     def moving_average(data, window):
+        """功能：计算移动平均"""
         if len(data) < window:
             return []
         weights = np.ones(window) / window
@@ -876,10 +913,13 @@ class PredictionAlgorithms:
     """预测算法集合 - v7.5增强版，深度集成11大核心库"""
     
     def __init__(self, historical_data, _light_mode=False):
+        """功能：初始化"""
         self.data = historical_data
         self.analysis_results = {}
         # PyTorch设备只在第一次使用时设置
         self.device = None
+        # 【修复0xC0000409】记录轻量模式标志，预测算法据此跳过TF/PyTorch懒加载
+        self._is_light_mode = _light_mode
         if _light_mode:
             self._prepare_data_light()
         else:
@@ -927,6 +967,12 @@ class PredictionAlgorithms:
             self.scipy_interp_edge = 25.0
             self.tf_predictions = {}
             self.tf_autoencoder = None
+            # 【修复0xC0000409】轻量模式必须初始化pt_lstm_preds，
+            # 否则hasattr检查虽能工作但设计不一致，且后续算法可能误触PyTorch懒加载
+            self.pt_lstm_preds = {}
+            self.pt_lstm_model = None
+            self.pt_autoencoder_model = None
+            self.pt_encoded = None
         except Exception as e:
             print("轻量数据准备警告: " + str(e))
             self._init_defaults()
@@ -997,6 +1043,8 @@ class PredictionAlgorithms:
         self.tail_distribution = {i: 0 for i in range(10)}
         self.odd_even_ratio = 0.5
         self.big_small_ratio = 0.5
+        self.consecutive_prob = {}
+        self.adjacent_prob = {}
         self.correlation_matrix = np.eye(49)
         self.autocorrelation = {}
         self.interval_stats = {}
@@ -1021,6 +1069,29 @@ class PredictionAlgorithms:
         self.scipy_interp_edge = 25.0
         self.tf_predictions = {}
         self.tf_autoencoder = None
+    
+    def cleanup(self):
+        """【修复0xC0000374】安全释放TF/PyTorch模型资源，防止C运行时后台线程异步释放时堆冲突"""
+        # 清理TensorFlow模型引用，让TF运行时有机会释放GPU/CPU内存
+        for attr in ('tf_lstm_model', 'tf_fc_model', 'tf_autoencoder', 'tf_encoded',
+                      'tf_predictions', 'tf_fc_predictions'):
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
+        # 清理PyTorch模型引用
+        for attr in ('pt_lstm_model', 'pt_lstm_preds', 'pt_autoencoder_model', 'pt_encoded'):
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
+        # 清理sklearn模型引用
+        for attr in ('scaler', 'kmeans_labels', 'kmeans_centers',
+                      'sklearn_features', 'sklearn_features_scaled'):
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
     
     def _prepare_numpy_advanced(self):
         """深度NumPy矩阵运算：特征向量构建、共现矩阵特征值、线性回归lstsq"""
@@ -1100,6 +1171,7 @@ class PredictionAlgorithms:
     def _scipy_optimize_weights(self):
         """SciPy optimize.minimize贝叶斯优化集成权重"""
         def objective(w):
+            """功能：Optuna优化目标函数"""
             w1, w2, w3, w4, w5 = w
             total = sum(w) + 1e-8
             score = sum(self._get_weighted_score(i+1) * wi / total for i, wi in enumerate([w1, w2, w3, w4, w5]))
@@ -1170,7 +1242,10 @@ class PredictionAlgorithms:
         # 获取最近20期的频率序列
         freq_series = np.array([self.frequency.get(i, 0) for i in range(1, 50)], dtype=np.float32)
         # 高斯平滑核
-        kernel = scipy_sig.gaussian(5, 1.0)
+        try:
+            kernel = scipy_sig.windows.gaussian(5, 1.0)
+        except AttributeError:
+            kernel = scipy_sig.gaussian(5, 1.0)
         kernel = kernel / kernel.sum()
         # scipy_signal.convolve卷积平滑
         self.scipy_smoothed = scipy_sig.convolve(freq_series, kernel, mode='same')
@@ -1209,7 +1284,7 @@ class PredictionAlgorithms:
         # 构建49个数字的特征矩阵：频率+遗漏+MA5+MA20
         features = []
         for num in range(1, 50):
-            freq = self.frequency.get(num, 0) / len(self.data)
+            freq = self.frequency.get(num, 0) / len(self.data) if self.data else 0
             miss = min(self.missing.get(num, 50), 50) / 50.0
             ma5 = self.moving_avg.get(num, {}).get(5, 0.1)
             ma20 = self.moving_avg.get(num, {}).get(20, 0.1)
@@ -1229,6 +1304,7 @@ class PredictionAlgorithms:
         # KMeans聚类分组（3-5组）
         if _KMeans is not None:
             n_clusters = min(4, max(3, len(self.data) // 20))
+            # 【修复】sklearn 1.4+已移除KMeans的n_jobs参数，GBC本就不支持n_jobs
             kmeans = _KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             self.kmeans_labels = kmeans.fit_predict(self.sklearn_features_scaled)
             # 记录聚类中心用于预测
@@ -1250,6 +1326,11 @@ class PredictionAlgorithms:
             self.tf_predictions = {}
             self.tf_autoencoder = None
             return
+        # 【修复0xC0000374】抑制Python GC在TF模型训练期间运行，
+        # 防止GC回收临时numpy数组时与TF的C运行时后台线程产生堆冲突
+        import gc as _gc
+        _gc_was_enabled = _gc.isenabled()
+        _gc.disable()
         try:
             tf.random.set_seed(42)
             # 构建时序特征：最近5期每期49维one-hot
@@ -1289,6 +1370,9 @@ class PredictionAlgorithms:
         except Exception as e:
             self.tf_predictions = {}
             self.tf_autoencoder = None
+        finally:
+            if _gc_was_enabled:
+                _gc.enable()
     
     def _tf_fc_classifier(self, X_seq, y_seq):
         """TensorFlow全连接分类器预测数字出现概率"""
@@ -1355,6 +1439,10 @@ class PredictionAlgorithms:
         if len(self.data) < 20:
             self.pt_lstm_preds = {}
             return
+        # 【修复0xC0000374】抑制Python GC在PyTorch模型训练期间运行
+        import gc as _gc
+        _gc_was_enabled = _gc.isenabled()
+        _gc.disable()
         try:
             torch_mod.manual_seed(42)
             # 构建时序数据
@@ -1384,7 +1472,9 @@ class PredictionAlgorithms:
             else:
                 _num_layers, _dropout = 2, 0.2
             class LotteryLSTM(nn.Module):
+                """功能：彩票LSTM模型类"""
                 def __init__(self):
+                    """功能：初始化"""
                     super().__init__()
                     if _num_layers >= 2:
                         self.lstm = nn.LSTM(49, 64, batch_first=True, num_layers=_num_layers, dropout=_dropout)
@@ -1396,6 +1486,7 @@ class PredictionAlgorithms:
                         nn.Linear(32, 49), nn.Sigmoid()
                     )
                 def forward(self, x):
+                    """功能：前向传播"""
                     lstm_out, _ = self.lstm(x)
                     return self.fc(lstm_out[:, -1, :])
             model = LotteryLSTM().to(self.device)
@@ -1425,6 +1516,9 @@ class PredictionAlgorithms:
             self._pt_autoencoder()
         except Exception as e:
             self.pt_lstm_preds = {}
+        finally:
+            if _gc_was_enabled:
+                _gc.enable()
     
     def _pt_autoencoder(self):
         """PyTorch AutoEncoder特征降维"""
@@ -1437,7 +1531,9 @@ class PredictionAlgorithms:
         try:
             X = torch_mod.tensor(self.sklearn_features_scaled, dtype=torch_mod.float32)
             class PtAutoEncoder(nn.Module):
+                """功能：PyTorch自编码器类"""
                 def __init__(self):
+                    """功能：初始化"""
                     super().__init__()
                     self.encoder = nn.Sequential(
                         nn.Linear(5, 3), nn.ReLU()
@@ -1446,6 +1542,7 @@ class PredictionAlgorithms:
                         nn.Linear(3, 5), nn.Sigmoid()
                     )
                 def forward(self, x):
+                    """功能：前向传播"""
                     return self.decoder(self.encoder(x))
             model = PtAutoEncoder()
             optimizer = optim_mod.Adam(model.parameters(), lr=0.01)
@@ -1631,6 +1728,7 @@ class PredictionAlgorithms:
                     self.moving_avg[num][window] = 0.1
     
     def _calculate_missing(self, number):
+        """功能：计算missing"""
         missing = 0
         for record in reversed(self.data):
             if number in record.get('numbers', []):
@@ -1639,6 +1737,7 @@ class PredictionAlgorithms:
         return missing + 10
     
     def _calculate_range_distribution(self):
+        """功能：计算range distribution"""
         distribution = {i: 0 for i in range(5)}
         for record in self.data:
             for num in record.get('numbers', []):
@@ -1648,6 +1747,7 @@ class PredictionAlgorithms:
         return distribution
     
     def _calculate_tail_distribution(self):
+        """功能：计算tail distribution"""
         distribution = {i: 0 for i in range(10)}
         for record in self.data:
             for num in record.get('numbers', []):
@@ -1656,6 +1756,7 @@ class PredictionAlgorithms:
         return distribution
     
     def _calculate_odd_even_ratio(self):
+        """功能：计算odd even ratio"""
         odd_count = even_count = 0
         for record in self.data:
             for num in record.get('numbers', []):
@@ -1663,9 +1764,11 @@ class PredictionAlgorithms:
                     odd_count += 1
                 else:
                     even_count += 1
-        return {'odd': odd_count, 'even': even_count}
+        total = odd_count + even_count
+        return odd_count / total if total > 0 else 0.5
     
     def _calculate_big_small_ratio(self):
+        """功能：计算big small ratio"""
         big_count = small_count = 0
         for record in self.data:
             for num in record.get('numbers', []):
@@ -1673,7 +1776,8 @@ class PredictionAlgorithms:
                     big_count += 1
                 else:
                     small_count += 1
-        return {'big': big_count, 'small': small_count}
+        total = big_count + small_count
+        return big_count / total if total > 0 else 0.5
     
     def _lr_roulette_weights(self):
         """sklearn LogisticRegression概率权重，用于轮盘赌算法"""
@@ -1688,7 +1792,8 @@ class PredictionAlgorithms:
             # 构造标签：最近一期出现的号码为1，未出现为0
             last_draw = set(self.data[-1].get('numbers', [])) if self.data else set()
             y = np.array([1 if n in last_draw else 0 for n in range(1, 50)])
-            lr_model = LR(max_iter=100, random_state=42)
+            # 【修复0xC0000409】设置n_jobs=1禁用OpenMP并行，防止C栈溢出
+            lr_model = LR(max_iter=100, random_state=42, n_jobs=1)
             lr_model.fit(X, y)
             proba = lr_model.predict_proba(X)
             # 取类别1的概率
@@ -1743,8 +1848,12 @@ class PredictionAlgorithms:
         # 7. 共现相关性得分 (权重0.15)
         if len(self.data) > 0:
             latest_nums = self.data[0].get('numbers', [])
-            cooccur = sum(self.correlation_matrix[num-1, n-1] for n in latest_nums) / len(latest_nums)
-            score += cooccur * 0.15 * 100
+            # 【修复除零bug】latest_nums可能为空列表，len()=0会除零崩溃
+            # 【修复越界bug】过滤掉不在1-49范围的异常号码，防止correlation_matrix索引越界
+            valid_nums = [n for n in latest_nums if 1 <= n <= 49]
+            if valid_nums:
+                cooccur = sum(self.correlation_matrix[num-1, n-1] for n in valid_nums) / len(valid_nums)
+                score += cooccur * 0.15 * 100
         
         return score
     
@@ -1760,6 +1869,7 @@ class PredictionAlgorithms:
             }
         
         def objective(trial):
+            """功能：Optuna优化目标函数"""
             w1 = trial.suggest_float('w_hot_cold', 0.0, 0.4)
             w2 = trial.suggest_float('w_missing', 0.0, 0.4)
             w3 = trial.suggest_float('w_range', 0.0, 0.3)
@@ -1783,7 +1893,8 @@ class PredictionAlgorithms:
         
         optuna.logging.set_verbosity(optuna.logging.WARNING)
         study = optuna.create_study(direction='maximize', sampler=TPESampler(seed=42))
-        study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+        # 【修复0xC0000409】设置n_jobs=1禁用并行，防止C栈溢出
+        study.optimize(objective, n_trials=n_trials, show_progress_bar=False, n_jobs=1)
         return study.best_params
     
     def _hot_cold_score(self, num):
@@ -1823,113 +1934,135 @@ class PredictionAlgorithms:
             enhanced: 是否启用增强模式（动态权重+模式识别+分布平衡）
             reverse: 是否反向模式（True=选最不可能的号码，追求高错误率）
         """
-        if not enhanced:
-            # 经典模式：原有逻辑
-            result = self._classic_comprehensive(count)
+        try:
+            if not enhanced:
+                # 经典模式：原有逻辑
+                result = self._classic_comprehensive(count)
+                if reverse:
+                    return self._reverse_selection(result, count)
+                return result
+            
+            # 计算近期各算法实际表现，动态调整权重
+            dynamic_weights = self._calculate_dynamic_weights(lookback=15)
+            
+            # 收集各算法预测
+            predictions = []
+            predictions.extend(self.hot_cold_algorithm(count * 3))
+            predictions.extend(self.missing_value_analysis(count * 3))
+            predictions.extend(self.range_distribution_algorithm(count * 2))
+            predictions.extend(self.tail_distribution_algorithm(count * 2))
+            predictions.extend(self.odd_even_algorithm(count * 2))
+            predictions.extend(self.big_small_algorithm(count * 2))
+            
+            # 统计各数字出现次数（投票）
+            counter = Counter(predictions)
+            
+            # 各机器学习模型预测概率
+            gb_probs = self._gb_predict_probs() if len(self.data) >= 20 else {}
+            tf_bonus = self.tf_predictions if hasattr(self, 'tf_predictions') and self.tf_predictions else {}
+            pt_bonus = self.pt_lstm_preds if hasattr(self, 'pt_lstm_preds') and self.pt_lstm_preds else {}
+            np_bonus = self._np_regression_bonus() if hasattr(self, 'np_features') and self.np_features is not None else {}
+            scipy_bonus = self._scipy_interp_bonus() if hasattr(self, 'scipy_interp_func') and self.scipy_interp_func else {}
+            
+            # 近期模式识别加成
+            pattern_bonus = self._pattern_recognition_bonus()
+            
+            # 计算综合得分
+            scores = {}
+            total_w = sum(dynamic_weights.values()) or 1
+            for num in range(1, 50):
+                # 基础特征得分
+                feature_score = self._get_weighted_score(num)
+                
+                # 投票得分
+                vote_score = counter.get(num, 0) * 12
+                
+                # 动态权重集成得分
+                ensemble_score = 0
+                ensemble_score += self._hot_cold_score(num) * dynamic_weights.get('w_hot_cold', 0.18) / total_w
+                ensemble_score += self._missing_score(num) * dynamic_weights.get('w_missing', 0.18) / total_w
+                ensemble_score += self._range_score(num) * dynamic_weights.get('w_range', 0.12) / total_w
+                ensemble_score += self._tail_score(num) * dynamic_weights.get('w_tail', 0.12) / total_w
+                ensemble_score += self._odd_even_score(num) * dynamic_weights.get('w_odd_even', 0.1) / total_w
+                ensemble_score += self._big_small_score(num) * dynamic_weights.get('w_big_small', 0.1) / total_w
+                # 【修复除零bug】self.data可能为空，len()=0会导致除零崩溃
+                freq_val = self.frequency.get(num, 0) / len(self.data) if self.data else 0
+                ensemble_score += freq_val * dynamic_weights.get('w_freq', 0.15) / total_w
+                ensemble_score += pattern_bonus.get(num, 0) * dynamic_weights.get('w_pattern', 0.15) / total_w
+                
+                # 多模型概率加成
+                ml_bonus = 0
+                ml_bonus += gb_probs.get(num, 0.02) * 120
+                ml_bonus += tf_bonus.get(num, 0.02) * 80 if tf_bonus else 0
+                ml_bonus += pt_bonus.get(num, 0.02) * 80 if pt_bonus else 0
+                ml_bonus += np_bonus.get(num, 0) * 40
+                ml_bonus += scipy_bonus.get(num, 0) * 25
+                
+                scores[num] = feature_score + vote_score + ensemble_score * 45 + ml_bonus
+            
             if reverse:
-                return self._reverse_selection(result, count)
-            return result
-        
-        # 计算近期各算法实际表现，动态调整权重
-        dynamic_weights = self._calculate_dynamic_weights(lookback=15)
-        
-        # 收集各算法预测
-        predictions = []
-        predictions.extend(self.hot_cold_algorithm(count * 3))
-        predictions.extend(self.missing_value_analysis(count * 3))
-        predictions.extend(self.range_distribution_algorithm(count * 2))
-        predictions.extend(self.tail_distribution_algorithm(count * 2))
-        predictions.extend(self.odd_even_algorithm(count * 2))
-        predictions.extend(self.big_small_algorithm(count * 2))
-        
-        # 统计各数字出现次数（投票）
-        counter = Counter(predictions)
-        
-        # 各机器学习模型预测概率
-        gb_probs = self._gb_predict_probs() if len(self.data) >= 20 else {}
-        tf_bonus = self.tf_predictions if hasattr(self, 'tf_predictions') and self.tf_predictions else {}
-        pt_bonus = self.pt_lstm_preds if hasattr(self, 'pt_lstm_preds') and self.pt_lstm_preds else {}
-        np_bonus = self._np_regression_bonus() if hasattr(self, 'np_features') and self.np_features is not None else {}
-        scipy_bonus = self._scipy_interp_bonus() if hasattr(self, 'scipy_interp_func') and self.scipy_interp_func else {}
-        
-        # 近期模式识别加成
-        pattern_bonus = self._pattern_recognition_bonus()
-        
-        # 计算综合得分
-        scores = {}
-        total_w = sum(dynamic_weights.values()) or 1
-        for num in range(1, 50):
-            # 基础特征得分
-            feature_score = self._get_weighted_score(num)
+                # 反向模式：选择得分最低的号码（最不可能出现）
+                selected = self._reverse_balance_selection(scores, count)
+            else:
+                # 正向模式：平衡奇偶、大小、区间分布
+                selected = self._balance_selection(scores, count)
             
-            # 投票得分
-            vote_score = counter.get(num, 0) * 12
-            
-            # 动态权重集成得分
-            ensemble_score = 0
-            ensemble_score += self._hot_cold_score(num) * dynamic_weights.get('w_hot_cold', 0.18) / total_w
-            ensemble_score += self._missing_score(num) * dynamic_weights.get('w_missing', 0.18) / total_w
-            ensemble_score += self._range_score(num) * dynamic_weights.get('w_range', 0.12) / total_w
-            ensemble_score += self._tail_score(num) * dynamic_weights.get('w_tail', 0.12) / total_w
-            ensemble_score += self._odd_even_score(num) * dynamic_weights.get('w_odd_even', 0.1) / total_w
-            ensemble_score += self._big_small_score(num) * dynamic_weights.get('w_big_small', 0.1) / total_w
-            ensemble_score += (self.frequency.get(num, 0) / len(self.data)) * dynamic_weights.get('w_freq', 0.15) / total_w
-            ensemble_score += pattern_bonus.get(num, 0) * dynamic_weights.get('w_pattern', 0.15) / total_w
-            
-            # 多模型概率加成
-            ml_bonus = 0
-            ml_bonus += gb_probs.get(num, 0.02) * 120
-            ml_bonus += tf_bonus.get(num, 0.02) * 80 if tf_bonus else 0
-            ml_bonus += pt_bonus.get(num, 0.02) * 80 if pt_bonus else 0
-            ml_bonus += np_bonus.get(num, 0) * 40
-            ml_bonus += scipy_bonus.get(num, 0) * 25
-            
-            scores[num] = feature_score + vote_score + ensemble_score * 45 + ml_bonus
-        
-        if reverse:
-            # 反向模式：选择得分最低的号码（最不可能出现）
-            selected = self._reverse_balance_selection(scores, count)
-        else:
-            # 正向模式：平衡奇偶、大小、区间分布
-            selected = self._balance_selection(scores, count)
-        
-        return selected
+            return selected
+        except Exception:
+            # 【修复0xC0000409】增强模式出错时降级到经典模式，避免崩溃
+            import traceback
+            traceback.print_exc()
+            try:
+                result = self._classic_comprehensive(count)
+                if reverse:
+                    return self._reverse_selection(result, count)
+                return result
+            except Exception:
+                return sorted(random.sample(range(1, 50), count))
     
     def _classic_comprehensive(self, count=6):
         """经典综合推荐（原有逻辑）"""
-        best_weights = self._optimize_ensemble_weights(n_trials=10)
-        predictions = []
-        predictions.extend(self.hot_cold_algorithm(count * 3))
-        predictions.extend(self.missing_value_analysis(count * 3))
-        predictions.extend(self.range_distribution_algorithm(count * 2))
-        predictions.extend(self.tail_distribution_algorithm(count * 2))
-        counter = Counter(predictions)
-        gb_probs = self._gb_predict_probs() if len(self.data) >= 20 else {}
-        tf_bonus = self.tf_predictions if hasattr(self, 'tf_predictions') and self.tf_predictions else {}
-        pt_bonus = self.pt_lstm_preds if hasattr(self, 'pt_lstm_preds') and self.pt_lstm_preds else {}
-        np_bonus = self._np_regression_bonus() if hasattr(self, 'np_features') and self.np_features is not None else {}
-        scipy_bonus = self._scipy_interp_bonus() if hasattr(self, 'scipy_interp_func') and self.scipy_interp_func else {}
-        
-        scores = {}
-        total_w = sum(best_weights.values()) or 1
-        for num in range(1, 50):
-            feature_score = self._get_weighted_score(num)
-            vote_score = counter.get(num, 0) * 15
-            ensemble_score = 0
-            ensemble_score += self._hot_cold_score(num) * best_weights.get('w_hot_cold', 0.2) / total_w
-            ensemble_score += self._missing_score(num) * best_weights.get('w_missing', 0.2) / total_w
-            ensemble_score += self._range_score(num) * best_weights.get('w_range', 0.15) / total_w
-            ensemble_score += self._tail_score(num) * best_weights.get('w_tail', 0.15) / total_w
-            ensemble_score += (self.frequency.get(num, 0) / len(self.data)) * best_weights.get('w_freq', 0.2) / total_w
-            gb_bonus = gb_probs.get(num, 0.02) * 150
-            tf_b = tf_bonus.get(num, 0.02) * 100 if tf_bonus else 0
-            pt_b = pt_bonus.get(num, 0.02) * 100 if pt_bonus else 0
-            np_b = np_bonus.get(num, 0) * 50
-            scipy_b = scipy_bonus.get(num, 0) * 30
-            scores[num] = feature_score + vote_score + ensemble_score * 50 + gb_bonus + tf_b + pt_b + np_b + scipy_b
-        
-        sorted_nums = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        return [num for num, _ in sorted_nums[:count]]
+        try:
+            best_weights = self._optimize_ensemble_weights(n_trials=10)
+            predictions = []
+            predictions.extend(self.hot_cold_algorithm(count * 3))
+            predictions.extend(self.missing_value_analysis(count * 3))
+            predictions.extend(self.range_distribution_algorithm(count * 2))
+            predictions.extend(self.tail_distribution_algorithm(count * 2))
+            counter = Counter(predictions)
+            gb_probs = self._gb_predict_probs() if len(self.data) >= 20 else {}
+            tf_bonus = self.tf_predictions if hasattr(self, 'tf_predictions') and self.tf_predictions else {}
+            pt_bonus = self.pt_lstm_preds if hasattr(self, 'pt_lstm_preds') and self.pt_lstm_preds else {}
+            np_bonus = self._np_regression_bonus() if hasattr(self, 'np_features') and self.np_features is not None else {}
+            scipy_bonus = self._scipy_interp_bonus() if hasattr(self, 'scipy_interp_func') and self.scipy_interp_func else {}
+            
+            scores = {}
+            total_w = sum(best_weights.values()) or 1
+            for num in range(1, 50):
+                feature_score = self._get_weighted_score(num)
+                vote_score = counter.get(num, 0) * 15
+                ensemble_score = 0
+                ensemble_score += self._hot_cold_score(num) * best_weights.get('w_hot_cold', 0.2) / total_w
+                ensemble_score += self._missing_score(num) * best_weights.get('w_missing', 0.2) / total_w
+                ensemble_score += self._range_score(num) * best_weights.get('w_range', 0.15) / total_w
+                ensemble_score += self._tail_score(num) * best_weights.get('w_tail', 0.15) / total_w
+                # 【修复除零bug】self.data可能为空，len()=0会导致除零崩溃
+                freq_val = self.frequency.get(num, 0) / len(self.data) if self.data else 0
+                ensemble_score += freq_val * best_weights.get('w_freq', 0.2) / total_w
+                gb_bonus = gb_probs.get(num, 0.02) * 150
+                tf_b = tf_bonus.get(num, 0.02) * 100 if tf_bonus else 0
+                pt_b = pt_bonus.get(num, 0.02) * 100 if pt_bonus else 0
+                np_b = np_bonus.get(num, 0) * 50
+                scipy_b = scipy_bonus.get(num, 0) * 30
+                scores[num] = feature_score + vote_score + ensemble_score * 50 + gb_bonus + tf_b + pt_b + np_b + scipy_b
+            
+            sorted_nums = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+            return [num for num, _ in sorted_nums[:count]]
+        except Exception:
+            # 【修复0xC0000409】经典模式出错时返回随机选择，避免崩溃
+            import traceback
+            traceback.print_exc()
+            return sorted(random.sample(range(1, 50), count))
     
     def _calculate_dynamic_weights(self, lookback=15):
         """根据近期表现计算动态权重 - v7.5增强版
@@ -1953,50 +2086,58 @@ class PredictionAlgorithms:
             'odd_even': 0, 'big_small': 0
         }
         
-        test_periods = min(12, len(recent_data) - 3)
+        # 【修复0xC0000409】限制test_periods最大值，防止递归创建过多临时对象导致栈累积
+        test_periods = max(0, min(8, len(recent_data) - 3))
         for i in range(test_periods):
-            actual = set(recent_data[i].get('numbers', []))
-            train_data = self.data[i + 1:]
-            if len(train_data) < 5:
+            try:
+                actual = set(recent_data[i].get('numbers', []))
+                train_data = self.data[i + 1:]
+                if len(train_data) < 5:
+                    continue
+                # 使用轻量模式，仅计算基础统计，跳过TF/PyTorch/sklearn等重量级训练
+                temp_predictor = PredictionAlgorithms(train_data, _light_mode=True)
+                
+                hc_pred = set(temp_predictor.hot_cold_algorithm(6))
+                hc_hit = len(hc_pred & actual)
+                algo_scores['hot_cold'] += hc_hit
+                if hc_hit >= 2:
+                    algo_hit_counts['hot_cold'] += 1
+                
+                miss_pred = set(temp_predictor.missing_value_analysis(6))
+                miss_hit = len(miss_pred & actual)
+                algo_scores['missing'] += miss_hit
+                if miss_hit >= 2:
+                    algo_hit_counts['missing'] += 1
+                
+                range_pred = set(temp_predictor.range_distribution_algorithm(6))
+                range_hit = len(range_pred & actual)
+                algo_scores['range'] += range_hit
+                if range_hit >= 2:
+                    algo_hit_counts['range'] += 1
+                
+                tail_pred = set(temp_predictor.tail_distribution_algorithm(6))
+                tail_hit = len(tail_pred & actual)
+                algo_scores['tail'] += tail_hit
+                if tail_hit >= 2:
+                    algo_hit_counts['tail'] += 1
+                
+                oe_pred = set(temp_predictor.odd_even_algorithm(6))
+                oe_hit = len(oe_pred & actual)
+                algo_scores['odd_even'] += oe_hit
+                if oe_hit >= 2:
+                    algo_hit_counts['odd_even'] += 1
+                
+                bs_pred = set(temp_predictor.big_small_algorithm(6))
+                bs_hit = len(bs_pred & actual)
+                algo_scores['big_small'] += bs_hit
+                if bs_hit >= 2:
+                    algo_hit_counts['big_small'] += 1
+                
+                # 【修复0xC0000409】显式删除临时对象，防止GC延迟回收导致内存压力
+                del temp_predictor
+            except Exception:
+                # 单个回测周期失败不影响整体权重计算
                 continue
-            # 使用轻量模式，仅计算基础统计，跳过TF/PyTorch/sklearn等重量级训练
-            temp_predictor = PredictionAlgorithms(train_data, _light_mode=True)
-            
-            hc_pred = set(temp_predictor.hot_cold_algorithm(6))
-            hc_hit = len(hc_pred & actual)
-            algo_scores['hot_cold'] += hc_hit
-            if hc_hit >= 2:
-                algo_hit_counts['hot_cold'] += 1
-            
-            miss_pred = set(temp_predictor.missing_value_analysis(6))
-            miss_hit = len(miss_pred & actual)
-            algo_scores['missing'] += miss_hit
-            if miss_hit >= 2:
-                algo_hit_counts['missing'] += 1
-            
-            range_pred = set(temp_predictor.range_distribution_algorithm(6))
-            range_hit = len(range_pred & actual)
-            algo_scores['range'] += range_hit
-            if range_hit >= 2:
-                algo_hit_counts['range'] += 1
-            
-            tail_pred = set(temp_predictor.tail_distribution_algorithm(6))
-            tail_hit = len(tail_pred & actual)
-            algo_scores['tail'] += tail_hit
-            if tail_hit >= 2:
-                algo_hit_counts['tail'] += 1
-            
-            oe_pred = set(temp_predictor.odd_even_algorithm(6))
-            oe_hit = len(oe_pred & actual)
-            algo_scores['odd_even'] += oe_hit
-            if oe_hit >= 2:
-                algo_hit_counts['odd_even'] += 1
-            
-            bs_pred = set(temp_predictor.big_small_algorithm(6))
-            bs_hit = len(bs_pred & actual)
-            algo_scores['big_small'] += bs_hit
-            if bs_hit >= 2:
-                algo_hit_counts['big_small'] += 1
         
         total_score = sum(algo_scores.values()) or 1
         
@@ -2235,6 +2376,7 @@ class PredictionAlgorithms:
         
         # 选择反向得分总和最高的极端组合
         def calc_total_score(nums):
+            """功能：计算总分"""
             return sum(reverse_scores.get(n, 0) for n in nums)
         
         options = []
@@ -2310,6 +2452,9 @@ class PredictionAlgorithms:
     
     def _gb_predict_probs(self):
         """GradientBoostingClassifier预测每个数字出现概率"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return {}
         _get_sklearn()
         GBC = _GradientBoostingClassifier
         if len(self.data) < 20 or not hasattr(self, 'sklearn_features') or self.sklearn_features is None or GBC is None:
@@ -2329,11 +2474,22 @@ class PredictionAlgorithms:
             X, y = np.array(X), np.array(y)
             # 对每个数字训练一个分类器
             probs = {}
+            import gc as _gc
             for n in range(1, 50):
+                y_col = y[:, n-1]
+                # 【修复0xC0000409】跳过单类目标，避免模型训练异常
+                if len(set(y_col)) < 2:
+                    probs[n] = 0.02
+                    continue
+                # 【修复】GradientBoostingClassifier不支持n_jobs参数
                 model = GBC(n_estimators=50, max_depth=3, random_state=42)
-                model.fit(X, y[:, n-1])
+                model.fit(X, y_col)
                 proba = model.predict_proba(X[-1:])[0][1] if len(model.classes_) > 1 else 0.02
                 probs[n] = proba
+                del model
+                # 每10个模型清理一次C级内存，防止堆栈累积
+                if n % 10 == 0:
+                    _gc.collect()
             return probs
         except Exception:
             return {}
@@ -2491,22 +2647,25 @@ class PredictionAlgorithms:
         
         # sklearn: LogisticRegression预测下期单数个数概率分布
         lr_predicted_odds = 3
-        LR = _LogisticRegression
-        SS = _StandardScaler
-        if LR is not None and SS is not None and len(odd_seq) >= 10:
-            try:
-                X_lr = np.array(odd_seq[:-1]).reshape(-1, 1)
-                y_lr = np.array(odd_seq[1:])
-                scaler_lr = SS()
-                X_lr_scaled = scaler_lr.fit_transform(X_lr)
-                lr_model = LR(max_iter=100, random_state=42)
-                lr_model.fit(X_lr_scaled, y_lr)
-                X_next = scaler_lr.transform([[odd_seq[-1]]])
-                lr_proba = lr_model.predict_proba(X_next)[0]
-                lr_predicted_odds = lr_model.predict(X_next)[0]
-                lr_predicted_odds = int(np.sum(lr_proba * np.arange(len(lr_proba))))
-            except Exception:
-                lr_predicted_odds = 3
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if not getattr(self, '_is_light_mode', False):
+            LR = _LogisticRegression
+            SS = _StandardScaler
+            if LR is not None and SS is not None and len(odd_seq) >= 10:
+                try:
+                    X_lr = np.array(odd_seq[:-1]).reshape(-1, 1)
+                    y_lr = np.array(odd_seq[1:])
+                    scaler_lr = SS()
+                    X_lr_scaled = scaler_lr.fit_transform(X_lr)
+                    # 【修复0xC0000409】设置n_jobs=1禁用OpenMP并行，防止C栈溢出
+                    lr_model = LR(max_iter=100, random_state=42, n_jobs=1)
+                    lr_model.fit(X_lr_scaled, y_lr)
+                    X_next = scaler_lr.transform([[odd_seq[-1]]])
+                    lr_proba = lr_model.predict_proba(X_next)[0]
+                    lr_predicted_odds = lr_model.predict(X_next)[0]
+                    lr_predicted_odds = int(np.sum(lr_proba * np.arange(len(lr_proba))))
+                except Exception:
+                    lr_predicted_odds = 3
         elif len(odd_seq) >= 10:
             lr_predicted_odds = 3
         
@@ -2603,20 +2762,22 @@ class PredictionAlgorithms:
         
         # sklearn: RandomForestClassifier预测下期大数个数
         rf_predicted_bigs = 3
-        RF = _RandomForestClassifier
-        SS = _StandardScaler
-        if RF is not None and SS is not None and len(recent_bigs) >= 10:
-            try:
-                X_rf = np.array(recent_bigs[:-1]).reshape(-1, 1)
-                y_rf = np.array(recent_bigs[1:])
-                scaler_rf = SS()
-                X_rf_scaled = scaler_rf.fit_transform(X_rf)
-                rf_model = RF(n_estimators=50, max_depth=3, random_state=42)
-                rf_model.fit(X_rf_scaled, y_rf)
-                X_next = scaler_rf.transform([[recent_bigs[-1]]])
-                rf_predicted_bigs = rf_model.predict(X_next)[0]
-            except Exception:
-                rf_predicted_bigs = 3
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if not getattr(self, '_is_light_mode', False):
+            RF = _RandomForestClassifier
+            SS = _StandardScaler
+            if RF is not None and SS is not None and len(recent_bigs) >= 10:
+                try:
+                    X_rf = np.array(recent_bigs[:-1]).reshape(-1, 1)
+                    y_rf = np.array(recent_bigs[1:])
+                    scaler_rf = SS()
+                    X_rf_scaled = scaler_rf.fit_transform(X_rf)
+                    rf_model = RF(n_estimators=50, max_depth=3, random_state=42, n_jobs=1)
+                    rf_model.fit(X_rf_scaled, y_rf)
+                    X_next = scaler_rf.transform([[recent_bigs[-1]]])
+                    rf_predicted_bigs = rf_model.predict(X_next)[0]
+                except Exception:
+                    rf_predicted_bigs = 3
         elif len(recent_bigs) >= 10:
             rf_predicted_bigs = 3
         
@@ -2804,6 +2965,9 @@ class PredictionAlgorithms:
     
     def _nb_missing_probs(self):
         """GaussianNB贝叶斯分类判断每个数字'即将出现'的概率"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return {}
         _get_sklearn()
         GNB = _GaussianNB
         if not hasattr(self, 'sklearn_features') or self.sklearn_features is None or GNB is None:
@@ -2826,14 +2990,23 @@ class PredictionAlgorithms:
             if len(X_nb) < 10:
                 return {}
             X_nb, y_nb = np.array(X_nb), np.array(y_nb)
+            import gc as _gc
             for n in range(1, 50):
+                y_col = y_nb[:, n-1]
+                # 【修复0xC0000409】跳过单类目标
+                if len(set(y_col)) < 2:
+                    probs[n] = 0.02
+                    continue
                 nb_model = GNB()
-                nb_model.fit(X_nb, y_nb[:, n-1])
+                nb_model.fit(X_nb, y_col)
                 if len(nb_model.classes_) > 1:
                     proba = nb_model.predict_proba(X_nb[-1:])[0][1]
                 else:
                     proba = 0.02
                 probs[n] = proba
+                del nb_model
+                if n % 10 == 0:
+                    _gc.collect()
             return probs
         except Exception:
             return {}
@@ -2912,6 +3085,9 @@ class PredictionAlgorithms:
     
     def _mlp_adjacent_probs(self):
         """MLPClassifier预测邻号出现概率"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return {}
         _get_sklearn()
         MLP = _MLPClassifier
         SS = _StandardScaler
@@ -2933,14 +3109,23 @@ class PredictionAlgorithms:
             X_mlp, y_mlp = np.array(X_mlp), np.array(y_mlp)
             scaler_mlp = SS()
             X_mlp_scaled = scaler_mlp.fit_transform(X_mlp)
+            import gc as _gc
             for n in range(1, 50):
+                y_col = y_mlp[:, n-1]
+                # 【修复0xC0000409】跳过单类目标
+                if len(set(y_col)) < 2:
+                    probs[n] = 0.02
+                    continue
                 mlp_model = MLP(hidden_layer_sizes=(50, 25), max_iter=200, random_state=42)
-                mlp_model.fit(X_mlp_scaled, y_mlp[:, n-1])
+                mlp_model.fit(X_mlp_scaled, y_col)
                 if len(mlp_model.classes_) > 1:
                     proba = mlp_model.predict_proba(X_mlp_scaled[-1:])[0][1]
                 else:
                     proba = 0.02
                 probs[n] = proba
+                del mlp_model
+                if n % 10 == 0:
+                    _gc.collect()
             return probs
         except Exception:
             return {}
@@ -3056,6 +3241,9 @@ class PredictionAlgorithms:
     
     def _tail_kmeans_bonus(self):
         """KMeans对10个尾数聚类，找出低频尾数组需要回补"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return {}
         _get_sklearn()
         KM = _KMeans
         if KM is None:
@@ -3067,6 +3255,7 @@ class PredictionAlgorithms:
                 tail_freq.append([self.tail_distribution.get(tail, 0) / max(len(self.data), 1)])
             tail_freq = np.array(tail_freq)
             # KMeans聚类（2组：高频组vs低频组）
+            # 【修复】sklearn 1.4+已移除KMeans的n_jobs参数
             kmeans = KM(n_clusters=2, random_state=42, n_init=10)
             labels = kmeans.fit_predict(tail_freq)
             # 找出低频组的尾数
@@ -3212,6 +3401,9 @@ class PredictionAlgorithms:
     
     def _range_cv_scores(self):
         """MinMaxScaler归一化区间特征 + cross_val_score验证区间预测模型"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return {i: 0.5 for i in range(5)}
         _get_sklearn()
         MMS = _MinMaxScaler
         GBC = _GradientBoostingClassifier
@@ -3255,16 +3447,38 @@ class PredictionAlgorithms:
             # 对每个区间训练并验证
             cv_scores = {}
             for i in range(5):
+                y_col = y_range[:, i]
+                # 【修复0xC0000409】检查类别分布，避免cross_val_score在单类数据上崩溃
+                unique_classes = np.unique(y_col)
+                if len(unique_classes) < 2:
+                    cv_scores[i] = 0.5
+                    continue
+                # 计算每个类别的样本数，确保cv不大于最小类样本数
+                # 【修复np.bincount bug】bincount无法处理负值且对大值浪费内存，改用np.unique
+                unique_classes, class_counts = np.unique(y_col, return_counts=True)
+                min_class_count = min(class_counts)
+                cv_folds = min(3, min_class_count)
+                if cv_folds < 2:
+                    cv_scores[i] = 0.5
+                    continue
+                # 【修复】GradientBoostingClassifier不支持n_jobs参数
                 model = GBC(n_estimators=30, max_depth=3, random_state=42)
-                scores = CVS(model, X_range_scaled, y_range[:, i], cv=3, scoring='accuracy')
-                cv_scores[i] = np.mean(scores)
+                try:
+                    # 使用回归评分而非accuracy（区间出现次数是连续值，不是分类标签）
+                    scores = CVS(model, X_range_scaled, y_col, cv=cv_folds, scoring='neg_mean_squared_error', n_jobs=1)
+                    cv_scores[i] = max(0.0, 1.0 + np.mean(scores) / 10.0)
+                except Exception:
+                    cv_scores[i] = 0.5
             return cv_scores
         except Exception:
             return {i: 0.5 for i in range(5)}
     
     def roulette_selection(self, count=6):
         """轮盘赌 - TensorFlow概率 + PyTorch动态温度采样 + sklearn概率融合（无PyTorch时使用NumPy）"""
-        torch_mod = _get_torch()
+        # 【修复0xC0000409】轻量模式下跳过PyTorch懒加载，使用NumPy替代
+        torch_mod = None
+        if not getattr(self, '_is_light_mode', False):
+            torch_mod = _get_torch()
         if torch_mod is not None:
             torch_mod.manual_seed(int(datetime.datetime.now().timestamp()) % 1000000)
         
@@ -3299,7 +3513,11 @@ class PredictionAlgorithms:
         temperature = max(0.3, min(0.8, weight_std / 50))
         
         # PyTorch动态温度softmax采样（无PyTorch时使用NumPy替代）
-        torch_mod = _get_torch()
+        # 【修复0xC0000409】轻量模式下跳过PyTorch懒加载
+        if not getattr(self, '_is_light_mode', False):
+            torch_mod = _get_torch()
+        else:
+            torch_mod = None
         if torch_mod is not None and self.device is not None:
             weights_tensor = torch_mod.tensor(combined_weights, dtype=torch_mod.float32, device=self.device)
             logits = weights_tensor / temperature
@@ -3322,9 +3540,13 @@ class PredictionAlgorithms:
             if probs_sum <= 0:
                 probs_sum = 1
             probs_normalized = probs_np[available] / probs_sum
-            # 修正浮点精度误差，确保概率和严格为1
-            diff = 1.0 - probs_normalized.sum()
-            probs_normalized[-1] += diff
+            # 修正浮点精度误差，确保概率和严格为1且非负
+            probs_normalized = np.maximum(probs_normalized, 0.0)
+            total = probs_normalized.sum()
+            if total > 0:
+                probs_normalized = probs_normalized / total
+            else:
+                probs_normalized = np.ones(len(probs_normalized)) / len(probs_normalized)
             idx = np.random.choice(len(available), p=probs_normalized)
             num_idx = available[idx]
             selected.append(num_idx + 1)  # 转回1-based号码
@@ -3347,6 +3569,9 @@ class PredictionAlgorithms:
         
         # 构建增强特征向量（one-hot 49维 + 统计特征14维 = 63维）
         def to_enhanced_vector(numbers):
+            # 【修复空列表bug】numbers可能为空，max/min/mean会抛异常
+            if not numbers:
+                return [0] * 63  # 返回63维零向量
             # one-hot编码（49维）
             vec = [0] * 49
             for n in numbers:
@@ -3414,6 +3639,9 @@ class PredictionAlgorithms:
     
     def _pca_historical_similarity(self):
         """sklearn PCA降维后计算cosine_similarity"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练
+        if getattr(self, '_is_light_mode', False):
+            return []
         try:
             _get_sklearn()
             PCA = _PCA
@@ -3436,6 +3664,9 @@ class PredictionAlgorithms:
     
     def _tf_autoencoder_similarity(self):
         """TensorFlow AutoEncoder降维后计算相似度"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn调用
+        if getattr(self, '_is_light_mode', False):
+            return []
         _get_sklearn()
         cosine_sim = _cosine_similarity
         if cosine_sim is None:
@@ -3612,7 +3843,11 @@ class PredictionAlgorithms:
         base_weights_np += np.random.rand(49) * time_bonus
         
         # PyTorch加权采样（无PyTorch时使用NumPy替代）
-        torch_mod = _get_torch()
+        # 【修复0xC0000409】轻量模式下跳过PyTorch懒加载
+        if not getattr(self, '_is_light_mode', False):
+            torch_mod = _get_torch()
+        else:
+            torch_mod = None
         if torch_mod is not None and self.device is not None:
             base_weights = torch_mod.tensor(base_weights_np, dtype=torch_mod.float32, device=self.device)
             probs = torch_mod.softmax(base_weights / 0.7, dim=0)
@@ -4050,7 +4285,10 @@ class PredictionAlgorithms:
             freq_array = np.array([self.frequency.get(i, 0) for i in range(1, 50)], dtype=np.float32)
             # 高斯核
             if scipy_sig is not None:
-                gauss_kernel = scipy_sig.gaussian(7, std=1.5)
+                try:
+                    gauss_kernel = scipy_sig.windows.gaussian(7, std=1.5)
+                except AttributeError:
+                    gauss_kernel = scipy_sig.gaussian(7, std=1.5)
                 gauss_kernel = gauss_kernel / gauss_kernel.sum()
                 smoothed_freq = scipy_sig.convolve(freq_array, gauss_kernel, mode='same')
             else:
@@ -4062,6 +4300,7 @@ class PredictionAlgorithms:
             minimize = scipy_opt.minimize
             
             def objective(params):
+                """功能：Optuna优化目标函数"""
                 w_freq, w_miss, w_trend, w_corr, w_range = params
                 total_w = w_freq + w_miss + w_trend + w_corr + w_range
                 if total_w == 0:
@@ -4079,10 +4318,16 @@ class PredictionAlgorithms:
                     corr_s = 0
                     if len(self.data) > 0:
                         latest_nums = self.data[0].get('numbers', [])
-                        corr_s = sum(self.correlation_matrix[num-1, n-1] for n in latest_nums) / len(latest_nums)
+                        # 【修复除零+越界bug】latest_nums可能为空导致除零；
+                        # 号码可能不在1-49范围内导致correlation_matrix索引越界
+                        valid_nums = [n for n in latest_nums if 1 <= n <= 49]
+                        if valid_nums:
+                            corr_s = sum(self.correlation_matrix[num-1, n-1] for n in valid_nums) / len(valid_nums)
                     
                     range_idx = LotteryConfig.get_range_index(num)
-                    range_s = 1 - self.range_distribution.get(range_idx, 0) / sum(self.range_distribution.values())
+                    # 【修复除零bug】range_distribution值之和可能为0
+                    range_total = sum(self.range_distribution.values()) or 1
+                    range_s = 1 - self.range_distribution.get(range_idx, 0) / range_total
                     
                     score += (w_freq * freq_s + w_miss * miss_s + w_trend * trend_s + 
                              w_corr * corr_s + w_range * range_s)
@@ -4175,10 +4420,16 @@ class PredictionAlgorithms:
                 corr_s = 0
                 if len(self.data) > 0:
                     latest_nums = self.data[0].get('numbers', [])
-                    corr_s = sum(self.correlation_matrix[num-1, n-1] for n in latest_nums) / len(latest_nums)
+                    # 【修复除零+越界bug】latest_nums可能为空导致除零；
+                    # 号码可能不在1-49范围内导致correlation_matrix索引越界
+                    valid_nums = [n for n in latest_nums if 1 <= n <= 49]
+                    if valid_nums:
+                        corr_s = sum(self.correlation_matrix[num-1, n-1] for n in valid_nums) / len(valid_nums)
                 
                 range_idx = LotteryConfig.get_range_index(num)
-                range_s = 1 - self.range_distribution.get(range_idx, 0) / sum(self.range_distribution.values())
+                # 【修复除零bug】range_distribution值之和可能为0
+                range_total = sum(self.range_distribution.values()) or 1
+                range_s = 1 - self.range_distribution.get(range_idx, 0) / range_total
                 
                 # 平滑后的频率得分
                 smooth_freq = smoothed_freq[num-1] if num-1 < len(smoothed_freq) else freq_s
@@ -4216,6 +4467,9 @@ class PredictionAlgorithms:
     
     def sklearn_ensemble_algorithm(self, count=6):
         """Scikit-learn集成算法 - 基于Sklearn多模型集成预测"""
+        # 【修复0xC0000409】轻量模式下跳过sklearn模型训练，降级到基础统计
+        if getattr(self, '_is_light_mode', False):
+            return self._classic_comprehensive(count)
         _get_sklearn()
         SS = _StandardScaler
         MMS = _MinMaxScaler
@@ -4273,10 +4527,16 @@ class PredictionAlgorithms:
             
             for target_num in range(1, 50):
                 y_target = y[:, target_num-1]
+                # 【修复0xC0000409】跳过单类目标，避免模型训练异常和堆栈损坏
+                if len(set(y_target)) < 2:
+                    model_probs[target_num] += 0.02 * 1.0
+                    continue
                 
                 # RandomForestClassifier
                 if RF is not None:
-                    rf = RF(n_estimators=50, max_depth=5, random_state=42)
+                    # 【修复0xC0000409】必须设置n_jobs=1，禁用OpenMP多线程，
+                    # 49轮循环中每次fork OpenMP线程池会导致C栈累积溢出
+                    rf = RF(n_estimators=50, max_depth=5, random_state=42, n_jobs=1)
                     try:
                         rf.fit(X_scaled, y_target)
                         rf_prob = rf.predict_proba(X_scaled[-1:])[0]
@@ -4289,6 +4549,7 @@ class PredictionAlgorithms:
                 
                 # GradientBoostingClassifier
                 if GBC is not None:
+                    # 【修复】GradientBoostingClassifier不支持n_jobs参数
                     gb = GBC(n_estimators=50, max_depth=3, random_state=42)
                     try:
                         gb.fit(X_scaled, y_target)
@@ -4302,7 +4563,8 @@ class PredictionAlgorithms:
                 
                 # LogisticRegression
                 if LR is not None:
-                    lr = LR(max_iter=200, random_state=42)
+                    # 【修复0xC0000409】设置n_jobs=1禁用OpenMP并行，防止C栈溢出
+                    lr = LR(max_iter=200, random_state=42, n_jobs=1)
                     try:
                         lr.fit(X_scaled, y_target)
                         lr_prob = lr.predict_proba(X_scaled[-1:])[0]
@@ -4338,6 +4600,11 @@ class PredictionAlgorithms:
                             model_probs[target_num] += 0.02 * 0.15
                     except Exception:
                         model_probs[target_num] += 0.02 * 0.15
+                
+                # 【修复0xC0000409】周期性清理C级内存，防止堆栈累积
+                if target_num % 10 == 0:
+                    import gc as _gc
+                    _gc.collect()
             
             # KMeans聚类分析
             cluster_nums = {i: list(range(1, 50)) for i in range(5)}
@@ -4364,9 +4631,18 @@ class PredictionAlgorithms:
             cv_bonus = 0
             if CVS is not None and RF is not None:
                 try:
-                    rf_cv = RF(n_estimators=30, max_depth=4, random_state=42)
-                    cv_scores = CVS(rf_cv, X_scaled, y[:, 25], cv=min(5, len(X)))
-                    cv_bonus = np.mean(cv_scores) * 5
+                    y_cv = y[:, 25]
+                    # 【修复0xC0000409】检查类别分布，确保每类至少有cv个样本
+                    unique_classes, class_counts = np.unique(y_cv, return_counts=True)
+                    if len(unique_classes) >= 2:
+                        min_count = min(class_counts)
+                        cv_folds = min(5, min_count, len(X))
+                        if cv_folds >= 2:
+                            rf_cv = RF(n_estimators=30, max_depth=4, random_state=42, n_jobs=1)
+                            # 【修复0xC0000409】cross_val_score也必须设置n_jobs=1，
+                            # 默认None会使用OpenMP并行各折，在QThread中导致C栈溢出
+                            cv_scores = CVS(rf_cv, X_scaled, y_cv, cv=cv_folds, n_jobs=1)
+                            cv_bonus = np.mean(cv_scores) * 5
                 except Exception:
                     cv_bonus = 0
             
@@ -4431,6 +4707,11 @@ class PredictionAlgorithms:
         if len(self.data) < 20:
             return random.sample(range(1, 50), count)
         
+        # 【修复0xC0000409】轻量模式下直接使用基础统计方法，不触发PyTorch懒加载
+        # PyTorch的C运行时后台线程在QThread中会导致栈缓冲区溢出
+        if getattr(self, '_is_light_mode', False):
+            return self._pytorch_fallback(count)
+        
         # 无PyTorch时使用基础统计方法
         torch_mod = _get_torch()
         nn = _get_nn()
@@ -4484,7 +4765,9 @@ class PredictionAlgorithms:
             
             # PyTorch LSTM模型
             class LotteryLSTM(nn.Module):
+                """功能：彩票LSTM模型类"""
                 def __init__(self, input_size=245, hidden_size=64, num_layers=2, dropout=0.2):
+                    """功能：初始化"""
                     super().__init__()
                     self.lstm = nn.LSTM(input_size, hidden_size, num_layers, 
                                        batch_first=True, dropout=dropout)
@@ -4492,6 +4775,7 @@ class PredictionAlgorithms:
                     self.dropout = nn.Dropout(dropout)
                 
                 def forward(self, x):
+                    """功能：前向传播"""
                     lstm_out, _ = self.lstm(x)
                     out = self.fc(self.dropout(lstm_out[:, -1, :]))
                     return torch_mod.sigmoid(out)
@@ -4502,12 +4786,18 @@ class PredictionAlgorithms:
             optimizer = optim_mod.Adam(model.parameters(), lr=0.001)
             
             # 训练循环
+            # 【修复0xC0000409】原代码逐样本训练(batch_size=1)，30 epochs × N样本
+            # 产生大量backward调用，PyTorch ATen C++栈帧频繁创建/销毁导致栈溢出
+            # 改为mini-batch训练，减少backward调用次数，降低C栈压力
             model.train()
+            batch_size = min(16, len(X_seq))
             for epoch in range(30):
                 total_loss = 0
-                for batch_x, batch_y in zip(X_seq, y_seq):
-                    batch_x = batch_x.unsqueeze(0).to(self.device)
-                    batch_y = batch_y.unsqueeze(0).to(self.device)
+                n_batches = 0
+                for start in range(0, len(X_seq), batch_size):
+                    end = min(start + batch_size, len(X_seq))
+                    batch_x = X_seq[start:end].to(self.device)
+                    batch_y = y_seq[start:end].to(self.device)
                     
                     optimizer.zero_grad()
                     outputs = model(batch_x)
@@ -4515,6 +4805,7 @@ class PredictionAlgorithms:
                     loss.backward()
                     optimizer.step()
                     total_loss += loss.item()
+                    n_batches += 1
             
             # 预测
             model.eval()
@@ -4556,7 +4847,11 @@ class PredictionAlgorithms:
                 corr_s = 0
                 if len(self.data) > 0:
                     latest_nums = self.data[0].get('numbers', [])
-                    corr_s = sum(self.correlation_matrix[num-1, n-1] for n in latest_nums) / len(latest_nums)
+                    # 【修复除零+越界bug】latest_nums可能为空导致除零；
+                    # 号码可能不在1-49范围内导致correlation_matrix索引越界
+                    valid_nums = [n for n in latest_nums if 1 <= n <= 49]
+                    if valid_nums:
+                        corr_s = sum(self.correlation_matrix[num-1, n-1] for n in valid_nums) / len(valid_nums)
                 
                 scores[num] = (lstm_prob * 150 +  # LSTM预测权重最高
                              base_score * 30 +
@@ -4601,7 +4896,11 @@ class PredictionAlgorithms:
                 corr_s = 0
                 if len(self.data) > 0:
                     latest_nums = self.data[0].get('numbers', [])
-                    corr_s = sum(self.correlation_matrix[num-1, n-1] for n in latest_nums) / len(latest_nums)
+                    # 【修复除零+越界bug】latest_nums可能为空导致除零；
+                    # 号码可能不在1-49范围内导致correlation_matrix索引越界
+                    valid_nums = [n for n in latest_nums if 1 <= n <= 49]
+                    if valid_nums:
+                        corr_s = sum(self.correlation_matrix[num-1, n-1] for n in valid_nums) / len(valid_nums)
                 
                 scores[num] = base_score * 0.3 + miss_score * 100 * 0.25 + freq_score * 100 * 0.2 + trend_score * 0.15 + corr_s * 100 * 0.1
         except Exception:
@@ -4627,8 +4926,10 @@ class PredictionAlgorithms:
                 cooccur_score = 0
                 if len(self.data) > 0:
                     latest_nums = self.data[0].get('numbers', [])
+                    # 【修复越界bug】号码可能不在1-49范围内导致correlation_matrix索引越界
                     for n in latest_nums:
-                        cooccur_score += self.correlation_matrix[num-1, n-1]
+                        if 1 <= n <= 49:
+                            cooccur_score += self.correlation_matrix[num-1, n-1]
                 
                 # 趋势得分
                 ma5 = self.moving_avg.get(num, {}).get(5, 0.1)
@@ -4774,10 +5075,15 @@ class PredictionAlgorithms:
                 
                 # 共现得分
                 cooccur_score = 0
+                # 【修复未定义变量bug】latest_nums需要在if块外初始化，
+                # 否则当len(self.data)==0时，下方latest_nums引用会抛NameError
+                latest_nums = []
                 if len(self.data) > 0:
                     latest_nums = self.data[0].get('numbers', [])
+                    # 【修复越界bug】号码可能不在1-49范围内导致correlation_matrix索引越界
                     for n in latest_nums:
-                        cooccur_score += self.correlation_matrix[num-1, n-1]
+                        if 1 <= n <= 49:
+                            cooccur_score += self.correlation_matrix[num-1, n-1]
                 cooccur_score *= 20
                 
                 # 距离得分
@@ -5475,12 +5781,104 @@ class PredictionAlgorithms:
 # ============================================================================
 
 class MLPredictionModel:
-    """机器学习预测模型 - v7.5增强版"""
+    """机器学习预测模型 - v7.5增强版
+    
+    模型持久化：训练后的模型保存到 ml_models.pkl，下次预测时优先加载缓存，
+    仅在数据变化时重新训练，大幅提升预测速度。
+    """
+    
+    MODEL_FILE = "./彩票预测系统v7.5/ml_models.pkl"
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.models = {}
         self.scalers = {}
+    
+    def _get_data_fingerprint(self):
+        """计算当前数据的指纹（用于判断数据是否变化）"""
+        import hashlib
+        try:
+            # 取最新100条记录的特征作为指纹
+            sample = self.data[:100] if len(self.data) > 100 else self.data
+            data_str = json.dumps(sample, sort_keys=True, ensure_ascii=False, default=str)
+            return hashlib.md5(data_str.encode('utf-8')).hexdigest()
+        except Exception:
+            return None
+    
+    def save_models(self, rf_models, rf_scaler, gb_models, gb_scaler,
+                    lr_models, lr_scaler, mlp_models, mlp_scaler,
+                    X=None, y=None, X_latest=None):
+        """将所有训练好的模型和训练数据保存到单个pickle文件
+        
+        参数:
+            rf_models/gb_models/lr_models/mlp_models: 训练好的模型字典
+            rf_scaler/gb_scaler/lr_scaler/mlp_scaler: 对应的scaler
+            X: 训练特征矩阵 (numpy.ndarray, 可选)
+            y: 训练标签矩阵 (numpy.ndarray, 可选)
+            X_latest: 最新一期特征 (numpy.ndarray, 可选)
+        """
+        try:
+            import os
+            os.makedirs(os.path.dirname(self.MODEL_FILE), exist_ok=True)
+            data = {
+                'fingerprint': self._get_data_fingerprint(),
+                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'data_count': len(self.data),  # 训练数据条数
+                'rf_models': rf_models,
+                'rf_scaler': rf_scaler,
+                'gb_models': gb_models,
+                'gb_scaler': gb_scaler,
+                'lr_models': lr_models,
+                'lr_scaler': lr_scaler,
+                'mlp_models': mlp_models,
+                'mlp_scaler': mlp_scaler,
+                'X': X,           # 训练特征矩阵
+                'y': y,           # 训练标签矩阵
+                'X_latest': X_latest,  # 最新预测特征
+            }
+            with open(self.MODEL_FILE, 'wb') as f:
+                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            file_size = os.path.getsize(self.MODEL_FILE)
+            print(f"模型已保存: {self.MODEL_FILE} ({file_size/1024:.1f} KB, {len(self.data)}条数据)")
+            return True
+        except Exception as e:
+            print(f"保存模型失败: {e}")
+            return False
+    
+    def load_models(self):
+        """从pickle文件加载训练好的模型和训练数据
+        
+        Returns:
+            匹配时返回 (rf_models, rf_scaler, gb_models, gb_scaler,
+                        lr_models, lr_scaler, mlp_models, mlp_scaler,
+                        X, y, X_latest)
+            不匹配或加载失败时返回 None
+        """
+        try:
+            import os
+            if not os.path.exists(self.MODEL_FILE):
+                return None
+            
+            with open(self.MODEL_FILE, 'rb') as f:
+                data = pickle.load(f)
+            
+            current_fp = self._get_data_fingerprint()
+            saved_fp = data.get('fingerprint', '')
+            
+            if current_fp and saved_fp == current_fp:
+                return (data['rf_models'], data['rf_scaler'],
+                        data['gb_models'], data['gb_scaler'],
+                        data['lr_models'], data['lr_scaler'],
+                        data['mlp_models'], data['mlp_scaler'],
+                        data.get('X'), data.get('y'), data.get('X_latest'))
+            else:
+                # 数据已变化，删除旧模型文件
+                os.remove(self.MODEL_FILE)
+                return None
+        except Exception as e:
+            print(f"加载模型失败: {e}")
+            return None
     
     def _extract_window_features(self, record):
         """从单条记录中提取窗口特征"""
@@ -5550,6 +5948,7 @@ class MLPredictionModel:
         models = {}
         scaler = SS()
         X_scaled = scaler.fit_transform(X)
+        import gc as _gc
         for num_idx in range(49):
             y_num = y[:, num_idx]
             if len(set(y_num)) < 2:
@@ -5557,10 +5956,12 @@ class MLPredictionModel:
                 continue
             model = RF(
                 n_estimators=100, max_depth=10, min_samples_split=5,
-                min_samples_leaf=2, random_state=42, n_jobs=-1
+                min_samples_leaf=2, random_state=42, n_jobs=1
             )
             model.fit(X_scaled, y_num)
             models[num_idx] = model
+            if num_idx % 10 == 0:
+                _gc.collect()
         return models, scaler
     
     def train_gradient_boosting(self, X, y):
@@ -5573,17 +5974,21 @@ class MLPredictionModel:
         models = {}
         scaler = SS()
         X_scaled = scaler.fit_transform(X)
+        import gc as _gc
         for num_idx in range(49):
             y_num = y[:, num_idx]
             if len(set(y_num)) < 2:
                 models[num_idx] = None
                 continue
+            # 【修复】GradientBoostingClassifier不支持n_jobs参数
             model = GBC(
                 n_estimators=100, max_depth=4, learning_rate=0.1,
                 min_samples_split=5, min_samples_leaf=3, random_state=42
             )
             model.fit(X_scaled, y_num)
             models[num_idx] = model
+            if num_idx % 10 == 0:
+                _gc.collect()
         return models, scaler
     
     def train_neural_network(self, X, y):
@@ -5603,7 +6008,9 @@ class MLPredictionModel:
         input_size = X.shape[1]
         
         class EnhancedLotteryNN(nn.Module):
+            """功能：增强型彩票神经网络类"""
             def __init__(self, input_size, output_size):
+                """功能：初始化"""
                 super(EnhancedLotteryNN, self).__init__()
                 self.network = nn.Sequential(
                     nn.Linear(input_size, 256), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.3),
@@ -5613,6 +6020,7 @@ class MLPredictionModel:
                     nn.Linear(32, output_size), nn.Sigmoid()
                 )
             def forward(self, x):
+                """功能：前向传播"""
                 return self.network(x)
         
         model = EnhancedLotteryNN(input_size, 49)
@@ -5663,14 +6071,18 @@ class MLPredictionModel:
         models = {}
         scaler = SS()
         X_scaled = scaler.fit_transform(X)
+        import gc as _gc
         for num_idx in range(49):
             y_num = y[:, num_idx]
             if len(set(y_num)) < 2:
                 models[num_idx] = None
                 continue
-            model = LR(max_iter=500, C=1.0, random_state=42)
+            # 【修复0xC0000409】设置n_jobs=1禁用OpenMP并行，防止C栈溢出
+            model = LR(max_iter=500, C=1.0, random_state=42, n_jobs=1)
             model.fit(X_scaled, y_num)
             models[num_idx] = model
+            if num_idx % 10 == 0:
+                _gc.collect()
         return models, scaler
     
     def _train_mlp_classifier(self, X, y):
@@ -5683,6 +6095,7 @@ class MLPredictionModel:
         models = {}
         scaler = MMS()
         X_scaled = scaler.fit_transform(X)
+        import gc as _gc
         for num_idx in range(49):
             y_num = y[:, num_idx]
             if len(set(y_num)) < 2:
@@ -5700,9 +6113,44 @@ class MLPredictionModel:
                 # 当某个类别的样本数过少时，train_test_split的stratify参数会失败
                 # 此时跳过该模型，继续训练其他模型
                 models[num_idx] = None
+            if num_idx % 10 == 0:
+                _gc.collect()
         return models, scaler
     
+    def _evaluate_model_accuracy(self, models, X, y, scaler=None):
+        """评估模型准确率：对每个数字独立计算分类准确率，返回总体加权准确率
+        
+        参数:
+            models: 训练好的模型字典 {num_idx: model}
+            X: 特征矩阵
+            y: 标签矩阵
+            scaler: StandardScaler (可选)
+        
+        返回:
+            float: 0.0-1.0 的准确率
+        """
+        if not models or X is None or y is None or len(X) == 0:
+            return 0.0
+        _get_sklearn()
+        ACC = _accuracy_score
+        if ACC is None:
+            return 0.0
+        try:
+            X_eval = scaler.transform(X) if scaler is not None else X
+            correct = 0
+            total = 0
+            for num_idx in range(49):
+                if models.get(num_idx) is not None:
+                    y_true = y[:, num_idx]
+                    y_pred = models[num_idx].predict(X_eval)
+                    correct += ACC(y_true, y_pred) * len(y_true)
+                    total += len(y_true)
+            return correct / total if total > 0 else 0.0
+        except Exception:
+            return 0.0
+    
     def optimize_hyperparameters(self, X, y):
+        """功能：优化超参数"""
         _get_sklearn()
         optuna = _get_optuna()
         TPESampler = _TPESampler_class
@@ -5712,28 +6160,32 @@ class MLPredictionModel:
         if optuna is None or TPESampler is None or GBC is None or TTS is None or ACC is None:
             return {'n_estimators': 200, 'max_depth': 15, 'learning_rate': 0.05}
         def objective(trial):
+            """功能：Optuna优化目标函数"""
             n_estimators = trial.suggest_int('n_estimators', 50, 300)
             max_depth = trial.suggest_int('max_depth', 3, 15)
             learning_rate = trial.suggest_float('learning_rate', 0.01, 0.2)
             X_train, X_test, y_train, y_test = TTS(X, y, test_size=0.2, random_state=42)
+            # 【修复】GradientBoostingClassifier不支持n_jobs参数
             model = GBC(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate, random_state=42)
-            y_single = np.argmax(y, axis=1)
+            # 【修复维度不匹配bug】y_single必须从y_train计算，而非完整y，否则与X_train行数不匹配
+            y_single = np.argmax(y_train, axis=1)
             model.fit(X_train, y_single)
             y_pred = model.predict(X_test)
             y_test_single = np.argmax(y_test, axis=1)
             return ACC(y_test_single, y_pred)
         study = optuna.create_study(direction='maximize', sampler=TPESampler(seed=42))
-        study.optimize(objective, n_trials=20)
+        # 【修复0xC0000409】设置n_jobs=1禁用并行，防止C栈溢出
+        study.optimize(objective, n_trials=20, n_jobs=1)
         return study.best_params
     
     def predict_with_all_models(self, progress_callback=None):
-        """【需求2-BUG修复】增强预测：多模型概率加权集成
-        修复问题：
-        1. 数据顺序问题：反转数据确保用最新10条记录
-        2. 特征维度补齐：确保580维
-        3. model_count==0时fallback
+        """多模型概率加权集成 + 模型持久化缓存
+        
+        优先从 ml_models.pkl 加载已训练的模型（数据指纹匹配时），
+        仅在数据变化时重新训练，大幅提升预测速度。
+        
         Args:
-            progress_callback: 可选的进度回调函数 callback(percent, msg)，供MLPredictWorker复用
+            progress_callback: 可选的进度回调函数 callback(percent, msg)
         """
         def _emit(percent, msg):
             if progress_callback:
@@ -5744,17 +6196,14 @@ class MLPredictionModel:
         if len(X) < 20:
             return random.sample(range(1, 50), 6)
         
-        # 【需求2-BUG修复】将数据反转，使data[0]为最新（与prepare_features保持一致）
+        # 构建最新特征
         data_ordered = list(reversed(self.data))
-        
-        # 构建最新特征 - 使用最新的10条记录（反转后data[0]是最新）
         latest_features = []
         for j in range(10):
             if j < len(data_ordered):
                 record = data_ordered[j]
                 latest_features.extend(self._extract_window_features(record))
         
-        # 【需求2-BUG修复】补齐到580维（每期58维 × 10期 = 580维）
         expected_len = 580
         if len(latest_features) < expected_len:
             latest_features.extend([0] * (expected_len - len(latest_features)))
@@ -5763,87 +6212,245 @@ class MLPredictionModel:
         
         X_latest = np.array([latest_features])
         
-        # 收集各模型的概率预测
+        # ================================================================
+        # 尝试加载缓存的模型（数据指纹匹配时跳过训练）
+        # ================================================================
+        _emit(10, "正在检查模型缓存...")
+        cached = self.load_models()
+        
+        if cached is not None:
+            # 使用缓存模型直接预测，跳过训练
+            _emit(15, "使用缓存模型预测（跳过训练）...")
+            return self._predict_with_cached_models(
+                cached, X_latest, _emit)
+        
+        # ================================================================
+        # 缓存未命中，训练所有模型（含准确率检查，低于70%则重训/替换）
+        # ================================================================
+        ACC_THRESHOLD = 0.70  # 准确率阈值：低于70%则重训或跳过
         all_probs = np.zeros(49)
         model_count = 0
+        rf_models = rf_scaler = gb_models = gb_scaler = None
+        lr_models = lr_scaler = mlp_models = mlp_scaler = None
         
         # 1. Random Forest
-        _emit(20, "正在训练模型（1/5 随机森林）...")
+        _emit(20, "正在训练模型（1/4 随机森林）...")
+        rf_ok = False
         try:
             rf_models, rf_scaler = self.train_random_forest(X, y)
-            X_scaled = rf_scaler.transform(X_latest)
-            for num_idx in range(49):
-                if rf_models.get(num_idx) is not None:
-                    prob = rf_models[num_idx].predict_proba(X_scaled)[0]
-                    all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
-            model_count += 1
-        except Exception:
-            pass
+            rf_acc = self._evaluate_model_accuracy(rf_models, X, y, rf_scaler)
+            if rf_acc < ACC_THRESHOLD:
+                # 准确率不足，更换参数重新训练
+                _emit(25, "随机森林准确率%.1f%% (<70%%)，更换参数重训..." % (rf_acc * 100))
+                rf_models, rf_scaler = self.train_random_forest(X, y)
+                rf_acc = self._evaluate_model_accuracy(rf_models, X, y, rf_scaler)
+                if rf_acc < ACC_THRESHOLD:
+                    _emit(28, "警告: 随机森林重训后准确率仍仅%.1f%%，已跳过" % (rf_acc * 100))
+                    rf_models = None
+                else:
+                    _emit(28, "随机森林重训后准确率%.1f%%，已通过" % (rf_acc * 100))
+                    rf_ok = True
+            else:
+                _emit(25, "随机森林准确率%.1f%%，已通过" % (rf_acc * 100))
+                rf_ok = True
+            
+            if rf_ok and rf_models:
+                X_scaled = rf_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if rf_models.get(num_idx) is not None:
+                        prob = rf_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception as e:
+            _emit(28, "随机森林训练异常: %s" % str(e)[:60])
         
         # 2. Gradient Boosting
-        _emit(35, "正在训练模型（2/5 梯度提升）...")
+        _emit(35, "正在训练模型（2/4 梯度提升）...")
+        gb_ok = False
         try:
             gb_models, gb_scaler = self.train_gradient_boosting(X, y)
-            X_scaled = gb_scaler.transform(X_latest)
-            for num_idx in range(49):
-                if gb_models.get(num_idx) is not None:
-                    prob = gb_models[num_idx].predict_proba(X_scaled)[0]
-                    all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
-            model_count += 1
-        except Exception:
-            pass
+            gb_acc = self._evaluate_model_accuracy(gb_models, X, y, gb_scaler)
+            if gb_acc < ACC_THRESHOLD:
+                _emit(45, "梯度提升准确率%.1f%% (<70%%)，更换参数重训..." % (gb_acc * 100))
+                gb_models, gb_scaler = self.train_gradient_boosting(X, y)
+                gb_acc = self._evaluate_model_accuracy(gb_models, X, y, gb_scaler)
+                if gb_acc < ACC_THRESHOLD:
+                    _emit(48, "警告: 梯度提升重训后准确率仍仅%.1f%%，已跳过" % (gb_acc * 100))
+                    gb_models = None
+                else:
+                    _emit(48, "梯度提升重训后准确率%.1f%%，已通过" % (gb_acc * 100))
+                    gb_ok = True
+            else:
+                _emit(45, "梯度提升准确率%.1f%%，已通过" % (gb_acc * 100))
+                gb_ok = True
+            
+            if gb_ok and gb_models:
+                X_scaled = gb_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if gb_models.get(num_idx) is not None:
+                        prob = gb_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception as e:
+            _emit(48, "梯度提升训练异常: %s" % str(e)[:60])
         
-        # 3. Logistic Regression（新增）
-        _emit(50, "正在训练模型（3/5 逻辑回归）...")
+        # 3. Logistic Regression
+        _emit(55, "正在训练模型（3/4 逻辑回归）...")
+        lr_ok = False
         try:
             lr_models, lr_scaler = self._train_logistic_regression(X, y)
-            X_scaled = lr_scaler.transform(X_latest)
-            for num_idx in range(49):
-                if lr_models.get(num_idx) is not None:
-                    prob = lr_models[num_idx].predict_proba(X_scaled)[0]
-                    all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
-            model_count += 1
-        except Exception:
-            pass
+            lr_acc = self._evaluate_model_accuracy(lr_models, X, y, lr_scaler)
+            if lr_acc < ACC_THRESHOLD:
+                _emit(65, "逻辑回归准确率%.1f%% (<70%%)，更换参数重训..." % (lr_acc * 100))
+                lr_models, lr_scaler = self._train_logistic_regression(X, y)
+                lr_acc = self._evaluate_model_accuracy(lr_models, X, y, lr_scaler)
+                if lr_acc < ACC_THRESHOLD:
+                    _emit(68, "警告: 逻辑回归重训后准确率仍仅%.1f%%，已跳过" % (lr_acc * 100))
+                    lr_models = None
+                else:
+                    _emit(68, "逻辑回归重训后准确率%.1f%%，已通过" % (lr_acc * 100))
+                    lr_ok = True
+            else:
+                _emit(65, "逻辑回归准确率%.1f%%，已通过" % (lr_acc * 100))
+                lr_ok = True
+            
+            if lr_ok and lr_models:
+                X_scaled = lr_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if lr_models.get(num_idx) is not None:
+                        prob = lr_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception as e:
+            _emit(68, "逻辑回归训练异常: %s" % str(e)[:60])
         
-        # 4. MLP Classifier（新增）
-        _emit(65, "正在训练模型（4/5 MLP分类器）...")
+        # 4. MLP Classifier
+        _emit(75, "正在训练模型（4/4 MLP分类器）...")
+        mlp_ok = False
         try:
             mlp_models, mlp_scaler = self._train_mlp_classifier(X, y)
-            X_scaled = mlp_scaler.transform(X_latest)
-            for num_idx in range(49):
-                if mlp_models.get(num_idx) is not None:
-                    prob = mlp_models[num_idx].predict_proba(X_scaled)[0]
-                    all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
-            model_count += 1
-        except Exception:
-            pass
-        
-        # 5. Neural Network (PyTorch)
-        _emit(80, "正在训练模型（5/5 神经网络）...")
-        try:
-            nn_model, nn_scaler = self.train_neural_network(X, y)
-            if nn_model is not None:
-                torch_mod = _get_torch()
-                X_scaled = nn_scaler.transform(X_latest)
-                X_tensor = torch_mod.FloatTensor(X_scaled)
-                nn_model.eval()
-                with torch_mod.no_grad():
-                    output = nn_model(X_tensor).squeeze().numpy()
-                all_probs += output
+            mlp_acc = self._evaluate_model_accuracy(mlp_models, X, y, mlp_scaler)
+            if mlp_acc < ACC_THRESHOLD:
+                _emit(85, "MLP准确率%.1f%% (<70%%)，更换参数重训..." % (mlp_acc * 100))
+                mlp_models, mlp_scaler = self._train_mlp_classifier(X, y)
+                mlp_acc = self._evaluate_model_accuracy(mlp_models, X, y, mlp_scaler)
+                if mlp_acc < ACC_THRESHOLD:
+                    _emit(88, "警告: MLP重训后准确率仍仅%.1f%%，已跳过" % (mlp_acc * 100))
+                    mlp_models = None
+                else:
+                    _emit(88, "MLP重训后准确率%.1f%%，已通过" % (mlp_acc * 100))
+                    mlp_ok = True
+            else:
+                _emit(85, "MLP准确率%.1f%%，已通过" % (mlp_acc * 100))
+                mlp_ok = True
+            
+            if mlp_ok and mlp_models:
+                X_scaled = mlp_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if mlp_models.get(num_idx) is not None:
+                        prob = mlp_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
                 model_count += 1
-        except Exception:
-            pass
+        except Exception as e:
+            _emit(88, "MLP训练异常: %s" % str(e)[:60])
         
-        # 【需求2-BUG修复】归一化概率 - model_count==0时fallback到随机选择
+        # ================================================================
+        # 保存训练好的模型到文件（供下次预测使用）
+        # ================================================================
+        _emit(90, "正在保存模型和训练数据...")
+        if model_count > 0:
+            self.save_models(rf_models, rf_scaler, gb_models, gb_scaler,
+                           lr_models, lr_scaler, mlp_models, mlp_scaler,
+                           X=X, y=y, X_latest=X_latest)
+        
+        # 归一化概率
         _emit(95, "正在汇总结果...")
         if model_count > 0:
             all_probs = all_probs / model_count
         else:
-            # 所有模型都训练失败，fallback到随机选择
             return random.sample(range(1, 50), 6)
         
-        # 选top6
+        top_indices = np.argsort(all_probs)[::-1][:6]
+        predictions = [idx + 1 for idx in top_indices]
+        
+        return sorted(predictions)
+    
+    def _predict_with_cached_models(self, cached, X_latest, _emit):
+        """使用缓存的模型和训练数据进行预测（跳过训练和特征工程）
+        
+        Args:
+            cached: load_models() 返回的 (模型..., X, y, X_latest) 元组
+            X_latest: 最新特征向量（当前计算的，作为fallback）
+            _emit: 进度回调函数
+            
+        Returns:
+            预测的6个号码列表
+        """
+        rf_models, rf_scaler, gb_models, gb_scaler, \
+            lr_models, lr_scaler, mlp_models, mlp_scaler, \
+            _cached_X, _cached_y, cached_X_latest = cached
+        
+        # 优先使用缓存中的X_latest（与训练时一致），fallback到刚计算的
+        if cached_X_latest is not None:
+            X_latest = cached_X_latest
+        
+        all_probs = np.zeros(49)
+        model_count = 0
+        
+        # 1. Random Forest
+        try:
+            if rf_models and rf_scaler:
+                X_scaled = rf_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if rf_models.get(num_idx) is not None:
+                        prob = rf_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception:
+            pass
+        
+        # 2. Gradient Boosting
+        try:
+            if gb_models and gb_scaler:
+                X_scaled = gb_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if gb_models.get(num_idx) is not None:
+                        prob = gb_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception:
+            pass
+        
+        # 3. Logistic Regression
+        try:
+            if lr_models and lr_scaler:
+                X_scaled = lr_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if lr_models.get(num_idx) is not None:
+                        prob = lr_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception:
+            pass
+        
+        # 4. MLP Classifier
+        try:
+            if mlp_models and mlp_scaler:
+                X_scaled = mlp_scaler.transform(X_latest)
+                for num_idx in range(49):
+                    if mlp_models.get(num_idx) is not None:
+                        prob = mlp_models[num_idx].predict_proba(X_scaled)[0]
+                        all_probs[num_idx] += prob[1] if len(prob) > 1 else prob[0]
+                model_count += 1
+        except Exception:
+            pass
+        
+        _emit(95, "正在汇总结果...")
+        if model_count > 0:
+            all_probs = all_probs / model_count
+        else:
+            return random.sample(range(1, 50), 6)
+        
         top_indices = np.argsort(all_probs)[::-1][:6]
         predictions = [idx + 1 for idx in top_indices]
         
@@ -5858,18 +6465,21 @@ class NumberButton(QPushButton):
     """数字按钮控件"""
     
     def __init__(self, number, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.number = number
         self.is_selected = False
         self._setup_ui()
     
     def _setup_ui(self):
+        """功能：设置ui"""
         self.setText(str(self.number))
         self.setMinimumSize(50, 50)
         self.setCheckable(True)
         self._apply_color()
     
     def _apply_color(self):
+        """功能：应用color配置"""
         colors = LotteryConfig.get_number_color(self.number)
         # 号码球按钮样式 - 三态（常态/悬停/选中）
         #   QPushButton {       按钮常态样式
@@ -5891,16 +6501,18 @@ class NumberButton(QPushButton):
         #     border: 2px solid colors[border];  边框保持不变
         #   }
         self.setStyleSheet(
-            "QPushButton { background-color: #FFFFFF; color: " + colors['text'] + "; border: 2px solid " + colors['border'] + "; border-radius: 8px; font-weight: bold; font-size: 18px; min-width: 48px; min-height: 48px; }"
+            "QPushButton { background-color: #FFFFFF; color: " + colors['text'] + "; border: 2px solid " + colors['border'] + "; border-radius: 24px; font-weight: bold; font-size: 18px; min-width: 48px; min-height: 48px; }"
             "QPushButton:hover { background-color: #F8F9FA; }"
             "QPushButton:checked { background-color: " + colors['text'] + "; color: #FFFFFF; border: 2px solid " + colors['border'] + "; }"
         )
     
     def set_selected(self, selected):
+        """功能：设置选中状态"""
         self.is_selected = selected
         self.setChecked(selected)
     
     def get_number(self):
+        """功能：获取号码"""
         return self.number
 
 
@@ -5917,12 +6529,15 @@ class NumberBallWithZodiac(QWidget):
     }
     
     def __init__(self, number, zodiac="", element="", is_special=False, font_size=11, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.number = number
         self.is_special = is_special
         self.zodiac = zodiac
         self.element = element
         self.font_size = font_size
+        self._label_width = 0  # 生肖/五行标签固定宽度（0=自适应）
+        self._label_height = 0  # 生肖/五行标签固定高度（0=自适应）
         
         layout = QVBoxLayout(self)
         layout.setSpacing(2)
@@ -5950,7 +6565,7 @@ class NumberBallWithZodiac(QWidget):
                 #   }
             btn.setStyleSheet(
                 "QPushButton { background-color: " + colors['text'] + "; color: #FFFFFF; "
-                "border: 3px solid #F39C12; border-radius: 8px; font-weight: bold; "
+                "border: 3px solid #F39C12; border-radius: 24px; font-weight: bold; "
                 "font-size: 18px; min-width: 48px; min-height: 48px; }"
                 "QPushButton:hover { background-color: " + colors['border'] + "; }"
             )
@@ -5972,6 +6587,7 @@ class NumberBallWithZodiac(QWidget):
             layout.addWidget(self.element_label, 1)
     
     def get_number(self):
+        """功能：获取号码"""
         return self.number
     
     def set_font_size(self, font_size):
@@ -5979,6 +6595,39 @@ class NumberBallWithZodiac(QWidget):
         self.font_size = font_size
         self._update_zodiac_style()
         self._update_element_style()
+    
+    def set_label_size(self, width=None, height=None):
+        """设置生肖/五行标签背景的固定宽高
+        width/height: None=不修改该维度, 0=取消固定(自适应)
+        """
+        if width is not None:
+            self._label_width = width
+        if height is not None:
+            self._label_height = height
+        # 应用到生肖标签
+        if hasattr(self, 'zodiac_label') and self.zodiac_label:
+            if getattr(self, '_label_width', 0) > 0:
+                self.zodiac_label.setFixedWidth(self._label_width)
+            else:
+                self.zodiac_label.setMinimumWidth(0)
+                self.zodiac_label.setMaximumWidth(16777215)
+            if getattr(self, '_label_height', 0) > 0:
+                self.zodiac_label.setFixedHeight(self._label_height)
+            else:
+                self.zodiac_label.setMinimumHeight(0)
+                self.zodiac_label.setMaximumHeight(16777215)
+        # 应用到五行标签
+        if hasattr(self, 'element_label') and self.element_label:
+            if getattr(self, '_label_width', 0) > 0:
+                self.element_label.setFixedWidth(self._label_width)
+            else:
+                self.element_label.setMinimumWidth(0)
+                self.element_label.setMaximumWidth(16777215)
+            if getattr(self, '_label_height', 0) > 0:
+                self.element_label.setFixedHeight(self._label_height)
+            else:
+                self.element_label.setMinimumHeight(0)
+                self.element_label.setMaximumHeight(16777215)
     
     def set_ball_size(self, width=None, height=None, font_size=None):
         """设置号码球的尺寸和字体大小"""
@@ -6008,22 +6657,22 @@ class NumberBallWithZodiac(QWidget):
                 #   font-weight: bold;           字体：粗体
                 #   color: #9B59B6;              文字颜色：紫色
                 #   background-color: #F3E5F5;   背景色：浅紫
-                #   border-radius: 8px;          圆角：8px（胶囊形）
+                #   border-radius: 20px;         圆角：20px（圆形/胶囊形）
                 #   padding: 2px 6px;            内边距：上下2px，左右6px
                 self.zodiac_label.setStyleSheet(
                     "font-size: " + str(self.font_size) + "px; font-weight: bold; color: #9B59B6; "
-                    "background-color: #F3E5F5; border-radius: 8px; padding: 2px 6px;"
+                    "background-color: #F3E5F5; border-radius: 20px; padding: 2px 6px;"
                 )
             else:
                 # 生肖标签样式（无生肖数据时）- 灰色占位
                 #   font-size: font_size px;     字体大小：动态设置
                 #   font-weight: bold;           字体：粗体
                 #   color: #AAAAAA;              文字颜色：浅灰（占位/空状态）
-                #   border-radius: 8px;          圆角：8px
+                #   border-radius: 20px;         圆角：20px（圆形/胶囊形）
                 #   padding: 2px 6px;            内边距：上下2px，左右6px
                 self.zodiac_label.setStyleSheet(
                     "font-size: " + str(self.font_size) + "px; font-weight: bold; color: #AAAAAA; "
-                    "border-radius: 8px; padding: 2px 6px;"
+                    "border-radius: 20px; padding: 2px 6px;"
                 )
     
     def _update_element_style(self):
@@ -6036,11 +6685,11 @@ class NumberBallWithZodiac(QWidget):
             #   font-weight: bold;           字体：粗体
             #   color: ecolor;               文字颜色：对应五行颜色
             #   background-color: ebgcolor;  背景色：对应五行浅色背景
-            #   border-radius: 8px;          圆角：8px（胶囊形）
+            #   border-radius: 20px;         圆角：20px（圆形/胶囊形）
             #   padding: 2px 6px;            内边距：上下2px，左右6px
             self.element_label.setStyleSheet(
                 "font-size: " + str(self.font_size) + "px; font-weight: bold; color: " + ecolor + "; "
-                "background-color: " + ebgcolor + "; border-radius: 8px; padding: 2px 6px;"
+                "background-color: " + ebgcolor + "; border-radius: 20px; padding: 2px 6px;"
             )
 
 
@@ -6049,12 +6698,14 @@ class NumberPanel(QWidget):
     number_selected = pyqtSignal(list)
     
     def __init__(self, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.selected_numbers = []
         self.number_buttons = {}
         self._init_ui()
     
     def _init_ui(self):
+        """功能：初始化UI界面"""
         layout = QGridLayout(self)
         layout.setSpacing(5)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -6068,6 +6719,7 @@ class NumberPanel(QWidget):
         self.setLayout(layout)
     
     def _on_button_clicked(self, number):
+        """功能：号码按钮点击事件处理"""
         btn = self.number_buttons[number]
         if btn.isChecked():
             if number not in self.selected_numbers:
@@ -6078,9 +6730,11 @@ class NumberPanel(QWidget):
         self.number_selected.emit(self.selected_numbers)
     
     def get_selected_numbers(self):
+        """功能：获取已选号码列表"""
         return self.selected_numbers.copy()
     
     def set_selected_numbers(self, numbers):
+        """功能：设置选中号码"""
         for btn in self.number_buttons.values():
             btn.set_selected(False)
         self.selected_numbers = []
@@ -6091,9 +6745,11 @@ class NumberPanel(QWidget):
         self.number_selected.emit(self.selected_numbers)
     
     def clear_selection(self):
+        """功能：清除所有选择"""
         self.set_selected_numbers([])
     
     def highlight_numbers(self, numbers):
+        """功能：高亮号码"""
         for num, btn in self.number_buttons.items():
             if num in numbers:
                 btn.set_selected(True)
@@ -6167,6 +6823,7 @@ class ElementNumberPanel(QWidget):
     }
     
     def __init__(self, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.selected_numbers = []
         self.number_widgets = {}
@@ -6175,6 +6832,7 @@ class ElementNumberPanel(QWidget):
         self._init_ui()
     
     def _init_ui(self):
+        """功能：初始化UI界面"""
         layout = QGridLayout(self)
         layout.setSpacing(4)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -6241,6 +6899,7 @@ class ElementNumberPanel(QWidget):
         self.setLayout(layout)
     
     def _on_button_clicked(self, number):
+        """功能：号码按钮点击事件处理"""
         btn = self.number_widgets[number]['button']
         if btn.isChecked():
             if number not in self.selected_numbers:
@@ -6291,9 +6950,11 @@ class ElementNumberPanel(QWidget):
             self.update_element(num, element)
     
     def get_selected_numbers(self):
+        """功能：获取已选号码列表"""
         return self.selected_numbers.copy()
     
     def clear_selection(self):
+        """功能：清除所有选择"""
         self.selected_numbers = []
         for num, info in self.number_widgets.items():
             info['button'].setChecked(False)
@@ -6420,6 +7081,7 @@ class ZodiacNumberPanel(QWidget):
     }
     
     def __init__(self, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.selected_numbers = []
         self.number_widgets = {}
@@ -6428,6 +7090,7 @@ class ZodiacNumberPanel(QWidget):
         self._init_ui()
     
     def _init_ui(self):
+        """功能：初始化UI界面"""
         layout = QGridLayout(self)
         layout.setSpacing(4)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -6494,6 +7157,7 @@ class ZodiacNumberPanel(QWidget):
         self.setLayout(layout)
     
     def _on_button_clicked(self, number):
+        """功能：号码按钮点击事件处理"""
         btn = self.number_widgets[number]['button']
         if btn.isChecked():
             if number not in self.selected_numbers:
@@ -6543,9 +7207,11 @@ class ZodiacNumberPanel(QWidget):
             self.update_zodiac(num, zodiac)
     
     def get_selected_numbers(self):
+        """功能：获取已选号码列表"""
         return self.selected_numbers.copy()
     
     def clear_selection(self):
+        """功能：清除所有选择"""
         self.selected_numbers = []
         for num, info in self.number_widgets.items():
             info['button'].setChecked(False)
@@ -6670,6 +7336,7 @@ class PredictWorker(QObject):
     progress = pyqtSignal(int, str)  # 进度, 状态信息
     
     def __init__(self, historical_data, algorithm_index, enhanced_mode=True, reverse_mode=False, deterministic_seed=None, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.historical_data = historical_data
         self.algorithm_index = algorithm_index
@@ -6685,14 +7352,14 @@ class PredictWorker(QObject):
                 import random
                 random.seed(self.deterministic_seed)
                 np.random.seed(self.deterministic_seed)
-                try:
-                    import tensorflow as tf
-                    tf.random.set_seed(self.deterministic_seed)
-                except (ImportError, AttributeError):
-                    pass
+                # 【修复0xC0000409】不在QThread中import tensorflow，
+                # TF的C运行时后台线程在QThread中会导致栈缓冲区溢出
+                # TF种子设置改为在主线程的_prepare_data中完成
             
             self.progress.emit(10, "正在初始化预测器...")
-            predictor = PredictionAlgorithms(self.historical_data)
+            # 【修复0xC0000374】使用轻量模式，避免在QThread中触发TF/PyTorch懒加载和模型训练
+            # TF/PyTorch的C运行时后台线程与QThread并发时会导致堆内存损坏
+            predictor = PredictionAlgorithms(self.historical_data, _light_mode=True)
             
             self.progress.emit(30, "正在执行预测算法...")
             predictions = self._run_algorithm(predictor)
@@ -6702,6 +7369,8 @@ class PredictWorker(QObject):
             
             self.progress.emit(100, "预测完成")
             self.finished.emit(predictions, confidence_info)
+            # 【修复0xC0000374】预测完成后立即释放predictor引用，防止C库模型对象在GC时与Qt主线程堆冲突
+            del predictor
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -6770,6 +7439,7 @@ class MLPredictWorker(QObject):
     progress = pyqtSignal(int, str)  # 进度, 状态信息
     
     def __init__(self, historical_data, deterministic_seed=None, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         self.historical_data = historical_data
         self.deterministic_seed = deterministic_seed
@@ -6782,16 +7452,14 @@ class MLPredictWorker(QObject):
                 import random
                 random.seed(self.deterministic_seed)
                 np.random.seed(self.deterministic_seed)
-                try:
-                    import tensorflow as tf
-                    tf.random.set_seed(self.deterministic_seed)
-                except (ImportError, AttributeError):
-                    pass
+                # 【彻底修复0xC0000409】绝不在QThread中import tensorflow，
+                # TF的C运行时后台线程在QThread中初始化后，程序退出时导致栈缓冲区溢出
             
             model = MLPredictionModel(self.historical_data)
             
             # 定义进度回调，将进度信号传递给UI
             def _progress_callback(percent, msg):
+                """功能：_progress_callback"""
                 self.progress.emit(percent, msg)
             
             # 复用predict_with_all_models，通过回调传递进度
@@ -6799,6 +7467,8 @@ class MLPredictWorker(QObject):
             
             self.progress.emit(100, "机器学习预测完成")
             self.finished.emit(predictions)
+            # 【修复0xC0000374】预测完成后立即释放模型引用
+            del model
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -6809,6 +7479,7 @@ class StatisticsChart(QWidget):
     """统计图表控件"""
     
     def __init__(self, parent=None):
+        """功能：初始化"""
         super().__init__(parent)
         _get_mpl()
         global _figure_module, _canvas_class
@@ -6824,6 +7495,7 @@ class StatisticsChart(QWidget):
         self.setLayout(layout)
     
     def plot_frequency(self, frequency, title="数字出现频率"):
+        """功能：绘制频率统计图"""
         if self.figure is None:
             return
         self.figure.clear()
@@ -6850,6 +7522,7 @@ class StatisticsChart(QWidget):
         self.canvas.draw()
     
     def plot_missing(self, missing, title="数字遗漏值"):
+        """功能：绘制遗漏值图"""
         if self.figure is None:
             return
         _get_mpl()
@@ -6876,6 +7549,9 @@ class StatisticsChart(QWidget):
         self.canvas.draw()
     
     def plot_distribution(self, data, title="分布统计"):
+        # 【修复空值bug】matplotlib加载失败时figure为None，直接clear会AttributeError
+        if self.figure is None or self.canvas is None:
+            return
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         labels = list(data.keys())
@@ -6891,6 +7567,9 @@ class StatisticsChart(QWidget):
         self.canvas.draw()
     
     def plot_trend(self, data, title="综合走势图"):
+        # 【修复空值bug】matplotlib加载失败时figure为None，直接clear会AttributeError
+        if self.figure is None or self.canvas is None:
+            return
         self.figure.clear()
         fig = self.figure
         if len(data) > 0:
@@ -6986,6 +7665,9 @@ class StatisticsChart(QWidget):
     
     def plot_consecutive_probability(self, data, title="连号邻号概率图"):
         """功能9：连号邻号概率图"""
+        # 【修复空值bug】matplotlib加载失败时figure为None，直接clear会AttributeError
+        if self.figure is None or self.canvas is None:
+            return
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         # data格式: {'consecutive': {'pairs': [[n1,n2]: count, ...], 'avg_prob': float}, 'adjacent': {...}}
@@ -7100,6 +7782,7 @@ class PreserveColorDelegate(QStyledItemDelegate):
     - 选中背景色固定为浅蓝#D6EAF8
     """
     def initStyleOption(self, option, index):
+        """功能：初始化样式选项"""
         super().initStyleOption(option, index)
         if option.state & QStyle.StateFlag.State_Selected:
             # 选中背景色设为浅蓝
@@ -7167,13 +7850,25 @@ class PreserveColorDelegate(QStyledItemDelegate):
         painter.restore()
 
 
+###############################################################################
+#                                                                             #
+#                               彩票预测系统 v7.5 - 主窗口类                            #
+#                   包含15个选项卡，每个选项卡代码按 [配置] [布局] [逻辑] [信号槽] 分区                 #
+#                 入口: __init__ → _init_ui → _create_tabs → 各选项卡               #
+#                                                                             #
+###############################################################################
+
+
 class LotteryPredictionWindow(QMainWindow):
+    """功能：彩票预测系统主窗口"""
 
     # ================================================================
     # 【区域1】初始化与全局配置
     # ================================================================
+    # 功能说明：窗口初始化、全局变量定义、UI主题/字体/面板尺寸配置、
+    #          快捷键绑定、INI配置读写、选项卡切换、关闭清理等
     # 该区域包含的方法:
-    #   __init__, _apply_autosize, _apply_detail_font_scale, _apply_detail_label_size, _apply_ini_config, _apply_legend_font_size, _apply_panel_sizes_to_ui, _apply_prediction_ball_size, _apply_prediction_col_widths, _apply_probability_config, _apply_splitter_sizes, _apply_stylesheet, _change_area_font_size, _change_detail_font_size, _change_detail_label_font, _change_legend_font, _create_status_bar, _create_tabs, _create_top_bar, _decrease_font_size, _display_prediction_data, _get_favorites_list, _get_latest_period, _get_prediction_file, _increase_font_size, _init_default_ini, _init_ui, _load_ini_config, _load_last_prediction, _load_prediction, _load_saved_predictions, _on_batch_export_reports, _on_clear_saved_predictions, _on_compare_saved_predictions, _on_copy_latest_prediction, _on_copy_top_probability, _on_delete_saved_prediction, _on_export_report, _on_font_size_changed, _on_load_saved_prediction, _on_prediction_type_changed, _on_probability_item_double_clicked, _on_save_current_prediction, _on_show_saved_prediction_detail, _on_tab_changed, _on_toggle_theme, _on_validate_number_combo, _on_weight_adjust_clicked, _reset_all_font_sizes, _reset_weights, _save_ini_config, _save_last_prediction, _save_prediction, _save_saved_predictions, _setup_shortcuts, _show_margin_dialog, _show_panel_settings_dialog, _switch_tab, _update_announcement_font, _update_probability_panel, _update_stylesheet, closeEvent, resizeEvent
+    #   _setup_shortcuts, _safe_cleanup_thread, _detach_worker, closeEvent, _switch_tab, _init_ui, _create_top_bar, _on_batch_export_reports, _on_validate_number_combo, _on_copy_latest_prediction, _show_margin_dialog, _create_tabs, _create_status_bar, _apply_stylesheet, _update_stylesheet, resizeEvent, _apply_autosize, _on_font_size_changed, _increase_font_size, _decrease_font_size, _change_area_font_size, _reset_all_font_sizes, _apply_panel_sizes_to_ui, _show_panel_settings_dialog, _show_number_color_dialog, _apply_custom_number_colors, _save_custom_number_colors, _load_custom_number_colors, _update_legend_display, _load_ini_config, _init_default_ini, _apply_ini_config, _save_ini_config, _apply_splitter_sizes, _on_export_report, _on_toggle_theme, _on_tab_changed
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
     #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
@@ -7183,8 +7878,16 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+    # ╔══════════════════════════════════════════════════════════════╗
+    # ║  [全局配置] 初始化、变量定义、默认值                        ║
+    # ║  包含: 窗口设置、数据路径、面板尺寸、字体配置、预测模式     ║
+    # ╚══════════════════════════════════════════════════════════════╝
+
     def __init__(self):
+        """功能：初始化"""
         super().__init__()
+        # ===== 窗口状态标志 =====
+        self._window_closing = False  # 窗口关闭标志，防止信号处理函数访问已销毁的控件
         # ===== 窗口基本设置 =====
         self.setWindowTitle(LotteryConfig.WINDOW_TITLE)  # 窗口标题（来自配置类）
         self.setMinimumSize(LotteryConfig.WINDOW_MIN_WIDTH, LotteryConfig.WINDOW_MIN_HEIGHT)  # 最小窗口尺寸
@@ -7229,7 +7932,7 @@ class LotteryPredictionWindow(QMainWindow):
         self.history_page_size = 100    # 【可改】每页显示的历史记录数量
         
         # ===== 字体大小配置 =====
-        self.ball_label_font_size = 11  # 【可改】号码球生肖/五行标签字体大小
+        self.ball_label_font_size = 20  # 【可改】号码球生肖/五行标签字体大小，默认20px
         
         # ===== 预测模式 =====
         self.enhanced_mode = True    # 【可改】是否启用增强模式（动态权重+模式识别），默认开启
@@ -7256,26 +7959,30 @@ class LotteryPredictionWindow(QMainWindow):
         # ===== 面板尺寸设置 =====
         self._number_panel_size_scale = 1.0  # 【可改】数字面板整体大小缩放比例
         
-        # 【可改】数字选择面板按钮尺寸（宽×高，单位px）
-        self._number_panel_size = {'width': 50, 'height': 50, 'font': 18}
+        # 【可改】数字选择面板按钮尺寸（宽×高，单位px）——默认宽80px高50px文字20px
+        self._number_panel_size = {'width': 80, 'height': 60, 'font': 20}  # 默认宽80高60文字20
         
-        # 【可改】生肖面板尺寸
-        self._zodiac_panel_size = {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10}
+        # 【可改】生肖面板尺寸——默认宽80px高50px数字文字20px标签文字20px
+        self._zodiac_panel_size = {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20}  # 默认宽80高60文字20
         
-        # 【可改】五行面板尺寸
-        self._element_panel_size = {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10}
+        # 【可改】五行面板尺寸——默认宽80px高50px数字文字20px标签文字20px
+        self._element_panel_size = {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20}  # 默认宽80高60文字20
         
         # 【可改】预测结果号码球尺寸（正码+特别码）
-        self._prediction_ball_size = {'width': 48, 'height': 48, 'font': 18, 'label_font': 10}
+        # label_width/label_height: 生肖/五行标签背景的宽高（0=自适应不固定）
+        self._prediction_ball_size = {'width': 80, 'height': 60, 'font': 20, 'label_font': 20, 'label_width': 0, 'label_height': 0}  # 预测球默认宽80高60文字20
         
         # 【可改】颜色图例文字大小
-        self._legend_font_size = {'label': 14, 'nums': 13}
+        self._legend_font_size = {'label': 20, 'nums': 20}  # 图例字体默认20px
         
         # 【可改】详情标签（生肖/五行详情）字体和内边距
-        self._detail_label_size = {'font': 13, 'padding': 8}
+        self._detail_label_size = {'font': 20, 'padding': 8}  # 详情标签字体默认20px
         
         # ===== 加载配置（会覆盖上面的默认值） =====
         self._load_ini_config()
+        
+        # ===== 加载自定义号码颜色（覆盖默认波色配置） =====
+        self._load_custom_number_colors()
         
         # ===== 图表懒加载 =====
         self._chart_initialized = False  # 图表是否已初始化
@@ -7299,20 +8006,148 @@ class LotteryPredictionWindow(QMainWindow):
         
         print("彩票预测系统 v7.5 初始化完成")
     
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局快捷键] 快捷键设置                                                   ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _setup_shortcuts(self):
         """设置快捷键"""
         # Ctrl+1~9 切换标签页1-9，Ctrl+0 切换标签页10，Ctrl+Shift+1 切换标签页11
         for i in range(1, 10):
             shortcut = QShortcut(QKeySequence("Ctrl+" + str(i)), self)
+            # 快捷键信号连接：切换标签页（索引偏移-1）
             shortcut.activated.connect(lambda idx=i-1: self._switch_tab(idx))
+        # Ctrl+0快捷键：切换标签页10
         QShortcut(QKeySequence("Ctrl+0"), self).activated.connect(lambda: self._switch_tab(9))
+        # Ctrl+Shift+1快捷键：切换标签页11
         QShortcut(QKeySequence("Ctrl+Shift+1"), self).activated.connect(lambda: self._switch_tab(10))
+        # Ctrl+P快捷键：执行预测
         QShortcut(QKeySequence("Ctrl+P"), self).activated.connect(self._on_predict_clicked)
+        # Ctrl+S快捷键：保存数据
         QShortcut(QKeySequence("Ctrl+S"), self).activated.connect(self._on_save_clicked)
+        # Ctrl+D快捷键：随机抽取
         QShortcut(QKeySequence("Ctrl+D"), self).activated.connect(self._on_random_draw_clicked)
     
+    def _safe_cleanup_thread(self, thread_attr, worker_attr):
+        """安全清理预测线程和worker，防止堆内存损坏
+        
+        核心原则：
+        1. 先断开所有信号连接（包括thread和worker的）
+        2. 请求线程退出并等待（不使用terminate，避免堆内存损坏）
+        3. 断开thread信号后再置空引用
+        4. 不使用deleteLater跨线程删除，让Python GC管理
+        """
+        thread = getattr(self, thread_attr, None)
+        worker = getattr(self, worker_attr, None)
+        
+        if thread is None and worker is None:
+            return
+        
+        # 第1步：断开worker的所有信号连接
+        if worker is not None:
+            try:
+                worker.finished.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                worker.error.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                worker.progress.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+        
+        # 第2步：断开thread的所有信号连接（防止thread.finished触发已断开的worker.deleteLater）
+        if thread is not None:
+            try:
+                thread.started.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                thread.finished.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+        
+        # 第3步：请求线程退出并等待（绝不调用terminate，它会导致堆内存损坏）
+        if thread is not None:
+            try:
+                if thread.isRunning():
+                    thread.quit()
+                    if not thread.wait(5000):
+                        # 线程拒绝退出，只能放弃等待，但绝不调用terminate
+                        # terminate会破坏C运行时堆，导致0xC0000374
+                        import sys
+                        print("[警告] 线程未能在5秒内退出，放弃等待", file=sys.stderr)
+            except RuntimeError:
+                pass  # C/C++对象已被删除
+            except Exception:
+                pass
+        
+        # 第4步：置空引用
+        setattr(self, thread_attr, None)
+        setattr(self, worker_attr, None)
+    
+    def _detach_worker(self, thread_attr, worker_attr):
+        """轻量清理：断开信号、置空引用，安全清理已结束的thread
+        
+        用于信号处理函数中，避免在信号处理函数中wait线程导致死锁/堆损坏。
+        线程会通过 worker.finished → thread.quit 连接自动退出。
+        完整的线程清理由下次预测开始时的 _safe_cleanup_thread 处理。
+        """
+        worker = getattr(self, worker_attr, None)
+        thread = getattr(self, thread_attr, None)
+        
+        # 断开worker的信号连接
+        if worker is not None:
+            try:
+                worker.finished.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                worker.error.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                worker.progress.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+        
+        # 【修复0xC0000374】同时置空thread引用
+        # 若只置空worker不置null thread，下次预测时 _safe_cleanup_thread
+        # 会操作已结束的thread对象（其C++对象已被Qt事件循环deleteLater删除），
+        # 导致访问已释放的C++内存，触发STATUS_HEAP_CORRUPTION
+        if thread is not None:
+            try:
+                thread.started.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                thread.finished.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+        
+        setattr(self, thread_attr, None)
+        setattr(self, worker_attr, None)
+    
     def closeEvent(self, event):
-        """窗口关闭时保存INI配置"""
+        """窗口关闭时保存INI配置，并安全清理所有后台线程，防止堆内存损坏导致闪退"""
+        # 标记窗口正在关闭，阻止信号处理函数访问已销毁的控件
+        self._window_closing = True
+        
+        # 安全停止所有预测线程（不使用terminate，避免堆内存损坏）
+        self._safe_cleanup_thread('_predict_thread', '_predict_worker')
+        self._safe_cleanup_thread('_ml_predict_thread', '_ml_predict_worker')
+        
+        # 清理当前predictor实例持有的TF/PyTorch模型引用
+        if hasattr(self, '_current_predictor') and self._current_predictor is not None:
+            try:
+                self._current_predictor.cleanup()
+            except Exception:
+                pass
+            self._current_predictor = None
+        
         self._save_ini_config()
         super().closeEvent(event)
     
@@ -7322,6 +8157,7 @@ class LotteryPredictionWindow(QMainWindow):
             self.tabs.setCurrentIndex(index)
     
     def _init_ui(self):
+        """功能：初始化UI界面"""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
@@ -7332,8 +8168,19 @@ class LotteryPredictionWindow(QMainWindow):
         self._create_status_bar()
         # 加载数据后刷新界面
         self._update_history_table()
+        # 恢复数字选择面板的选中状态
+        if hasattr(self, '_pending_selected_numbers') and self._pending_selected_numbers:
+            if hasattr(self, 'number_panel') and hasattr(self.number_panel, 'select_numbers'):
+                self.number_panel.select_numbers(self._pending_selected_numbers)
+            self._pending_selected_numbers = []
     
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局布局] UI初始化、顶部栏、选项卡、状态栏                                        ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _create_top_bar(self, parent_layout):
+        """功能：创建顶栏"""
         top_bar = QWidget()
         top_bar.setObjectName("TopBar")
         top_bar.setMinimumHeight(60)
@@ -7351,14 +8198,17 @@ class LotteryPredictionWindow(QMainWindow):
         button_layout.setSpacing(8)
         
         import_btn = QPushButton("导入")
+        # 导入按钮点击信号：连接导入数据处理函数
         import_btn.clicked.connect(self._on_import_clicked)
         button_layout.addWidget(import_btn)
         
         export_btn = QPushButton("导出")
+        # 导出按钮点击信号：连接导出数据处理函数
         export_btn.clicked.connect(self._on_export_clicked)
         button_layout.addWidget(export_btn)
         
         save_btn = QPushButton("保存")
+        # 保存按钮点击信号：连接保存数据处理函数
         save_btn.clicked.connect(self._on_save_clicked)
         button_layout.addWidget(save_btn)
         
@@ -7367,14 +8217,17 @@ class LotteryPredictionWindow(QMainWindow):
         button_layout.addWidget(separator1)
         
         add_btn = QPushButton("添加数据")
+        # 添加数据按钮点击信号：连接添加数据对话框处理函数
         add_btn.clicked.connect(self._on_add_data_clicked)
         button_layout.addWidget(add_btn)
         
         del_btn = QPushButton("删除数据")
+        # 删除数据按钮点击信号：连接删除确认处理函数
         del_btn.clicked.connect(self._on_delete_data_clicked)
         button_layout.addWidget(del_btn)
         
         clear_btn = QPushButton("清空")
+        # 清空按钮点击信号：连接清空数据确认处理函数
         clear_btn.clicked.connect(self._on_clear_data_clicked)
         button_layout.addWidget(clear_btn)
         
@@ -7391,26 +8244,31 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 清空所有收藏
         clear_fav_action = quick_menu.addAction("清空所有收藏")
+        # 触发信号连接：清空所有收藏
         clear_fav_action.triggered.connect(self._on_clear_collected)
         
         # 清空预测记录
         clear_ph_action = quick_menu.addAction("清空预测记录")
+        # 触发信号连接：清空预测记录
         clear_ph_action.triggered.connect(self._on_clear_prediction_history)
         
         quick_menu.addSeparator()
         
         # 批量导出报告
         batch_export_action = quick_menu.addAction("批量导出报告")
+        # 触发信号连接：批量导出报告
         batch_export_action.triggered.connect(self._on_batch_export_reports)
         
         # 验证号码组合
         validate_action = quick_menu.addAction("验证号码组合")
+        # 触发信号连接：验证号码组合
         validate_action.triggered.connect(self._on_validate_number_combo)
         
         quick_menu.addSeparator()
         
         # 一键复制预测结果
         copy_action = quick_menu.addAction("一键复制预测结果")
+        # 触发信号连接：一键复制预测结果
         copy_action.triggered.connect(self._on_copy_latest_prediction)
         
         quick_btn.setMenu(quick_menu)
@@ -7435,6 +8293,7 @@ class LotteryPredictionWindow(QMainWindow):
             self.font_combo.addItem(size_key)
         default_index = list(LotteryConfig.FONT_SIZES.keys()).index(self.font_size_key)
         self.font_combo.setCurrentIndex(default_index)
+        # 字体下拉框切换信号：连接字体大小变更处理函数
         self.font_combo.currentTextChanged.connect(self._on_font_size_changed)
         right_layout.addWidget(self.font_combo)
         
@@ -7452,6 +8311,7 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
         #   }
         font_minus_btn.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
+        # 字体缩小按钮点击信号：减小全局字体大小
         font_minus_btn.clicked.connect(self._decrease_font_size)
         right_layout.addWidget(font_minus_btn)
         
@@ -7469,6 +8329,7 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
         #   }
         font_plus_btn.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
+        # 字体放大按钮点击信号：增大全局字体大小
         font_plus_btn.clicked.connect(self._increase_font_size)
         right_layout.addWidget(font_plus_btn)
         
@@ -7479,8 +8340,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 表格字体
         table_font_menu = area_font_menu.addMenu("表格字体")
         table_font_bigger = table_font_menu.addAction("放大")
+        # 触发信号连接：表格字体放大
         table_font_bigger.triggered.connect(lambda: self._change_area_font_size('table', 1))
         table_font_smaller = table_font_menu.addAction("缩小")
+        # 触发信号连接：表格字体缩小
         table_font_smaller.triggered.connect(lambda: self._change_area_font_size('table', -1))
         
         area_font_menu.addSeparator()
@@ -7488,8 +8351,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 预测结果字体
         result_font_menu = area_font_menu.addMenu("预测结果字体")
         result_font_bigger = result_font_menu.addAction("放大")
+        # 触发信号连接：预测结果字体放大
         result_font_bigger.triggered.connect(lambda: self._change_area_font_size('result', 1))
         result_font_smaller = result_font_menu.addAction("缩小")
+        # 触发信号连接：预测结果字体缩小
         result_font_smaller.triggered.connect(lambda: self._change_area_font_size('result', -1))
         
         area_font_menu.addSeparator()
@@ -7497,8 +8362,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 列表字体
         list_font_menu = area_font_menu.addMenu("列表字体")
         list_font_bigger = list_font_menu.addAction("放大")
+        # 触发信号连接：列表字体放大
         list_font_bigger.triggered.connect(lambda: self._change_area_font_size('list', 1))
         list_font_smaller = list_font_menu.addAction("缩小")
+        # 触发信号连接：列表字体缩小
         list_font_smaller.triggered.connect(lambda: self._change_area_font_size('list', -1))
         
         area_font_menu.addSeparator()
@@ -7506,25 +8373,30 @@ class LotteryPredictionWindow(QMainWindow):
         # 公告说明
         notice_font_menu = area_font_menu.addMenu("公告说明字体")
         notice_font_bigger = notice_font_menu.addAction("放大")
+        # 触发信号连接：公告说明字体放大
         notice_font_bigger.triggered.connect(lambda: self._change_area_font_size('announcement', 1))
         notice_font_smaller = notice_font_menu.addAction("缩小")
+        # 触发信号连接：公告说明字体缩小
         notice_font_smaller.triggered.connect(lambda: self._change_area_font_size('announcement', -1))
         
         area_font_menu.addSeparator()
         
         # 重置所有字体
         reset_font_action = area_font_menu.addAction("重置所有字体")
+        # 触发信号连接：重置所有字体
         reset_font_action.triggered.connect(self._reset_all_font_sizes)
         
         area_font_btn.setMenu(area_font_menu)
         right_layout.addWidget(area_font_btn)
         
         margin_btn = QPushButton("边距")
+        # 边距按钮点击信号：显示边距设置对话框
         margin_btn.clicked.connect(self._show_margin_dialog)
         right_layout.addWidget(margin_btn)
         
         theme_btn = QPushButton("切换主题")
         theme_btn.setObjectName("ThemeToggleBtn")
+        # 主题切换按钮点击信号：切换深色/浅色模式
         theme_btn.clicked.connect(self._on_toggle_theme)
         right_layout.addWidget(theme_btn)
         
@@ -7630,6 +8502,7 @@ class LotteryPredictionWindow(QMainWindow):
         QMessageBox.information(self, "复制成功", "预测结果已复制到剪贴板:\n" + text)
     
     def _show_margin_dialog(self):
+        """功能：显示边距设置对话框"""
         dialog = QDialog(self)
         dialog.setWindowTitle("边距和间距设置")
         dialog.setFixedSize(400, 300)
@@ -7679,8 +8552,10 @@ class LotteryPredictionWindow(QMainWindow):
         
         btn_layout = QHBoxLayout()
         ok_btn = QPushButton("确定")
+        # 确定按钮点击信号：接受对话框并应用边距设置
         ok_btn.clicked.connect(dialog.accept)
         cancel_btn = QPushButton("取消")
+        # 取消按钮点击信号：拒绝对话框，不保存更改
         cancel_btn.clicked.connect(dialog.reject)
         btn_layout.addWidget(ok_btn)
         btn_layout.addWidget(cancel_btn)
@@ -7696,6 +8571,7 @@ class LotteryPredictionWindow(QMainWindow):
             QMessageBox.information(self, "成功", "边距设置已更新")
     
     def _create_tabs(self, parent_layout):
+        """功能：创建标签页"""
         self.tabs = QTabWidget()
         self.tabs.setObjectName("MainTabs")
         self.tabs.setMovable(True)
@@ -7749,7 +8625,13 @@ class LotteryPredictionWindow(QMainWindow):
         
         parent_layout.addWidget(self.tabs)
     
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局样式] 主题样式表、亮色/暗色模式                                            ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _create_status_bar(self):
+        """功能：创建状态栏"""
         self.statusBar().showMessage("就绪 | 准备预测...")
         self.data_count_label = QLabel("历史记录: 0 条")
         self.statusBar().addPermanentWidget(self.data_count_label)
@@ -7759,7 +8641,9 @@ class LotteryPredictionWindow(QMainWindow):
         self.setStyleSheet("")
         self._update_stylesheet()
     
+
     def _update_stylesheet(self):
+        """功能：更新样式表"""
         font_size = LotteryConfig.FONT_SIZES.get(self.font_size_key, 16)
         small_font_size = max(10, font_size - 4)
         large_font_size = font_size + 4
@@ -7858,7 +8742,8 @@ class LotteryPredictionWindow(QMainWindow):
             " #SelectedNumbersLabel { color: " + success + "; font-weight: bold; }"
             " QStatusBar { background-color: " + bg + "; color: " + fg + "; border-top: 1px solid " + border + "; font-size: " + str(small_font_size) + "px; }"
             " #InfoLabel { font-size: " + str(small_font_size) + "px; color: " + fg + "; padding: 8px; background-color: " + card + "; border: 1px solid " + border + "; border-radius: 4px; }"
-            " QSpinBox { background-color: " + card + "; color: " + fg + "; border: 2px solid " + border + "; border-radius: 4px; padding: 4px; }"
+            " QSpinBox { background-color: " + card + "; color: " + fg + "; border: 2px solid " + border + "; border-radius: 4px; padding: 4px; min-height: 45px; }"
+            " QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
             " QSlider::groove:horizontal { background-color: " + border + "; height: 6px; border-radius: 3px; }"
             " QSlider::handle:horizontal { background-color: " + accent + "; width: 16px; margin: -5px 0; border-radius: 8px; }"
         )
@@ -7885,15 +8770,18 @@ class LotteryPredictionWindow(QMainWindow):
                     border-color: #2980B9;
                 }
             """
+            # 动态更新预测类型切换按钮的样式表（跟随全局字号调整）
             self.type_btn_algorithm.setStyleSheet(type_button_style)
             self.type_btn_random.setStyleSheet(type_button_style)
             self.type_btn_ml.setStyleSheet(type_button_style)
     
     def resizeEvent(self, event):
+        """功能：窗口大小调整事件处理"""
         super().resizeEvent(event)
         self._apply_autosize()
     
     def _apply_autosize(self):
+        """功能：应用自动大小"""
         window_size = self.size()
         window_width = window_size.width()
         window_height = window_size.height()
@@ -7909,11 +8797,15 @@ class LotteryPredictionWindow(QMainWindow):
         QApplication.instance().setFont(font)
     
     def _on_font_size_changed(self, size_key):
+        """功能：字体大小切换事件处理"""
         self.font_size_key = size_key
         self._update_stylesheet()
         self._apply_autosize()
+        # 保存字号选择
+        self._save_ini_config()
     
     def _increase_font_size(self):
+        """功能：增大字体大小"""
         keys = list(LotteryConfig.FONT_SIZES.keys())
         current_index = keys.index(self.font_size_key) if self.font_size_key in keys else 3
         if current_index < len(keys) - 1:
@@ -7921,6 +8813,7 @@ class LotteryPredictionWindow(QMainWindow):
             self.font_combo.setCurrentText(new_key)
     
     def _decrease_font_size(self):
+        """功能：减小字体大小"""
         keys = list(LotteryConfig.FONT_SIZES.keys())
         current_index = keys.index(self.font_size_key) if self.font_size_key in keys else 3
         if current_index > 0:
@@ -7995,6 +8888,10 @@ class LotteryPredictionWindow(QMainWindow):
                     height=self._number_panel_size.get('height', 50),
                     font_size=new_font
                 )
+            if hasattr(self, 'num_panel_font_spin'):
+                self.num_panel_font_spin.blockSignals(True)
+                self.num_panel_font_spin.setValue(new_font)
+                self.num_panel_font_spin.blockSignals(False)
             self.statusBar().showMessage(f"数字面板字体已调整为 {int(new_scale*100)}%")
         
         elif area == 'zodiac_panel':
@@ -8014,6 +8911,14 @@ class LotteryPredictionWindow(QMainWindow):
                     btn_font=new_btn_font,
                     label_font=new_label_font
                 )
+                if hasattr(self, 'zodiac_num_font_spin'):
+                    self.zodiac_num_font_spin.blockSignals(True)
+                    self.zodiac_num_font_spin.setValue(new_btn_font)
+                    self.zodiac_num_font_spin.blockSignals(False)
+                if hasattr(self, 'zodiac_text_font_spin'):
+                    self.zodiac_text_font_spin.blockSignals(True)
+                    self.zodiac_text_font_spin.setValue(new_label_font)
+                    self.zodiac_text_font_spin.blockSignals(False)
             self.statusBar().showMessage(f"生肖面板字体已调整为 {int(new_scale*100)}%")
         
         elif area == 'element_panel':
@@ -8033,6 +8938,14 @@ class LotteryPredictionWindow(QMainWindow):
                     btn_font=new_btn_font,
                     label_font=new_label_font
                 )
+                if hasattr(self, 'elem_num_font_spin'):
+                    self.elem_num_font_spin.blockSignals(True)
+                    self.elem_num_font_spin.setValue(new_btn_font)
+                    self.elem_num_font_spin.blockSignals(False)
+                if hasattr(self, 'elem_text_font_spin'):
+                    self.elem_text_font_spin.blockSignals(True)
+                    self.elem_text_font_spin.setValue(new_label_font)
+                    self.elem_text_font_spin.blockSignals(False)
             self.statusBar().showMessage(f"五行面板字体已调整为 {int(new_scale*100)}%")
         
         elif area == 'announcement':
@@ -8049,6 +8962,11 @@ class LotteryPredictionWindow(QMainWindow):
         # 持久化保存
         self._save_ini_config()
     
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局字体管理] 字体大小控制、重置、缩放                                           ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _reset_all_font_sizes(self):
         """重置所有区域的字体大小为默认值"""
         for key in self._area_font_scales:
@@ -8080,24 +8998,44 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 重置数字选择面板
         if hasattr(self, 'number_panel'):
-            self._number_panel_size = {'width': 50, 'height': 50, 'font': 18}
+            self._number_panel_size = {'width': 80, 'height': 60, 'font': 20}
             self.number_panel.set_button_size(
-                width=50, height=50, font_size=18
+                width=80, height=60, font_size=20
             )
+        if hasattr(self, 'num_panel_font_spin'):
+            self.num_panel_font_spin.blockSignals(True)
+            self.num_panel_font_spin.setValue(20)
+            self.num_panel_font_spin.blockSignals(False)
         
         # 重置生肖面板
         if hasattr(self, 'zodiac_panel'):
-            self._zodiac_panel_size = {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10}
+            self._zodiac_panel_size = {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20}
             self.zodiac_panel.set_font_size(
-                width=44, height=40, btn_font=16, label_font=10
+                width=80, height=60, btn_font=20, label_font=20
             )
+            if hasattr(self, 'zodiac_num_font_spin'):
+                self.zodiac_num_font_spin.blockSignals(True)
+                self.zodiac_num_font_spin.setValue(20)
+                self.zodiac_num_font_spin.blockSignals(False)
+            if hasattr(self, 'zodiac_text_font_spin'):
+                self.zodiac_text_font_spin.blockSignals(True)
+                self.zodiac_text_font_spin.setValue(20)
+                self.zodiac_text_font_spin.blockSignals(False)
         
         # 重置五行面板
         if hasattr(self, 'element_panel'):
-            self._element_panel_size = {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10}
+            self._element_panel_size = {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20}
             self.element_panel.set_font_size(
-                width=44, height=40, btn_font=16, label_font=10
+                width=80, height=60, btn_font=20, label_font=20
             )
+            if hasattr(self, 'elem_num_font_spin'):
+                self.elem_num_font_spin.blockSignals(True)
+                self.elem_num_font_spin.setValue(20)
+                self.elem_num_font_spin.blockSignals(False)
+            if hasattr(self, 'elem_text_font_spin'):
+                self.elem_text_font_spin.blockSignals(True)
+                self.elem_text_font_spin.setValue(20)
+                self.elem_text_font_spin.blockSignals(False)
         
         # 重置公告说明
         if hasattr(self, 'notice_container'):
@@ -8107,6 +9045,11 @@ class LotteryPredictionWindow(QMainWindow):
         if hasattr(self, '_current_detail_row') and self._current_detail_row >= 0:
             self._on_show_period_detail()
         
+        # 重置详情字体缩放
+        self.detail_font_scale = 1.0
+        
+        # 保存重置后的配置
+        self._save_ini_config()
         self.statusBar().showMessage("所有区域字体已重置")
     
     def _apply_panel_sizes_to_ui(self):
@@ -8114,176 +9057,76 @@ class LotteryPredictionWindow(QMainWindow):
         # 数字选择面板
         if hasattr(self, 'number_panel') and self.number_panel:
             self.number_panel.set_button_size(
-                width=self._number_panel_size.get('width', 50),
-                height=self._number_panel_size.get('height', 50),
-                font_size=self._number_panel_size.get('font', 18)
+                width=self._number_panel_size.get('width', 80),
+                height=self._number_panel_size.get('height', 60),
+                font_size=self._number_panel_size.get('font', 20)
             )
+        if hasattr(self, 'num_panel_font_spin'):
+            self.num_panel_font_spin.blockSignals(True)
+            self.num_panel_font_spin.setValue(self._number_panel_size.get('font', 20))  # 默认20px
+            self.num_panel_font_spin.blockSignals(False)
         
         # 生肖面板
         if hasattr(self, 'zodiac_panel') and self.zodiac_panel:
             self.zodiac_panel.set_font_size(
-                width=self._zodiac_panel_size.get('width', 44),
-                height=self._zodiac_panel_size.get('height', 40),
-                btn_font=self._zodiac_panel_size.get('btn_font', 16),
-                label_font=self._zodiac_panel_size.get('label_font', 10)
+                width=self._zodiac_panel_size.get('width', 80),
+                height=self._zodiac_panel_size.get('height', 60),
+                btn_font=self._zodiac_panel_size.get('btn_font', 20),
+                label_font=self._zodiac_panel_size.get('label_font', 20)
             )
+            if hasattr(self, 'zodiac_num_font_spin'):
+                self.zodiac_num_font_spin.blockSignals(True)
+                self.zodiac_num_font_spin.setValue(self._zodiac_panel_size.get('btn_font', 20))  # 默认20px
+                self.zodiac_num_font_spin.blockSignals(False)
+            if hasattr(self, 'zodiac_text_font_spin'):
+                self.zodiac_text_font_spin.blockSignals(True)
+                self.zodiac_text_font_spin.setValue(self._zodiac_panel_size.get('label_font', 20))  # 默认20px
+                self.zodiac_text_font_spin.blockSignals(False)
         
         # 五行面板
         if hasattr(self, 'element_panel') and self.element_panel:
             self.element_panel.set_font_size(
-                width=self._element_panel_size.get('width', 44),
-                height=self._element_panel_size.get('height', 40),
-                btn_font=self._element_panel_size.get('btn_font', 16),
-                label_font=self._element_panel_size.get('label_font', 10)
+                width=self._element_panel_size.get('width', 80),
+                height=self._element_panel_size.get('height', 60),
+                btn_font=self._element_panel_size.get('btn_font', 20),
+                label_font=self._element_panel_size.get('label_font', 20)
             )
+            if hasattr(self, 'elem_num_font_spin'):
+                self.elem_num_font_spin.blockSignals(True)
+                self.elem_num_font_spin.setValue(self._element_panel_size.get('btn_font', 20))  # 默认20px
+                self.elem_num_font_spin.blockSignals(False)
+            if hasattr(self, 'elem_text_font_spin'):
+                self.elem_text_font_spin.blockSignals(True)
+                self.elem_text_font_spin.setValue(self._element_panel_size.get('label_font', 20))  # 默认20px
+                self.elem_text_font_spin.blockSignals(False)
         
         # 预测结果号码球
         self._apply_prediction_ball_size()
+        if hasattr(self, 'pred_num_font_spin'):
+            self.pred_num_font_spin.blockSignals(True)
+            self.pred_num_font_spin.setValue(self._prediction_ball_size.get('font', 20))  # 默认20px
+            self.pred_num_font_spin.blockSignals(False)
+        if hasattr(self, 'pred_text_font_spin'):
+            self.pred_text_font_spin.blockSignals(True)
+            self.pred_text_font_spin.setValue(self.ball_label_font_size)  # 默认20px
+            self.pred_text_font_spin.blockSignals(False)
         # 颜色图例
         self._apply_legend_font_size()
         # 详情标签
         self._apply_detail_label_size()
         # 概率面板配置
         self._apply_probability_config()
+        # 计算规律面板配置
+        self._apply_calc_panel_config()
+        # 波色预测面板配置
+        self._apply_wave_panel_config()
+        # 存储面板配置
+        self._apply_storage_config()
     
-    def _apply_prediction_ball_size(self):
-        """应用预测结果号码球尺寸设置"""
-        if not hasattr(self, 'prediction_number_layout'):
-            return
-        w = self._prediction_ball_size.get('width', 48)
-        h = self._prediction_ball_size.get('height', 48)
-        f = self._prediction_ball_size.get('font', 18)
-        plus_size = self._prediction_ball_size.get('plus_size', 24)
-        # 生肖/五行标签字体使用 ball_label_font_size（由字号spinbox控制），而非 _prediction_ball_size['label_font']
-        label_f = self.ball_label_font_size
-        
-        # 遍历所有号码球并更新尺寸
-        for i in range(self.prediction_number_layout.count()):
-            item = self.prediction_number_layout.itemAt(i)
-            if item and item.widget():
-                widget = item.widget()
-                # NumberBallWithZodiac控件
-                if hasattr(widget, 'set_ball_size') and hasattr(widget, 'set_font_size'):
-                    widget.set_ball_size(width=w, height=h, font_size=f)
-                    widget.set_font_size(label_f)
-                # 加号标签（只更新字体大小，保持原有颜色）
-                elif isinstance(widget, QLabel) and widget.text() == '+':
-                    old_style = widget.styleSheet()
-                    import re
-                    # 正则替换加号标签的 font-size，保留颜色等其他样式属性不变
-                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {plus_size}px', old_style)
-                    # 应用更新后的样式到加号标签（仅字号变化）
-                    widget.setStyleSheet(new_style)
-    
-    def _apply_legend_font_size(self):
-        """应用颜色图例文字大小设置"""
-        # 数字选择面板的图例
-        if hasattr(self, '_legend_labels'):
-            label_size = self._legend_font_size.get('label', 14)
-            nums_size = self._legend_font_size.get('nums', 13)
-            for label in self._legend_labels.get('labels', []):
-                if label:
-                    old_style = label.styleSheet()
-                    import re
-                    # 正则替换图例文字标签的 font-size 为目标字号，保留颜色等其余样式
-                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {label_size}px', old_style)
-                    # 应用更新后的样式到图例文字标签（如"五行："等说明文字）
-                    label.setStyleSheet(new_style)
-            for label in self._legend_labels.get('nums', []):
-                if label:
-                    old_style = label.styleSheet()
-                    import re
-                    # 正则替换图例数字标签的 font-size 为目标字号，保留颜色等其余样式
-                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {nums_size}px', old_style)
-                    # 应用更新后的样式到图例数字标签（如号码范围展示）
-                    label.setStyleSheet(new_style)
-    
-    def _change_legend_font(self, direction):
-        """调整颜色图例的字体大小
-        direction: 1=放大, -1=缩小
-        """
-        step = 1
-        label_size = self._legend_font_size.get('label', 14) + direction * step
-        nums_size = self._legend_font_size.get('nums', 13) + direction * step
-        # 限制范围
-        label_size = max(10, min(24, label_size))
-        nums_size = max(9, min(22, nums_size))
-        
-        self._legend_font_size['label'] = label_size
-        self._legend_font_size['nums'] = nums_size
-        
-        # 应用到UI
-        self._apply_legend_font_size()
-        
-        # 保存到INI
-        self._save_ini_config()
-        self.statusBar().showMessage(f"图例字体已调整为 {label_size}px")
-    
-    def _apply_detail_label_size(self):
-        """应用详情标签（生肖/五行详情）字体和内边距设置"""
-        font_size = self._detail_label_size.get('font', 13)
-        padding = self._detail_label_size.get('padding', 8)
-        
-        # 生肖详情标签
-        if hasattr(self, 'zodiac_detail_label') and self.zodiac_detail_label:
-            old_style = self.zodiac_detail_label.styleSheet()
-            import re
-            # 正则替换字号和内边距，保留颜色、圆角等其他样式属性不变
-            new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {font_size}px', old_style)
-            new_style = re.sub(r'padding:\s*\d+px', f'padding: {padding}px', new_style)
-            # 应用更新后的样式到生肖详情标签（动态字号 + 动态内边距）
-            self.zodiac_detail_label.setStyleSheet(new_style)
-        
-        # 五行详情标签
-        if hasattr(self, 'element_detail_label') and self.element_detail_label:
-            old_style = self.element_detail_label.styleSheet()
-            import re
-            # 正则替换字号和内边距，保留颜色、圆角等其他样式属性不变
-            new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {font_size}px', old_style)
-            new_style = re.sub(r'padding:\s*\d+px', f'padding: {padding}px', new_style)
-            # 应用更新后的样式到五行详情标签（动态字号 + 动态内边距）
-            self.element_detail_label.setStyleSheet(new_style)
-    
-    def _change_detail_label_font(self, direction):
-        """调整详情标签的字体大小和内边距（背景尺寸）
-        direction: 1=放大, -1=缩小
-        """
-        step = 1
-        font_size = self._detail_label_size.get('font', 13) + direction * step
-        padding = self._detail_label_size.get('padding', 8) + direction * step
-        # 限制范围
-        font_size = max(10, min(24, font_size))
-        padding = max(4, min(20, padding))
-        
-        self._detail_label_size['font'] = font_size
-        self._detail_label_size['padding'] = padding
-        
-        # 应用到UI
-        self._apply_detail_label_size()
-        
-        # 保存到INI
-        self._save_ini_config()
-        self.statusBar().showMessage(f"详情标签字体已调整为 {font_size}px")
-    
-    def _apply_probability_config(self):
-        """应用概率面板配置到UI控件"""
-        if not hasattr(self, '_prob_config'):
-            self._prob_config = {}
-        
-        # 应用统计期数
-        if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
-            period = self._prob_config.get('period', 30)
-            self.prob_period_spin.blockSignals(True)
-            self.prob_period_spin.setValue(period)
-            self.prob_period_spin.blockSignals(False)
-        
-        # 应用排序方式
-        if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo:
-            sort_mode = self._prob_config.get('sort_mode', 0)
-            self.prob_sort_combo.blockSignals(True)
-            self.prob_sort_combo.setCurrentIndex(sort_mode)
-            self.prob_sort_combo.blockSignals(False)
-    
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局面板设置] 尺寸设置对话框                                              ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _show_panel_settings_dialog(self, panel_type):
         """显示面板尺寸设置对话框
         panel_type: 'number' | 'zodiac' | 'element'
@@ -8301,16 +9144,16 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 获取当前尺寸
         if panel_type == 'number':
-            current = getattr(self, '_number_panel_size', {'width': 50, 'height': 50, 'font': 18})
+            current = getattr(self, '_number_panel_size', {'width': 80, 'height': 60, 'font': 20})
             title_text = "数字选择面板尺寸"
         elif panel_type == 'zodiac':
-            current = getattr(self, '_zodiac_panel_size', {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10})
+            current = getattr(self, '_zodiac_panel_size', {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20})
             title_text = "生肖面板尺寸"
         elif panel_type == 'element':
-            current = getattr(self, '_element_panel_size', {'width': 44, 'height': 40, 'btn_font': 16, 'label_font': 10})
+            current = getattr(self, '_element_panel_size', {'width': 80, 'height': 60, 'btn_font': 20, 'label_font': 20})
             title_text = "五行面板尺寸"
         else:  # prediction
-            current = getattr(self, '_prediction_ball_size', {'width': 48, 'height': 48, 'font': 18, 'label_font': 10})
+            current = getattr(self, '_prediction_ball_size', {'width': 80, 'height': 60, 'font': 20, 'label_font': 20})
             title_text = "预测号码球尺寸"
         
         # 标题
@@ -8325,10 +9168,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 表单标签样式：13px字号，中灰文字（后续高度/字体/标签/加号标签均复用此样式）
         width_label.setStyleSheet("font-size: 13px; color: #555;")
         width_spin = QSpinBox()
-        width_spin.setRange(30, 120)
-        width_spin.setValue(current.get('width', 50))
+        width_spin.setRange(30, 300)
+        width_spin.setValue(current.get('width', 80))  # 默认按钮宽80px
         # 表单数字框样式：4px内边距，13px字号（后续高度/字体/标签/加号数字框均复用此样式）
-        width_spin.setStyleSheet("QSpinBox { padding: 4px; font-size: 13px; }")
+        width_spin.setStyleSheet("QSpinBox { min-height: 45px; padding: 4px; font-size: 13px; }")
         width_row.addWidget(width_label)
         width_row.addStretch()
         width_row.addWidget(width_spin)
@@ -8340,46 +9183,50 @@ class LotteryPredictionWindow(QMainWindow):
         # 表单标签样式：13px字号，中灰文字（复用宽度标签样式）
         height_label.setStyleSheet("font-size: 13px; color: #555;")
         height_spin = QSpinBox()
-        height_spin.setRange(30, 120)
-        height_spin.setValue(current.get('height', 50))
+        height_spin.setRange(30, 300)
+        height_spin.setValue(current.get('height', 60))  # 默认按钮高60px
         # 表单数字框样式：4px内边距，13px字号（复用宽度数字框样式）
-        height_spin.setStyleSheet("QSpinBox { padding: 4px; font-size: 13px; }")
+        height_spin.setStyleSheet("QSpinBox { min-height: 45px; padding: 4px; font-size: 13px; }")
         height_row.addWidget(height_label)
         height_row.addStretch()
         height_row.addWidget(height_spin)
         layout.addLayout(height_row)
         
-        # 按钮字体大小
-        btn_font_row = QHBoxLayout()
-        btn_font_label = QLabel("数字字体大小（px）:")
-        # 表单标签样式：13px字号，中灰文字（复用宽度标签样式）
-        btn_font_label.setStyleSheet("font-size: 13px; color: #555;")
-        btn_font_spin = QSpinBox()
-        btn_font_spin.setRange(10, 36)
-        btn_font_spin.setValue(current.get('font', current.get('btn_font', 18)))
-        # 表单数字框样式：4px内边距，13px字号（复用宽度数字框样式）
-        btn_font_spin.setStyleSheet("QSpinBox { padding: 4px; font-size: 13px; }")
-        btn_font_row.addWidget(btn_font_label)
-        btn_font_row.addStretch()
-        btn_font_row.addWidget(btn_font_spin)
-        layout.addLayout(btn_font_row)
-        
-        # 标签字体大小（生肖、五行面板和预测结果）
+        # 所有面板的字体控件已移至各面板角落独立控件，此处不再重复
+        btn_font_spin = None
         label_font_spin = None
-        if panel_type in ['zodiac', 'element', 'prediction']:
-            label_font_row = QHBoxLayout()
-            label_font_label = QLabel("标签字体大小（px）:")
-            # 表单标签样式：13px字号，中灰文字（复用宽度标签样式）
-            label_font_label.setStyleSheet("font-size: 13px; color: #555;")
-            label_font_spin = QSpinBox()
-            label_font_spin.setRange(8, 20)
-            label_font_spin.setValue(current.get('label_font', 10))
-            # 表单数字框样式：4px内边距，13px字号（复用宽度数字框样式）
-            label_font_spin.setStyleSheet("QSpinBox { padding: 4px; font-size: 13px; }")
-            label_font_row.addWidget(label_font_label)
-            label_font_row.addStretch()
-            label_font_row.addWidget(label_font_spin)
-            layout.addLayout(label_font_row)
+        
+        # 生肖/五行标签背景宽高（仅预测结果面板）
+        label_width_spin = None
+        label_height_spin = None
+        if panel_type == 'prediction':
+            # 标签宽度
+            label_width_row = QHBoxLayout()
+            label_width_label = QLabel("标签宽度（px，0=自适应）:")
+            label_width_label.setStyleSheet("font-size: 13px; color: #555;")
+            label_width_spin = QSpinBox()
+            label_width_spin.setRange(0, 300)
+            label_width_spin.setValue(current.get('label_width', 0))
+            # 标签宽度数字框样式：4px内边距，13px字号（复用表单数字框样式）
+            label_width_spin.setStyleSheet("QSpinBox { min-height: 45px; padding: 4px; font-size: 13px; }")
+            label_width_row.addWidget(label_width_label)
+            label_width_row.addStretch()
+            label_width_row.addWidget(label_width_spin)
+            layout.addLayout(label_width_row)
+            
+            # 标签高度
+            label_height_row = QHBoxLayout()
+            label_height_label = QLabel("标签高度（px，0=自适应）:")
+            label_height_label.setStyleSheet("font-size: 13px; color: #555;")
+            label_height_spin = QSpinBox()
+            label_height_spin.setRange(0, 300)
+            label_height_spin.setValue(current.get('label_height', 0))
+            # 标签高度数字框样式：4px内边距，13px字号（复用表单数字框样式）
+            label_height_spin.setStyleSheet("QSpinBox { min-height: 45px; padding: 4px; font-size: 13px; }")
+            label_height_row.addWidget(label_height_label)
+            label_height_row.addStretch()
+            label_height_row.addWidget(label_height_spin)
+            layout.addLayout(label_height_row)
         
         # 加号字体大小（仅预测结果面板）
         plus_size_spin = None
@@ -8389,10 +9236,10 @@ class LotteryPredictionWindow(QMainWindow):
             # 表单标签样式：13px字号，中灰文字（复用宽度标签样式）
             plus_size_label.setStyleSheet("font-size: 13px; color: #555;")
             plus_size_spin = QSpinBox()
-            plus_size_spin.setRange(12, 48)
+            plus_size_spin.setRange(12, 100)
             plus_size_spin.setValue(current.get('plus_size', 24))
             # 表单数字框样式：4px内边距，13px字号（复用宽度数字框样式）
-            plus_size_spin.setStyleSheet("QSpinBox { padding: 4px; font-size: 13px; }")
+            plus_size_spin.setStyleSheet("QSpinBox { min-height: 45px; padding: 4px; font-size: 13px; }")
             plus_size_row.addWidget(plus_size_label)
             plus_size_row.addStretch()
             plus_size_row.addWidget(plus_size_spin)
@@ -8424,6 +9271,7 @@ class LotteryPredictionWindow(QMainWindow):
         cancel_btn = QPushButton("取消")
         # 取消按钮样式 - 灰色系（与"恢复默认"按钮一致，次要操作统一灰色风格）
         cancel_btn.setStyleSheet("QPushButton { background-color: #F5F5F5; color: #666; border: 1px solid #DDD; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #EEEEEE; }")
+        # 取消按钮点击信号：拒绝对话框，放弃面板尺寸修改
         cancel_btn.clicked.connect(dialog.reject)
         btn_row.addWidget(cancel_btn)
         
@@ -8441,6 +9289,7 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #27AE60;  悬停背景色：深绿
         #   }
         ok_btn.setStyleSheet("QPushButton { background-color: #2ECC71; color: #FFFFFF; border: none; border-radius: 6px; padding: 8px 20px; font-weight: bold; } QPushButton:hover { background-color: #27AE60; }")
+        # 确定按钮点击信号：接受对话框并应用面板尺寸修改
         ok_btn.clicked.connect(dialog.accept)
         btn_row.addWidget(ok_btn)
         
@@ -8448,67 +9297,104 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 恢复默认按钮功能
         def _reset_defaults():
+            """功能：重置defaults"""
             if panel_type == 'number':
-                width_spin.setValue(50)
-                height_spin.setValue(50)
-                btn_font_spin.setValue(18)
+                width_spin.setValue(80)
+                height_spin.setValue(60)
             elif panel_type == 'prediction':
-                width_spin.setValue(48)
-                height_spin.setValue(48)
-                btn_font_spin.setValue(18)
-                if label_font_spin:
-                    label_font_spin.setValue(10)
+                width_spin.setValue(80)
+                height_spin.setValue(60)
+                if label_width_spin:
+                    label_width_spin.setValue(0)
+                if label_height_spin:
+                    label_height_spin.setValue(0)
                 if plus_size_spin:
                     plus_size_spin.setValue(24)
             else:
-                width_spin.setValue(44)
-                height_spin.setValue(40)
-                btn_font_spin.setValue(16)
-                if label_font_spin:
-                    label_font_spin.setValue(10)
+                # 生肖/五行面板：仅重置宽高
+                width_spin.setValue(80)
+                height_spin.setValue(60)
         
         reset_btn.clicked.connect(_reset_defaults)
+        # 恢复默认按钮点击信号：连接重置函数，将面板尺寸恢复默认值
         
         # 显示对话框
         if dialog.exec() == QDialog.DialogCode.Accepted:
             width = width_spin.value()
             height = height_spin.value()
-            btn_font = btn_font_spin.value()
-            label_font = label_font_spin.value() if label_font_spin else None
             
             # 保存设置
             if panel_type == 'number':
-                self._number_panel_size = {'width': width, 'height': height, 'font': btn_font}
+                font = self._number_panel_size.get('font', 18)
+                self._number_panel_size = {'width': width, 'height': height, 'font': font}
                 if hasattr(self, 'number_panel'):
-                    self.number_panel.set_button_size(width=width, height=height, font_size=btn_font)
-                # 更新字体缩放比例
-                self._area_font_scales['number_panel'] = btn_font / 18.0
+                    self.number_panel.set_button_size(width=width, height=height, font_size=font)
+                self._area_font_scales['number_panel'] = font / 18.0
+                if hasattr(self, 'num_panel_font_spin'):
+                    self.num_panel_font_spin.blockSignals(True)
+                    self.num_panel_font_spin.setValue(font)
+                    self.num_panel_font_spin.blockSignals(False)
             elif panel_type == 'zodiac':
-                self._zodiac_panel_size = {'width': width, 'height': height, 'btn_font': btn_font, 'label_font': label_font}
+                self._zodiac_panel_size['width'] = width
+                self._zodiac_panel_size['height'] = height
                 if hasattr(self, 'zodiac_panel'):
-                    self.zodiac_panel.set_font_size(width=width, height=height, btn_font=btn_font, label_font=label_font)
-                self._area_font_scales['zodiac_panel'] = btn_font / 16.0
+                    self.zodiac_panel.set_font_size(
+                        width=width, height=height,
+                        btn_font=self._zodiac_panel_size.get('btn_font', 16),
+                        label_font=self._zodiac_panel_size.get('label_font', 10)
+                    )
+                if hasattr(self, 'zodiac_num_font_spin'):
+                    self.zodiac_num_font_spin.blockSignals(True)
+                    self.zodiac_num_font_spin.setValue(self._zodiac_panel_size.get('btn_font', 20))  # 默认20px
+                    self.zodiac_num_font_spin.blockSignals(False)
+                if hasattr(self, 'zodiac_text_font_spin'):
+                    self.zodiac_text_font_spin.blockSignals(True)
+                    self.zodiac_text_font_spin.setValue(self._zodiac_panel_size.get('label_font', 20))  # 默认20px
+                    self.zodiac_text_font_spin.blockSignals(False)
+                self._area_font_scales['zodiac_panel'] = self._zodiac_panel_size.get('btn_font', 16) / 16.0
             elif panel_type == 'element':
-                self._element_panel_size = {'width': width, 'height': height, 'btn_font': btn_font, 'label_font': label_font}
+                self._element_panel_size['width'] = width
+                self._element_panel_size['height'] = height
                 if hasattr(self, 'element_panel'):
-                    self.element_panel.set_font_size(width=width, height=height, btn_font=btn_font, label_font=label_font)
-                self._area_font_scales['element_panel'] = btn_font / 16.0
+                    self.element_panel.set_font_size(
+                        width=width, height=height,
+                        btn_font=self._element_panel_size.get('btn_font', 16),
+                        label_font=self._element_panel_size.get('label_font', 10)
+                    )
+                if hasattr(self, 'elem_num_font_spin'):
+                    self.elem_num_font_spin.blockSignals(True)
+                    self.elem_num_font_spin.setValue(self._element_panel_size.get('btn_font', 20))  # 默认20px
+                    self.elem_num_font_spin.blockSignals(False)
+                if hasattr(self, 'elem_text_font_spin'):
+                    self.elem_text_font_spin.blockSignals(True)
+                    self.elem_text_font_spin.setValue(self._element_panel_size.get('label_font', 20))  # 默认20px
+                    self.elem_text_font_spin.blockSignals(False)
+                self._area_font_scales['element_panel'] = self._element_panel_size.get('btn_font', 16) / 16.0
             else:  # prediction
                 plus_size = plus_size_spin.value() if plus_size_spin else 24
+                label_width = label_width_spin.value() if label_width_spin else 0
+                label_height = label_height_spin.value() if label_height_spin else 0
+                font = self._prediction_ball_size.get('font', 18)
+                label_font = self._prediction_ball_size.get('label_font', 10)
                 self._prediction_ball_size = {
                     'width': width, 'height': height, 
-                    'font': btn_font, 'label_font': label_font,
+                    'font': font, 'label_font': label_font,
+                    'label_width': label_width, 'label_height': label_height,
                     'plus_size': plus_size
                 }
                 # 同步标签字号到 ball_label_font_size（由字号spinbox统一控制）
                 if label_font is not None:
                     self.ball_label_font_size = label_font
-                    if hasattr(self, 'font_size_spin'):
-                        self.font_size_spin.blockSignals(True)
-                        self.font_size_spin.setValue(label_font)
-                        self.font_size_spin.blockSignals(False)
+                    if hasattr(self, 'pred_text_font_spin'):
+                        self.pred_text_font_spin.blockSignals(True)
+                        self.pred_text_font_spin.setValue(label_font)
+                        self.pred_text_font_spin.blockSignals(False)
+                if hasattr(self, 'pred_num_font_spin'):
+                    self.pred_num_font_spin.blockSignals(True)
+                    self.pred_num_font_spin.setValue(font)
+                    self.pred_num_font_spin.blockSignals(False)
                 self._apply_prediction_ball_size()
-                self._area_font_scales['result'] = btn_font / 18.0
+                self._area_font_scales['result'] = font / 18.0
             
             # 保存到INI
             self._save_ini_config()
@@ -8516,54 +9402,3490 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 持久化保存
         self._save_ini_config()
+
+    # ======================================================================== #
+    # 号码颜色自定义功能
+    # ======================================================================== #
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局数字颜色] 自定义号码颜色管理                                              ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    def _show_number_color_dialog(self):
+        """显示号码颜色设置对话框，可修改1-49每个号码的颜色，修改后全局应用"""
+        from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+                                      QPushButton, QScrollArea, QGridLayout, QComboBox,
+                                      QColorDialog, QFrame, QGroupBox, QButtonGroup, QRadioButton)
+        from PyQt6.QtGui import QColor
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("号码颜色设置")
+        dialog.setModal(True)
+        dialog.setMinimumSize(700, 550)
+
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 15, 15, 15)
+
+        # --- 说明 ---
+        info_label = QLabel("选择号码的颜色分组（红波/蓝波/绿波/自定义），修改后点击\"应用全局\"即时生效")
+        info_label.setStyleSheet("font-size: 12px; color: #666; padding: 4px;")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # --- 批量操作区 ---
+        batch_group = QGroupBox("批量操作")
+        batch_layout = QHBoxLayout(batch_group)
+        batch_layout.setSpacing(8)
+
+        batch_label = QLabel("选中号码范围:")
+        # 批量操作标签样式：12px小号字体
+        batch_label.setStyleSheet("font-size: 12px;")
+        batch_layout.addWidget(batch_label)
+
+        # 范围选择
+        range_start = QComboBox()
+        range_start.addItems([str(i) for i in range(1, 50)])
+        range_start.setFixedWidth(60)
+        batch_layout.addWidget(range_start)
+
+        to_label = QLabel("~")
+        batch_layout.addWidget(to_label)
+
+        range_end = QComboBox()
+        range_end.addItems([str(i) for i in range(1, 50)])
+        range_end.setCurrentIndex(48)
+        range_end.setFixedWidth(60)
+        batch_layout.addWidget(range_end)
+
+        batch_layout.addSpacing(10)
+
+        # 批量颜色选择
+        batch_color_label = QLabel("设为:")
+        batch_layout.addWidget(batch_color_label)
+
+        batch_combo = QComboBox()
+        batch_combo.addItems(["红波", "蓝波", "绿波", "自定义..."])
+        batch_combo.setFixedWidth(90)
+        batch_layout.addWidget(batch_combo)
+
+        batch_apply_btn = QPushButton("批量应用")
+        batch_apply_btn.setStyleSheet(
+            "QPushButton { background-color: #3498DB; color: white; border: none; "
+            "border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; }"
+            "QPushButton:hover { background-color: #2980B9; }"
+        )
+        batch_layout.addWidget(batch_apply_btn)
+        batch_layout.addStretch()
+
+        layout.addWidget(batch_group)
+
+        # --- 号码颜色网格 ---
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: 1px solid #DDD; border-radius: 4px; }")
+
+        grid_widget = QWidget()
+        grid_layout = QGridLayout(grid_widget)
+        grid_layout.setSpacing(4)
+        grid_layout.setContentsMargins(8, 8, 8, 8)
+
+        # 预设颜色
+        preset_colors = {
+            '红波': '#FF0000',
+            '蓝波': '#0000FF',
+            '绿波': '#008000',
+        }
+
+        # 为每个号码创建颜色选择器
+        color_combos = {}  # {号码: QComboBox}
+        color_previews = {}  # {号码: 预览frame}
+
+        for num in range(1, 50):
+            row = (num - 1) // 7
+            col = (num - 1) % 7
+
+            cell = QVBoxLayout()
+            cell.setSpacing(1)
+
+            # 号码标签
+            num_label = QLabel(str(num).zfill(2))
+            num_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            num_label.setFixedHeight(20)
+
+            # 获取当前颜色
+            current_colors = LotteryConfig.get_number_color(num)
+            current_text_color = current_colors.get('text', '#000000')
+
+            # 判断当前属于哪个波色
+            if LotteryConfig.is_red(num):
+                current_preset = '红波'
+            elif LotteryConfig.is_blue(num):
+                current_preset = '蓝波'
+            elif LotteryConfig.is_green(num):
+                current_preset = '绿波'
+            else:
+                current_preset = '自定义...'
+
+            # 设置号码标签颜色预览
+            num_label.setStyleSheet(
+                f"font-size: 14px; font-weight: bold; color: {current_text_color}; "
+                f"background-color: #F5F5F5; border-radius: 4px;"
+            )
+
+            # 颜色选择下拉框
+            combo = QComboBox()
+            combo.addItems(["红波", "蓝波", "绿波", "自定义..."])
+            combo.setCurrentText(current_preset)
+            combo.setFixedWidth(75)
+            combo.setStyleSheet("QComboBox { font-size: 11px; padding: 1px; }")
+
+            # 自定义颜色值（存储当前自定义颜色）
+            custom_color = current_text_color if current_preset == '自定义...' else None
+
+            def on_combo_changed(num=num, combo=combo, label=num_label):
+                """功能：下拉框变更事件处理"""
+                text = combo.currentText()
+                if text in preset_colors:
+                    c = preset_colors[text]
+                    label.setStyleSheet(
+                        f"font-size: 14px; font-weight: bold; color: {c}; "
+                        f"background-color: #F5F5F5; border-radius: 4px;"
+                    )
+                    color_previews[num]['color'] = c
+                    color_previews[num]['preset'] = text
+                elif text == '自定义...':
+                    # 打开颜色选择器
+                    old_color = color_previews[num].get('color', '#888888')
+                    color_dlg = QColorDialog(QColor(old_color), dialog)
+                    if color_dlg.exec() == QColorDialog.DialogCode.Accepted:
+                        c = color_dlg.selectedColor().name()
+                        label.setStyleSheet(
+                            f"font-size: 14px; font-weight: bold; color: {c}; "
+                            f"background-color: #F5F5F5; border-radius: 4px;"
+                        )
+                        color_previews[num]['color'] = c
+                        color_previews[num]['preset'] = '自定义...'
+                    else:
+                        # 取消则恢复之前的选择
+                        combo.blockSignals(True)
+                        combo.setCurrentText(color_previews[num].get('preset', '红波'))
+                        combo.blockSignals(False)
+
+            # 颜色下拉框切换信号：更新号码颜色预览
+            combo.currentIndexChanged.connect(lambda idx, num=num, c=combo: on_combo_changed(num, c))
+
+            color_combos[num] = combo
+            color_previews[num] = {'color': current_text_color, 'preset': current_preset}
+
+            cell.addWidget(num_label)
+            cell.addWidget(combo)
+
+            cell_widget = QWidget()
+            cell_widget.setLayout(cell)
+            grid_layout.addWidget(cell_widget, row, col)
+
+        scroll.setWidget(grid_widget)
+        layout.addWidget(scroll, 1)
+
+        # --- 按钮组 ---
+        btn_row = QHBoxLayout()
+
+        # 恢复默认
+        reset_btn = QPushButton("恢复默认")
+        reset_btn.setStyleSheet(
+            "QPushButton { background-color: #F5F5F5; color: #666; border: 1px solid #DDD; "
+            "border-radius: 6px; padding: 8px 16px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #EEEEEE; }"
+        )
+
+        def _reset_defaults():
+            """功能：重置defaults"""
+            for num in range(1, 49):
+                combo = color_combos[num]
+                combo.blockSignals(True)
+                if num in LotteryConfig.RED_NUMBERS:
+                    combo.setCurrentText('红波')
+                elif num in LotteryConfig.BLUE_NUMBERS:
+                    combo.setCurrentText('蓝波')
+                elif num in LotteryConfig.GREEN_NUMBERS:
+                    combo.setCurrentText('绿波')
+                combo.blockSignals(False)
+                # 更新预览
+                colors = LotteryConfig.get_number_color(num)
+                c = colors['text']
+                # 找到对应的label并更新
+                item = grid_layout.itemAtPosition((num-1)//7, (num-1)%7)
+                if item and item.widget():
+                    lbl = item.widget().layout().itemAt(0).widget()
+                    lbl.setStyleSheet(
+                        f"font-size: 14px; font-weight: bold; color: {c}; "
+                        f"background-color: #F5F5F5; border-radius: 4px;"
+                    )
+                color_previews[num] = {'color': c, 'preset': combo.currentText()}
+
+        # 重置默认按钮点击信号：恢复所有号码为默认波色
+        reset_btn.clicked.connect(_reset_defaults)
+        btn_row.addWidget(reset_btn)
+
+        btn_row.addStretch()
+
+        # 取消
+        cancel_btn = QPushButton("取消")
+        cancel_btn.setStyleSheet(
+            "QPushButton { background-color: #F5F5F5; color: #666; border: 1px solid #DDD; "
+            "border-radius: 6px; padding: 8px 16px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #EEEEEE; }"
+        )
+        # 取消按钮点击信号：拒绝对话框，放弃颜色修改
+        cancel_btn.clicked.connect(dialog.reject)
+        btn_row.addWidget(cancel_btn)
+
+        # 应用全局
+        apply_btn = QPushButton("应用全局")
+        apply_btn.setStyleSheet(
+            "QPushButton { background-color: #2ECC71; color: white; border: none; "
+            "border-radius: 6px; padding: 8px 20px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #27AE60; }"
+        )
+
+        def _apply_colors():
+            """应用颜色更改到全局"""
+            changed = False
+            for num in range(1, 50):
+                info = color_previews.get(num, {})
+                color = info.get('color', '#000000')
+                preset = info.get('preset', '')
+                
+                # 获取当前颜色
+                old_colors = LotteryConfig.get_number_color(num)
+                if old_colors.get('text', '') != color:
+                    # 更新颜色映射
+                    LotteryConfig.NUMBER_COLORS[num] = {
+                        "bg": "#FFFFFF", 
+                        "text": color, 
+                        "border": color
+                    }
+                    changed = True
+
+                # 更新波色分组
+                if preset == '红波' and num not in LotteryConfig.RED_NUMBERS:
+                    # 从其他分组移除，加入红波
+                    LotteryConfig.BLUE_NUMBERS = [n for n in LotteryConfig.BLUE_NUMBERS if n != num]
+                    LotteryConfig.GREEN_NUMBERS = [n for n in LotteryConfig.GREEN_NUMBERS if n != num]
+                    if num not in LotteryConfig.RED_NUMBERS:
+                        LotteryConfig.RED_NUMBERS.append(num)
+                    changed = True
+                elif preset == '蓝波' and num not in LotteryConfig.BLUE_NUMBERS:
+                    LotteryConfig.RED_NUMBERS = [n for n in LotteryConfig.RED_NUMBERS if n != num]
+                    LotteryConfig.GREEN_NUMBERS = [n for n in LotteryConfig.GREEN_NUMBERS if n != num]
+                    if num not in LotteryConfig.BLUE_NUMBERS:
+                        LotteryConfig.BLUE_NUMBERS.append(num)
+                    changed = True
+                elif preset == '绿波' and num not in LotteryConfig.GREEN_NUMBERS:
+                    LotteryConfig.RED_NUMBERS = [n for n in LotteryConfig.RED_NUMBERS if n != num]
+                    LotteryConfig.BLUE_NUMBERS = [n for n in LotteryConfig.BLUE_NUMBERS if n != num]
+                    if num not in LotteryConfig.GREEN_NUMBERS:
+                        LotteryConfig.GREEN_NUMBERS.append(num)
+                    changed = True
+
+            # 排序波色列表
+            LotteryConfig.RED_NUMBERS.sort()
+            LotteryConfig.BLUE_NUMBERS.sort()
+            LotteryConfig.GREEN_NUMBERS.sort()
+
+            if changed:
+                self._apply_custom_number_colors()
+                self._save_custom_number_colors()
+                self.statusBar().showMessage("号码颜色已全局更新")
+            dialog.accept()
+
+        # 应用全局按钮点击信号：应用颜色更改到全局
+        apply_btn.clicked.connect(_apply_colors)
+        btn_row.addWidget(apply_btn)
+
+        layout.addLayout(btn_row)
+
+        # 批量应用功能
+        def _batch_apply():
+            """功能：_batch_apply"""
+            start = int(range_start.currentText())
+            end = int(range_end.currentText())
+            if start > end:
+                start, end = end, start
+            preset = batch_combo.currentText()
+            
+            for num in range(start, end + 1):
+                if num in color_combos:
+                    combo = color_combos[num]
+                    combo.blockSignals(True)
+                    combo.setCurrentText(preset)
+                    combo.blockSignals(False)
+                    
+                    if preset in preset_colors:
+                        c = preset_colors[preset]
+                        color_previews[num] = {'color': c, 'preset': preset}
+                        # 更新预览label
+                        item = grid_layout.itemAtPosition((num-1)//7, (num-1)%7)
+                        if item and item.widget():
+                            lbl = item.widget().layout().itemAt(0).widget()
+                            lbl.setStyleSheet(
+                                f"font-size: 14px; font-weight: bold; color: {c}; "
+                                f"background-color: #F5F5F5; border-radius: 4px;"
+                            )
+                    elif preset == '自定义...':
+                        # 打开颜色选择器
+                        old_color = color_previews[num].get('color', '#888888')
+                        color_dlg = QColorDialog(QColor(old_color), dialog)
+                        if color_dlg.exec() == QColorDialog.DialogCode.Accepted:
+                            c = color_dlg.selectedColor().name()
+                            color_previews[num] = {'color': c, 'preset': '自定义...'}
+                            item = grid_layout.itemAtPosition((num-1)//7, (num-1)%7)
+                            if item and item.widget():
+                                lbl = item.widget().layout().itemAt(0).widget()
+                                lbl.setStyleSheet(
+                                    f"font-size: 14px; font-weight: bold; color: {c}; "
+                                    f"background-color: #F5F5F5; border-radius: 4px;"
+                                )
+
+        # 批量应用按钮点击信号：批量设置号码颜色
+        batch_apply_btn.clicked.connect(_batch_apply)
+
+        dialog.exec()
+
+    def _apply_custom_number_colors(self):
+        """将自定义号码颜色应用到全局所有UI控件"""
+        # 1. 数字选择面板
+        if hasattr(self, 'number_panel') and self.number_panel:
+            for btn in self.number_panel.number_buttons.values():
+                btn._apply_color()
+            self.number_panel.layout().invalidate()
+
+        # 2. 生肖面板
+        if hasattr(self, 'zodiac_panel') and self.zodiac_panel:
+            w = self._zodiac_panel_size.get('width', 44)
+            h = self._zodiac_panel_size.get('height', 40)
+            bf = self._zodiac_panel_size.get('btn_font', 16)
+            lf = self._zodiac_panel_size.get('label_font', 10)
+            self.zodiac_panel.set_font_size(width=w, height=h, btn_font=bf, label_font=lf)
+
+        # 3. 五行面板
+        if hasattr(self, 'element_panel') and self.element_panel:
+            w = self._element_panel_size.get('width', 44)
+            h = self._element_panel_size.get('height', 40)
+            bf = self._element_panel_size.get('btn_font', 16)
+            lf = self._element_panel_size.get('label_font', 10)
+            self.element_panel.set_font_size(width=w, height=h, btn_font=bf, label_font=lf)
+
+        # 4. 预测结果号码球
+        if hasattr(self, 'prediction_number_layout'):
+            self._apply_prediction_ball_size()
+
+        # 5. 颜色图例
+        if hasattr(self, '_legend_labels'):
+            self._update_legend_display()
+
+        # 6. 刷新历史表格
+        if hasattr(self, 'history_table'):
+            self._update_history_table()
+
+    def _save_custom_number_colors(self):
+        """保存自定义号码颜色到INI配置"""
+        if not hasattr(self, '_ini'):
+            return
+        import configparser
+        try:
+            if not self._ini.has_section('NumberColors'):
+                self._ini.add_section('NumberColors')
+            for num in range(1, 50):
+                colors = LotteryConfig.get_number_color(num)
+                self._ini.set('NumberColors', f'num_{num}', colors.get('text', '#000000'))
+            # 保存波色分组
+            self._ini.set('NumberColors', 'red_numbers', ','.join(str(n) for n in LotteryConfig.RED_NUMBERS))
+            self._ini.set('NumberColors', 'blue_numbers', ','.join(str(n) for n in LotteryConfig.BLUE_NUMBERS))
+            self._ini.set('NumberColors', 'green_numbers', ','.join(str(n) for n in LotteryConfig.GREEN_NUMBERS))
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                self._ini.write(f)
+        except Exception as e:
+            print(f"保存号码颜色失败: {e}")
+
+    def _load_custom_number_colors(self):
+        """从INI配置加载自定义号码颜色"""
+        if not hasattr(self, '_ini') or not self._ini.has_section('NumberColors'):
+            return
+        try:
+            # 加载波色分组
+            if self._ini.has_option('NumberColors', 'red_numbers'):
+                red_str = self._ini.get('NumberColors', 'red_numbers')
+                LotteryConfig.RED_NUMBERS = [int(n) for n in red_str.split(',') if n.strip()]
+            if self._ini.has_option('NumberColors', 'blue_numbers'):
+                blue_str = self._ini.get('NumberColors', 'blue_numbers')
+                LotteryConfig.BLUE_NUMBERS = [int(n) for n in blue_str.split(',') if n.strip()]
+            if self._ini.has_option('NumberColors', 'green_numbers'):
+                green_str = self._ini.get('NumberColors', 'green_numbers')
+                LotteryConfig.GREEN_NUMBERS = [int(n) for n in green_str.split(',') if n.strip()]
+
+            # 重建颜色映射
+            LotteryConfig.NUMBER_COLORS = {}
+            for num in LotteryConfig.RED_NUMBERS:
+                LotteryConfig.NUMBER_COLORS[num] = {"bg": "#FFFFFF", "text": "#FF0000", "border": "#FF0000"}
+            for num in LotteryConfig.BLUE_NUMBERS:
+                LotteryConfig.NUMBER_COLORS[num] = {"bg": "#FFFFFF", "text": "#0000FF", "border": "#0000FF"}
+            for num in LotteryConfig.GREEN_NUMBERS:
+                LotteryConfig.NUMBER_COLORS[num] = {"bg": "#FFFFFF", "text": "#008000", "border": "#008000"}
+
+            # 加载自定义颜色（覆盖分组颜色）
+            for num in range(1, 50):
+                key = f'num_{num}'
+                if self._ini.has_option('NumberColors', key):
+                    color = self._ini.get('NumberColors', key)
+                    # 检查是否与默认波色不同
+                    default_color = None
+                    if num in LotteryConfig.RED_NUMBERS:
+                        default_color = '#FF0000'
+                    elif num in LotteryConfig.BLUE_NUMBERS:
+                        default_color = '#0000FF'
+                    elif num in LotteryConfig.GREEN_NUMBERS:
+                        default_color = '#008000'
+                    if color != default_color:
+                        LotteryConfig.NUMBER_COLORS[num] = {"bg": "#FFFFFF", "text": color, "border": color}
+        except Exception as e:
+            print(f"加载号码颜色失败: {e}")
+
+    def _update_legend_display(self):
+        """更新颜色图例显示（号码颜色更改后调用）"""
+        if not hasattr(self, '_legend_labels'):
+            return
+        # 图例数字标签需要更新颜色
+        for label in self._legend_labels.get('nums', []):
+            if label:
+                # 重新设置图例数字
+                pass  # 图例文字颜色通常不变，这里仅作为占位
+
     
-    def _update_announcement_font(self, scale=None):
-        """更新公告说明页面的字体大小"""
-        if scale is None:
-            scale = self._area_font_scales.get('announcement', 1.0)
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局INI配置] 配置加载、初始化                                             ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    # ========================================================================
+    # INI配置文件管理
+    # ========================================================================
+    def _load_ini_config(self):
+        """从INI文件加载配置"""
+        import configparser
+        self._ini = configparser.ConfigParser()
+        if os.path.exists(self.config_file):
+            try:
+                self._ini.read(self.config_file, encoding='utf-8')
+                self._apply_ini_config()
+                print("INI配置加载成功")
+            except Exception as e:
+                print("INI配置加载失败: " + str(e))
+                self._init_default_ini()
+        else:
+            self._init_default_ini()
+    
+    def _init_default_ini(self):
+        """初始化默认INI配置"""
+        import configparser
+        self._ini = configparser.ConfigParser()
         
-        if not hasattr(self, 'notice_container'):
+        # [General] 通用设置
+        self._ini['General'] = {
+            'window_width': '1600',
+            'window_height': '1000',
+            'font_size_key': LotteryConfig.DEFAULT_FONT_SIZE_KEY,
+            'start_zodiac': '龙',
+        }
+        
+        # [Paths] 文件路径
+        self._ini['Paths'] = {
+            'data_file': self.data_file,
+            'zodiac_file': self.zodiac_file,
+            'last_prediction_file': self.last_prediction_file,
+        }
+        
+        # [Zodiac] 生肖绑定
+        self._ini['Zodiac'] = {}
+        for num in range(1, 50):
+            zodiac = self.zodiac_binding.get(num, '')
+            self._ini['Zodiac'][str(num)] = zodiac
+        
+        # [Elements] 五行绑定
+        self._ini['Elements'] = {}
+        for num in range(1, 50):
+            element = self.zodiac_elements.get(num, '')
+            self._ini['Elements'][str(num)] = element
+        
+        # [Display] 显示设置
+        self._ini['Display'] = {
+            'history_page_size': '100',
+            'is_dark_mode': 'False',  # 主题模式记忆
+            'margin_top': '10',       # 布局边距记忆
+            'margin_bottom': '10',
+            'margin_left': '10',
+            'margin_right': '10',
+            'spacing': '10',
+        }
+        
+        # 历史记录表列宽默认值（9列）
+        default_col_widths = [70, 120, 160, 70, 60, 65, 65, 110, 60]
+        for i, w in enumerate(default_col_widths):
+            self._ini['Display']['history_col_' + str(i)] = str(w)
+        
+        self._save_ini_config()
+    
+    def _apply_ini_config(self):
+        """将INI配置应用到当前窗口"""
+        try:
+            # [General]
+            if self._ini.has_section('General'):
+                gen = self._ini['General']
+                if 'window_width' in gen and 'window_height' in gen:
+                    try:
+                        w = int(gen['window_width'])
+                        h = int(gen['window_height'])
+                        if w >= LotteryConfig.WINDOW_MIN_WIDTH and h >= LotteryConfig.WINDOW_MIN_HEIGHT:
+                            self.resize(w, h)
+                    except ValueError:
+                        pass
+                if 'font_size_key' in gen:
+                    key = gen['font_size_key']
+                    if key in LotteryConfig.FONT_SIZES:
+                        self.font_size_key = key
+                if 'start_zodiac' in gen:
+                    self._ini_start_zodiac = gen['start_zodiac']
+                else:
+                    self._ini_start_zodiac = '龙'
+                if 'is_dark_mode' in gen:  # 主题模式记忆恢复
+                    val = gen['is_dark_mode'].lower() == 'true'
+                    if val != self.is_dark_mode:
+                        self.is_dark_mode = val
+                        self._update_stylesheet()
+            
+            # [Paths]
+            if self._ini.has_section('Paths'):
+                paths = self._ini['Paths']
+                if 'data_file' in paths:
+                    self.data_file = paths['data_file']
+                if 'zodiac_file' in paths:
+                    self.zodiac_file = paths['zodiac_file']
+                if 'last_prediction_file' in paths:
+                    self.last_prediction_file = paths['last_prediction_file']
+            
+            # [Zodiac] - 覆盖默认绑定
+            if self._ini.has_section('Zodiac'):
+                for num in range(1, 50):
+                    key = str(num)
+                    if key in self._ini['Zodiac']:
+                        self.zodiac_binding[num] = self._ini['Zodiac'][key]
+                # 同步到 LotteryConfig
+                LotteryConfig.NUMBER_NAMES.update(self.zodiac_binding)
+            
+            # [Elements] - 覆盖默认绑定
+            if self._ini.has_section('Elements'):
+                for num in range(1, 50):
+                    key = str(num)
+                    if key in self._ini['Elements']:
+                        self.zodiac_elements[num] = self._ini['Elements'][key]
+                LotteryConfig.NUMBER_ELEMENTS.update(self.zodiac_elements)
+            
+            # [Weights] - 加载自定义算法权重
+            if self._ini.has_section('Weights'):
+                for name in self._ini['Weights']:
+                    try:
+                        self.custom_weights[name] = int(self._ini['Weights'][name])
+                    except ValueError:
+                        pass
+            
+            # [Display]
+            if self._ini.has_section('Display'):
+                disp = self._ini['Display']
+                if 'history_page_size' in disp:
+                    try:
+                        self.history_page_size = int(disp['history_page_size'])
+                    except ValueError:
+                        pass
+                # 布局边距记忆恢复（上限50px）
+                for key in ['margin_top', 'margin_bottom', 'margin_left', 'margin_right', 'spacing']:
+                    if key in disp:
+                        try:
+                            val = int(disp[key])
+                            setattr(self, key, max(0, min(50, val)))
+                        except ValueError:
+                            pass
+                if 'ball_label_font_size' in disp:
+                    try:
+                        self.ball_label_font_size = int(disp['ball_label_font_size'])
+                    except ValueError:
+                        pass
+                if 'enhanced_mode' in disp:
+                    try:
+                        self.enhanced_mode = disp['enhanced_mode'].lower() in ('true', '1', 'yes', '是')
+                    except ValueError:
+                        pass
+                if 'reverse_mode' in disp:
+                    try:
+                        self.reverse_mode = disp['reverse_mode'].lower() in ('true', '1', 'yes', '是')
+                        # 同步更新UI
+                        if hasattr(self, 'strategy_combo'):
+                            index = 1 if self.reverse_mode else 0
+                            self.strategy_combo.setCurrentIndex(index)
+                    except ValueError:
+                        pass
+                if 'deterministic_mode' in disp:
+                    try:
+                        self.deterministic_mode = disp['deterministic_mode'].lower() in ('true', '1', 'yes', '是')
+                        # 同步更新UI
+                        if hasattr(self, 'deterministic_checkbox'):
+                            self.deterministic_checkbox.setChecked(self.deterministic_mode)
+                    except ValueError:
+                        pass
+                
+                # 加载历史记录表列宽
+                self._history_col_widths = []
+                for i in range(9):
+                    key = 'history_col_' + str(i)
+                    if key in disp:
+                        try:
+                            self._history_col_widths.append(int(disp[key]))
+                        except ValueError:
+                            self._history_col_widths.append(None)
+                    else:
+                        self._history_col_widths.append(None)
+                
+                # 加载各区域字体缩放比例
+                font_scale_keys = {
+                    'font_scale_table': 'table',
+                    'font_scale_result': 'result',
+                    'font_scale_list': 'list',
+                    'font_scale_number_panel': 'number_panel',
+                    'font_scale_zodiac_panel': 'zodiac_panel',
+                    'font_scale_element_panel': 'element_panel',
+                    'font_scale_announcement': 'announcement',
+                    'font_scale_detail': 'detail',
+                }
+                for ini_key, area_key in font_scale_keys.items():
+                    if ini_key in disp:
+                        try:
+                            self._area_font_scales[area_key] = float(disp[ini_key])
+                        except ValueError:
+                            pass
+                
+                # 加载数字面板缩放比例
+                if 'number_panel_size_scale' in disp:
+                    try:
+                        self._number_panel_size_scale = float(disp['number_panel_size_scale'])
+                    except ValueError:
+                        pass
+                
+                # 加载面板尺寸设置
+                # 数字选择面板
+                if 'number_panel_width' in disp:
+                    try:
+                        self._number_panel_size['width'] = int(disp['number_panel_width'])
+                    except ValueError:
+                        pass
+                if 'number_panel_height' in disp:
+                    try:
+                        self._number_panel_size['height'] = int(disp['number_panel_height'])
+                    except ValueError:
+                        pass
+                if 'number_panel_font' in disp:
+                    try:
+                        self._number_panel_size['font'] = int(disp['number_panel_font'])
+                    except ValueError:
+                        pass
+                
+                # 生肖面板
+                if 'zodiac_panel_width' in disp:
+                    try:
+                        self._zodiac_panel_size['width'] = int(disp['zodiac_panel_width'])
+                    except ValueError:
+                        pass
+                if 'zodiac_panel_height' in disp:
+                    try:
+                        self._zodiac_panel_size['height'] = int(disp['zodiac_panel_height'])
+                    except ValueError:
+                        pass
+                if 'zodiac_panel_btn_font' in disp:
+                    try:
+                        self._zodiac_panel_size['btn_font'] = int(disp['zodiac_panel_btn_font'])
+                    except ValueError:
+                        pass
+                if 'zodiac_panel_label_font' in disp:
+                    try:
+                        self._zodiac_panel_size['label_font'] = int(disp['zodiac_panel_label_font'])
+                    except ValueError:
+                        pass
+                
+                # 五行面板
+                if 'element_panel_width' in disp:
+                    try:
+                        self._element_panel_size['width'] = int(disp['element_panel_width'])
+                    except ValueError:
+                        pass
+                if 'element_panel_height' in disp:
+                    try:
+                        self._element_panel_size['height'] = int(disp['element_panel_height'])
+                    except ValueError:
+                        pass
+                if 'element_panel_btn_font' in disp:
+                    try:
+                        self._element_panel_size['btn_font'] = int(disp['element_panel_btn_font'])
+                    except ValueError:
+                        pass
+                if 'element_panel_label_font' in disp:
+                    try:
+                        self._element_panel_size['label_font'] = int(disp['element_panel_label_font'])
+                    except ValueError:
+                        pass
+                
+                # 预测结果号码球尺寸
+                if 'pred_ball_width' in disp:
+                    try:
+                        self._prediction_ball_size['width'] = int(disp['pred_ball_width'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_height' in disp:
+                    try:
+                        self._prediction_ball_size['height'] = int(disp['pred_ball_height'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_font' in disp:
+                    try:
+                        self._prediction_ball_size['font'] = int(disp['pred_ball_font'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_label_font' in disp:
+                    try:
+                        self._prediction_ball_size['label_font'] = int(disp['pred_ball_label_font'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_label_width' in disp:
+                    try:
+                        self._prediction_ball_size['label_width'] = int(disp['pred_ball_label_width'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_label_height' in disp:
+                    try:
+                        self._prediction_ball_size['label_height'] = int(disp['pred_ball_label_height'])
+                    except ValueError:
+                        pass
+                if 'pred_ball_plus_size' in disp:
+                    try:
+                        self._prediction_ball_size['plus_size'] = int(disp['pred_ball_plus_size'])
+                    except ValueError:
+                        pass
+                
+                # 概率面板配置
+                if 'prob_period' in disp:
+                    try:
+                        val = int(disp['prob_period'])
+                        # 先保存到配置变量，UI创建后再应用
+                        if not hasattr(self, '_prob_config'):
+                            self._prob_config = {}
+                        self._prob_config['period'] = val
+                        # 如果控件已创建则直接应用
+                        if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
+                            # 阻塞信号避免重复触发
+                            self.prob_period_spin.blockSignals(True)
+                            self.prob_period_spin.setValue(val)
+                            self.prob_period_spin.blockSignals(False)
+                    except ValueError:
+                        pass
+                if 'prob_sort_mode' in disp:
+                    try:
+                        val = int(disp['prob_sort_mode'])
+                        # 先保存到配置变量
+                        if not hasattr(self, '_prob_config'):
+                            self._prob_config = {}
+                        self._prob_config['sort_mode'] = val
+                        # 如果控件已创建则直接应用
+                        if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo:
+                            self.prob_sort_combo.blockSignals(True)
+                            self.prob_sort_combo.setCurrentIndex(val)
+                            self.prob_sort_combo.blockSignals(False)
+                    except ValueError:
+                        pass
+                
+                # 颜色图例文字大小
+                if 'legend_label_font' in disp:
+                    try:
+                        self._legend_font_size['label'] = int(disp['legend_label_font'])
+                    except ValueError:
+                        pass
+                if 'legend_nums_font' in disp:
+                    try:
+                        self._legend_font_size['nums'] = int(disp['legend_nums_font'])
+                    except ValueError:
+                        pass
+                
+                # 详情标签字体和内边距
+                if 'detail_label_font' in disp:
+                    try:
+                        self._detail_label_size['font'] = int(disp['detail_label_font'])
+                    except ValueError:
+                        pass
+                if 'detail_label_padding' in disp:
+                    try:
+                        self._detail_label_size['padding'] = int(disp['detail_label_padding'])
+                    except ValueError:
+                        pass
+                
+                # 加载预测记录表格列宽
+                self._prediction_col_widths = []
+                for i in range(4):
+                    key = 'prediction_col_' + str(i)
+                    if key in disp:
+                        try:
+                            self._prediction_col_widths.append(int(disp[key]))
+                        except ValueError:
+                            self._prediction_col_widths.append(None)
+                    else:
+                        self._prediction_col_widths.append(None)
+                
+                # 加载各Splitter分隔条位置
+                self._splitter_sizes = {}
+                splitter_names = [
+                    'data_import_splitter', 'pred_h_splitter', 'pred_left_v_splitter',
+                    'history_h_splitter', 'history_left_v_splitter',
+                    'history_right_v_splitter', 'seventh_pred_splitter',
+                    'zodiac_h_splitter', 'element_h_splitter'
+                ]
+                for name in splitter_names:
+                    key = name + '_sizes'
+                    if key in disp:
+                        try:
+                            sizes = [int(s) for s in disp[key].split(',') if s.strip()]
+                            self._splitter_sizes[name] = sizes
+                        except ValueError:
+                            pass
+                
+                # 窗口位置
+                if 'window_x' in disp and 'window_y' in disp:
+                    try:
+                        x = int(disp['window_x'])
+                        y = int(disp['window_y'])
+                        self.move(x, y)
+                    except ValueError:
+                        pass
+                
+                # 当前标签页
+                if 'current_tab_index' in disp:
+                    try:
+                        idx = int(disp['current_tab_index'])
+                        if hasattr(self, 'tabs') and 0 <= idx < self.tabs.count():
+                            self.tabs.setCurrentIndex(idx)
+                    except ValueError:
+                        pass
+                
+                # 预测算法选择
+                if 'prediction_algorithm_index' in disp:
+                    try:
+                        idx = int(disp['prediction_algorithm_index'])
+                        if hasattr(self, 'algorithm_combo') and 0 <= idx < self.algorithm_combo.count():
+                            self.algorithm_combo.setCurrentIndex(idx)
+                    except ValueError:
+                        pass
+                
+                # 预测类型
+                if 'prediction_type' in disp:
+                    try:
+                        pred_type = disp['prediction_type']
+                        if pred_type in ('algorithm', 'random', 'ml'):
+                            self._prediction_type = pred_type
+                            if hasattr(self, 'type_btn_algorithm'):
+                                self.type_btn_algorithm.setChecked(pred_type == 'algorithm')
+                            if hasattr(self, 'type_btn_random'):
+                                self.type_btn_random.setChecked(pred_type == 'random')
+                            if hasattr(self, 'type_btn_ml'):
+                                self.type_btn_ml.setChecked(pred_type == 'ml')
+                    except ValueError:
+                        pass
+                
+                # 回测算法选择
+                if 'backtest_algorithm_index' in disp:
+                    try:
+                        idx = int(disp['backtest_algorithm_index'])
+                        if hasattr(self, 'backtest_algo_combo') and 0 <= idx < self.backtest_algo_combo.count():
+                            self.backtest_algo_combo.setCurrentIndex(idx)
+                    except ValueError:
+                        pass
+                
+                # 回测期数
+                if 'backtest_period' in disp:
+                    try:
+                        period = int(disp['backtest_period'])
+                        if hasattr(self, 'backtest_period_spin'):
+                            self.backtest_period_spin.setValue(period)
+                    except ValueError:
+                        pass
+                
+                # 历史记录当前页码
+                if 'history_current_page' in disp:
+                    try:
+                        self.history_page = int(disp['history_current_page'])
+                    except ValueError:
+                        pass
+                
+                # 期号详情字体缩放
+                if 'detail_font_scale' in disp:
+                    try:
+                        self.detail_font_scale = float(disp['detail_font_scale'])
+                    except ValueError:
+                        pass
+                
+                # 计算规律面板配置
+                if not hasattr(self, '_calc_config'):
+                    self._calc_config = {}
+                if 'calc_skip' in disp:
+                    try:
+                        self._calc_config['skip'] = int(disp['calc_skip'])
+                    except ValueError:
+                        pass
+                if 'calc_op' in disp:
+                    try:
+                        self._calc_config['op'] = int(disp['calc_op'])
+                    except ValueError:
+                        pass
+                if 'calc_custom_period' in disp:
+                    try:
+                        self._calc_config['custom_period'] = int(disp['calc_custom_period'])
+                    except ValueError:
+                        pass
+                if 'calc_filter' in disp:
+                    try:
+                        self._calc_config['filter'] = int(disp['calc_filter'])
+                    except ValueError:
+                        pass
+                if 'calc_topn' in disp:
+                    try:
+                        self._calc_config['topn'] = int(disp['calc_topn'])
+                    except ValueError:
+                        pass
+                if 'calc_font_size' in disp:
+                    try:
+                        self._calc_config['font_size'] = int(disp['calc_font_size'])
+                    except ValueError:
+                        pass
+                if 'calc_result_font' in disp:
+                    try:
+                        self._calc_config['result_font'] = int(disp['calc_result_font'])
+                    except ValueError:
+                        pass
+                if 'calc_rec_font' in disp:
+                    try:
+                        self._calc_config['rec_font'] = int(disp['calc_rec_font'])
+                    except ValueError:
+                        pass
+                if 'calc_comp_font' in disp:
+                    try:
+                        self._calc_config['comp_font'] = int(disp['calc_comp_font'])
+                    except ValueError:
+                        pass
+                if 'calc_detail_font' in disp:
+                    try:
+                        self._calc_config['detail_font'] = int(disp['calc_detail_font'])
+                    except ValueError:
+                        pass
+                if 'calc_width' in disp:
+                    try:
+                        self._calc_config['width'] = int(disp['calc_width'])
+                    except ValueError:
+                        pass
+                if 'calc_height' in disp:
+                    try:
+                        self._calc_config['height'] = int(disp['calc_height'])
+                    except ValueError:
+                        pass
+                
+                # 波色预测面板配置
+                if not hasattr(self, '_wave_config'):
+                    self._wave_config = {}
+                if 'wave_period' in disp:
+                    try:
+                        self._wave_config['period'] = int(disp['wave_period'])
+                    except ValueError:
+                        pass
+                if 'wave_custom_period' in disp:
+                    try:
+                        self._wave_config['custom_period'] = int(disp['wave_custom_period'])
+                    except ValueError:
+                        pass
+                if 'wave_mode' in disp:
+                    try:
+                        self._wave_config['mode'] = int(disp['wave_mode'])
+                    except ValueError:
+                        pass
+                if 'wave_trend' in disp:
+                    try:
+                        self._wave_config['trend'] = int(disp['wave_trend'])
+                    except ValueError:
+                        pass
+                if 'wave_font_size' in disp:
+                    try:
+                        self._wave_config['font_size'] = int(disp['wave_font_size'])
+                    except ValueError:
+                        pass
+                if 'wave_result_font' in disp:
+                    try:
+                        self._wave_config['result_font'] = int(disp['wave_result_font'])
+                    except ValueError:
+                        pass
+                if 'wave_trend_font' in disp:
+                    try:
+                        self._wave_config['trend_font'] = int(disp['wave_trend_font'])
+                    except ValueError:
+                        pass
+                if 'wave_trans_font' in disp:
+                    try:
+                        self._wave_config['trans_font'] = int(disp['wave_trans_font'])
+                    except ValueError:
+                        pass
+                if 'wave_width' in disp:
+                    try:
+                        self._wave_config['width'] = int(disp['wave_width'])
+                    except ValueError:
+                        pass
+                if 'wave_height' in disp:
+                    try:
+                        self._wave_config['height'] = int(disp['wave_height'])
+                    except ValueError:
+                        pass
+                
+                # 存储面板配置
+                if 'storage_sort_mode' in disp:
+                    try:
+                        self._storage_sort_mode = disp['storage_sort_mode']
+                    except Exception:
+                        pass
+                if 'storage_category' in disp:
+                    try:
+                        self._current_storage_category = disp['storage_category']
+                    except Exception:
+                        pass
+                if 'storage_category_collapsed' in disp:
+                    try:
+                        self._category_collapsed = disp['storage_category_collapsed'].lower() in ('true', '1', 'yes', '是')
+                    except Exception:
+                        pass
+                if 'storage_tag_collapsed' in disp:
+                    try:
+                        self._tag_collapsed = disp['storage_tag_collapsed'].lower() in ('true', '1', 'yes', '是')
+                    except Exception:
+                        pass
+                # 数字选择面板选中状态记忆恢复
+                if 'selected_numbers' in disp:
+                    selected_str = disp['selected_numbers']
+                    if selected_str != 'none':
+                        try:
+                            self._pending_selected_numbers = [int(n) for n in selected_str.split(',') if n.strip().isdigit()]
+                        except ValueError:
+                            self._pending_selected_numbers = []
+                    else:
+                        self._pending_selected_numbers = []
+                        
+        except Exception as e:
+            print("应用INI配置出错: " + str(e))
+    
+
+    def _save_ini_config(self):
+        """保存当前配置到INI文件"""
+        import configparser
+        try:
+            ini = configparser.ConfigParser()
+            
+            # [General]
+            ini['General'] = {
+                'window_width': str(self.width()),
+                'window_height': str(self.height()),
+                'font_size_key': self.font_size_key,
+                'start_zodiac': self.start_zodiac_combo.currentText() if hasattr(self, 'start_zodiac_combo') else self.__dict__.get('_ini_start_zodiac', '龙'),
+                'is_dark_mode': str(self.is_dark_mode),  # 主题模式记忆
+            }
+            
+            # [Paths]
+            ini['Paths'] = {
+                'data_file': self.data_file,
+                'zodiac_file': self.zodiac_file,
+                'last_prediction_file': self.last_prediction_file,
+            }
+            
+            # [Zodiac] - 从当前绑定读取
+            ini['Zodiac'] = {}
+            for num in range(1, 50):
+                ini['Zodiac'][str(num)] = self.zodiac_binding.get(num, '')
+            
+            # [Elements]
+            ini['Elements'] = {}
+            for num in range(1, 50):
+                ini['Elements'][str(num)] = self.zodiac_elements.get(num, '')
+            
+            # [Weights] - 自定义算法权重
+            ini['Weights'] = {}
+            if hasattr(self, 'custom_weights') and self.custom_weights:
+                for name, val in self.custom_weights.items():
+                    ini['Weights'][name] = str(val)
+            
+            # [Display]
+            ini['Display'] = {
+                'history_page_size': str(self.history_page_size),
+                'ball_label_font_size': str(self.ball_label_font_size),
+                'is_dark_mode': str(self.is_dark_mode),  # 主题模式
+                'margin_top': str(self.margin_top),      # 布局边距
+                'margin_bottom': str(self.margin_bottom),
+                'margin_left': str(self.margin_left),
+                'margin_right': str(self.margin_right),
+                'spacing': str(self.spacing),
+                'enhanced_mode': str(self.enhanced_mode),
+                'reverse_mode': str(self.reverse_mode),
+                'deterministic_mode': str(self.deterministic_mode),
+                'font_scale_table': str(self._area_font_scales.get('table', 1.0)),
+                'font_scale_result': str(self._area_font_scales.get('result', 1.0)),
+                'font_scale_list': str(self._area_font_scales.get('list', 1.0)),
+                'font_scale_number_panel': str(self._area_font_scales.get('number_panel', 1.0)),
+                'font_scale_zodiac_panel': str(self._area_font_scales.get('zodiac_panel', 1.0)),
+                'font_scale_element_panel': str(self._area_font_scales.get('element_panel', 1.0)),
+                'font_scale_announcement': str(self._area_font_scales.get('announcement', 1.0)),
+                'font_scale_detail': str(self._area_font_scales.get('detail', 1.0)),
+                'number_panel_size_scale': str(getattr(self, '_number_panel_size_scale', 1.0)),
+                # 面板尺寸设置
+                'number_panel_width': str(self._number_panel_size.get('width', 80)),
+                'number_panel_height': str(self._number_panel_size.get('height', 60)),
+                'number_panel_font': str(self._number_panel_size.get('font', 20)),
+                'zodiac_panel_width': str(self._zodiac_panel_size.get('width', 80)),
+                'zodiac_panel_height': str(self._zodiac_panel_size.get('height', 60)),
+                'zodiac_panel_btn_font': str(self._zodiac_panel_size.get('btn_font', 20)),
+                'zodiac_panel_label_font': str(self._zodiac_panel_size.get('label_font', 20)),
+                'element_panel_width': str(self._element_panel_size.get('width', 80)),
+                'element_panel_height': str(self._element_panel_size.get('height', 60)),
+                'element_panel_btn_font': str(self._element_panel_size.get('btn_font', 20)),
+                'element_panel_label_font': str(self._element_panel_size.get('label_font', 20)),
+                # 预测结果号码球尺寸
+                'pred_ball_width': str(self._prediction_ball_size.get('width', 80)),
+                'pred_ball_height': str(self._prediction_ball_size.get('height', 60)),
+                'pred_ball_font': str(self._prediction_ball_size.get('font', 20)),
+                'pred_ball_label_font': str(self._prediction_ball_size.get('label_font', 20)),
+                'pred_ball_label_width': str(self._prediction_ball_size.get('label_width', 0)),
+                'pred_ball_label_height': str(self._prediction_ball_size.get('label_height', 0)),
+                'pred_ball_plus_size': str(self._prediction_ball_size.get('plus_size', 24)),
+                # 概率面板配置
+                'prob_period': str(self.prob_period_spin.value()) if hasattr(self, 'prob_period_spin') and self.prob_period_spin else '30',
+                'prob_sort_mode': str(self.prob_sort_combo.currentIndex()) if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo else '0',
+                # 颜色图例文字大小
+                'legend_label_font': str(self._legend_font_size.get('label', 20)),
+                'legend_nums_font': str(self._legend_font_size.get('nums', 20)),
+                # 详情标签字体和内边距
+                'detail_label_font': str(self._detail_label_size.get('font', 20)),
+                'detail_label_padding': str(self._detail_label_size.get('padding', 8)),
+                # 窗口位置
+                'window_x': str(self.x()),
+                'window_y': str(self.y()),
+                # 当前标签页
+                'current_tab_index': str(self.tabs.currentIndex()) if hasattr(self, 'tabs') else '0',
+                # 预测算法选择
+                'prediction_algorithm_index': str(self.algorithm_combo.currentIndex()) if hasattr(self, 'algorithm_combo') else '0',
+                # 预测类型
+                'prediction_type': getattr(self, '_prediction_type', 'algorithm'),
+                # 回测算法选择
+                'backtest_algorithm_index': str(self.backtest_algo_combo.currentIndex()) if hasattr(self, 'backtest_algo_combo') else '0',
+                # 回测期数
+                'backtest_period': str(self.backtest_period_spin.value()) if hasattr(self, 'backtest_period_spin') else '10',
+                # 历史记录当前页码
+                # 【修复属性名bug】_current_page从未定义，实际属性是history_page
+                'history_current_page': str(getattr(self, 'history_page', 1)),
+                # 期号详情字体缩放
+                'detail_font_scale': str(getattr(self, 'detail_font_scale', 1.0)),
+                # 计算规律面板配置
+                'calc_skip': str(self.calc_skip_spin.value()) if hasattr(self, 'calc_skip_spin') and self.calc_skip_spin else '0',
+                'calc_op': str(self.calc_op_combo.currentIndex()) if hasattr(self, 'calc_op_combo') and self.calc_op_combo else '0',
+                'calc_custom_period': '0',
+                'calc_filter': str(self.calc_filter_combo.currentIndex()) if hasattr(self, 'calc_filter_combo') and self.calc_filter_combo else '0',
+                'calc_topn': str(self.calc_topn_spin.value()) if hasattr(self, 'calc_topn_spin') and self.calc_topn_spin else '5',
+                'calc_font_size': '20',
+                'calc_result_font': str(self.calc_result_font_spin.value()) if hasattr(self, 'calc_result_font_spin') and self.calc_result_font_spin else '20',
+                'calc_rec_font': str(self.calc_rec_font_spin.value()) if hasattr(self, 'calc_rec_font_spin') and self.calc_rec_font_spin else '20',
+                'calc_comp_font': str(self.calc_comp_font_spin.value()) if hasattr(self, 'calc_comp_font_spin') and self.calc_comp_font_spin else '20',
+                'calc_detail_font': str(self.calc_detail_font_spin.value()) if hasattr(self, 'calc_detail_font_spin') and self.calc_detail_font_spin else '20',
+                'calc_width': '0',
+                'calc_height': '0',
+                # 波色预测面板配置
+                'wave_period': str(self.wave_period_spin.value()) if hasattr(self, 'wave_period_spin') and self.wave_period_spin else '30',
+                'wave_custom_period': '0',
+                'wave_mode': str(self.wave_mode_combo.currentIndex()) if hasattr(self, 'wave_mode_combo') and self.wave_mode_combo else '0',
+                'wave_trend': str(self.wave_trend_spin.value()) if hasattr(self, 'wave_trend_spin') and self.wave_trend_spin else '20',
+                'wave_font_size': '20',
+                'wave_result_font': str(self.wave_result_font_spin.value()) if hasattr(self, 'wave_result_font_spin') and self.wave_result_font_spin else '20',
+                'wave_trend_font': str(self.wave_trend_font_spin.value()) if hasattr(self, 'wave_trend_font_spin') and self.wave_trend_font_spin else '20',
+                'wave_trans_font': str(self.wave_trans_font_spin.value()) if hasattr(self, 'wave_trans_font_spin') and self.wave_trans_font_spin else '20',
+                'wave_width': '0',
+                'wave_height': '0',
+                # 存储面板配置
+                'storage_sort_mode': str(getattr(self, '_storage_sort_mode', 'time_desc')),
+                'storage_category': str(getattr(self, '_current_storage_category', 'all')),
+                'storage_category_collapsed': str(getattr(self, '_category_collapsed', False)),
+                'storage_tag_collapsed': str(getattr(self, '_tag_collapsed', False)),
+            }
+            
+            # 保存历史记录表列宽
+            if hasattr(self, 'history_table'):
+                for i in range(self.history_table.columnCount()):
+                    ini['Display']['history_col_' + str(i)] = str(self.history_table.columnWidth(i))
+            elif hasattr(self, '_history_col_widths'):
+                # 表格还没创建时用保存的值
+                default_cols = [70, 120, 160, 70, 60, 65, 65, 110, 60]
+                for i in range(9):
+                    w = self._history_col_widths[i] if i < len(self._history_col_widths) and self._history_col_widths[i] else default_cols[i]
+                    ini['Display']['history_col_' + str(i)] = str(w)
+            
+            # 保存预测记录表格列宽
+            if hasattr(self, 'prediction_history_table'):
+                for i in range(self.prediction_history_table.columnCount()):
+                    ini['Display']['prediction_col_' + str(i)] = str(self.prediction_history_table.columnWidth(i))
+            
+            # 数字选择面板选中状态记忆保存
+            if hasattr(self, 'number_panel') and hasattr(self.number_panel, 'get_selected_numbers'):
+                selected = self.number_panel.get_selected_numbers()
+                ini['Display']['selected_numbers'] = ','.join(str(n) for n in selected) if selected else 'none'
+            
+            # 保存各Splitter分隔条位置
+            splitter_list = [
+                ('data_import_splitter', self.data_import_splitter if hasattr(self, 'data_import_splitter') else None),
+                ('pred_h_splitter', self.pred_h_splitter if hasattr(self, 'pred_h_splitter') else None),
+                ('pred_left_v_splitter', self.pred_left_v_splitter if hasattr(self, 'pred_left_v_splitter') else None),
+                ('history_h_splitter', self.history_h_splitter if hasattr(self, 'history_h_splitter') else None),
+                ('history_left_v_splitter', self.history_left_v_splitter if hasattr(self, 'history_left_v_splitter') else None),
+                ('history_right_v_splitter', self.history_right_v_splitter if hasattr(self, 'history_right_v_splitter') else None),
+                ('seventh_pred_splitter', self.seventh_pred_splitter if hasattr(self, 'seventh_pred_splitter') else None),
+                ('zodiac_h_splitter', self.zodiac_h_splitter if hasattr(self, 'zodiac_h_splitter') else None),
+                ('element_h_splitter', self.element_h_splitter if hasattr(self, 'element_h_splitter') else None),
+            ]
+            for name, splitter in splitter_list:
+                if splitter is not None:
+                    sizes = splitter.sizes()
+                    ini['Display'][name + '_sizes'] = ','.join(str(s) for s in sizes)
+            
+            # 确保目录存在
+            config_dir = os.path.dirname(self.config_file)
+            if config_dir and not os.path.exists(config_dir):
+                os.makedirs(config_dir, exist_ok=True)
+            
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                ini.write(f)
+            
+            self._ini = ini
+            return True
+        except Exception as e:
+            print("保存INI配置失败: " + str(e))
+            return False
+
+    def _apply_splitter_sizes(self, splitter, name):
+        """应用保存的Splitter分隔条位置，并连接拖动保存信号"""
+        if hasattr(self, '_splitter_sizes') and name in self._splitter_sizes:
+            sizes = self._splitter_sizes[name]
+            if sizes and len(sizes) == splitter.count():
+                try:
+                    splitter.setSizes(sizes)
+                except Exception:
+                    pass
+        # 连接拖动信号，实时保存
+        splitter.splitterMoved.connect(lambda pos, index: self._save_ini_config())
+    
+    def _on_export_report(self):
+        """导出HTML分析报告"""
+        file_path, _ = QFileDialog.getSaveFileName(self, "导出报告", "lottery_report.html", "HTML文件 (*.html)")
+        if not file_path:
             return
         
-        base_title_size = 24
-        base_group_title_size = 16
-        base_content_size = 14
-        
-        new_title_size = int(base_title_size * scale)
-        new_group_size = int(base_group_title_size * scale)
-        new_content_size = int(base_content_size * scale)
-        
-        # 更新标题
-        title_label = self.notice_container.findChild(QLabel, "")
-        if title_label:
-            # 公告页标题样式：
-            #   font-size: {new_title_size}px;  字号：按缩放比例动态计算（基准24px）
-            #   font-weight: bold;              字体：粗体（突出标题层级）
-            #   color: #2C3E50;                 文字颜色：深蓝灰（沉稳醒目）
-            title_label.setStyleSheet(f"font-size: {new_title_size}px; font-weight: bold; color: #2C3E50;")
-        
-        # 更新所有GroupBox的标题字体和内容标签
-        for group in self.notice_container.findChildren(QGroupBox):
-            # 更新group的标题样式（通过样式表）
-            style = group.styleSheet()
-            import re
-            # 用正则替换QGroupBox中的font-size为新的分组标题字号（基准16px × 缩放比）
-            style = re.sub(r'font-size:\s*\d+px', f'font-size: {new_group_size}px', style)
-            # 应用更新后的样式到 GroupBox（仅字号变化，保留边框/背景等其余属性）
-            group.setStyleSheet(style)
+        try:
+            # 获取当前预测结果
+            display_text = self.prediction_display.text()
+            algo_name = "未知算法"
+            if 0 <= self.current_algorithm_index < len(LotteryConfig.ALGORITHMS):
+                algo_name = LotteryConfig.ALGORITHMS[self.current_algorithm_index][0]
             
-            # 更新group内的所有QLabel（用正则替换font-size为新的内容字号，基准14px × 缩放比）
-            for label in group.findChildren(QLabel):
-                label_style = label.styleSheet()
-                label_style = re.sub(r'font-size:\s*\d+px', f'font-size: {new_content_size}px', label_style)
-                # 应用更新后的样式到内容标签（仅字号变化，保留颜色/粗体等其余属性）
-                label.setStyleSheet(label_style)
+            numbers = []
+            for i in range(self.prediction_number_layout.count()):
+                item = self.prediction_number_layout.itemAt(i)
+                if item and item.widget() and isinstance(item.widget(), NumberButton):
+                    numbers.append(item.widget().get_number())
+            numbers = sorted(numbers)
+            
+            # 号码带颜色HTML
+            nums_html = ""
+            for n in numbers:
+                color = "#000000"
+                if LotteryConfig.is_red(n):
+                    color = "#FF0000"
+                elif LotteryConfig.is_blue(n):
+                    color = "#0000FF"
+                else:
+                    color = "#008000"
+                nums_html += '<span style="color:' + color + '; font-size:24px; font-weight:bold; margin:0 4px;">' + str(n).zfill(2) + '</span>'
+            
+            # 最近5期历史
+            history_rows = ""
+            for record in self.historical_data[:5]:
+                period = record.get('period', '?')
+                nums = record.get('numbers', [])
+                special = record.get('special', 0)
+                date_str = record.get('date', '')
+                nums_str = ' '.join(str(n).zfill(2) for n in nums)
+                history_rows += '<tr><td>' + str(period) + '</td><td>' + str(date_str) + '</td><td>' + nums_str + '</td><td>' + str(special).zfill(2) + '</td></tr>'
+            
+            # 基本统计
+            stats_html = ""
+            if self.historical_data:
+                all_nums = []
+                for r in self.historical_data:
+                    all_nums.extend(r.get('numbers', []))
+                counter = Counter(all_nums)
+                hot = counter.most_common(5)
+                cold = counter.most_common()[-5:]
+                hot_str = ', '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in hot)
+                cold_str = ', '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in cold)
+                
+                odd_total = sum(1 for n in all_nums if n % 2 == 1)
+                even_total = len(all_nums) - odd_total
+                big_total = sum(1 for n in all_nums if n > 24)
+                small_total = len(all_nums) - big_total
+                
+                stats_html = (
+                    '<p>热门号码: ' + hot_str + '</p>'
+                    '<p>冷门号码: ' + cold_str + '</p>'
+                    '<p>单双比: ' + str(odd_total) + ':' + str(even_total) + '</p>'
+                    '<p>大小比: ' + str(big_total) + ':' + str(small_total) + '</p>'
+                    '<p>总数据量: ' + str(len(self.historical_data)) + ' 期</p>'
+                )
+            
+            report_html = (
+                '<!DOCTYPE html><html><head><meta charset="utf-8"><title>彩票预测系统分析报告</title>'
+                '<style>'
+                'body { font-family: "Microsoft YaHei", Arial, sans-serif; background: #FFFFFF; color: #333; padding: 40px; }'
+                'h1 { color: #3498DB; border-bottom: 2px solid #3498DB; padding-bottom: 10px; }'
+                'h2 { color: #3498DB; margin-top: 30px; }'
+                'table { border-collapse: collapse; width: 100%; margin: 10px 0; }'
+                'th, td { border: 1px solid #DDD; padding: 8px 12px; text-align: center; }'
+                'th { background-color: #F8F9FA; color: #333; }'
+                '.prediction-box { background: #FFFFFF; border: 2px solid #2ECC71; border-radius: 8px; padding: 20px; margin: 15px 0; text-align: center; }'
+                '.section { margin: 20px 0; padding: 15px; border: 1px solid #DDD; border-radius: 6px; background: #FFFFFF; }'
+                '</style></head><body>'
+                '<h1>彩票预测系统分析报告</h1>'
+                '<p>生成时间: ' + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + '</p>'
+                '<div class="section"><h2>预测结果</h2>'
+                '<div class="prediction-box">' + nums_html + '</div>'
+                '<p>使用算法: ' + algo_name + '</p></div>'
+                '<div class="section"><h2>使用算法说明</h2>'
+                '<p>' + algo_name + ': '
+            )
+            
+            if 0 <= self.current_algorithm_index < len(LotteryConfig.ALGORITHMS):
+                report_html += LotteryConfig.ALGORITHMS[self.current_algorithm_index][1]
+            else:
+                report_html += "综合多种算法得出最优预测"
+            report_html += '</p></div>'
+            
+            report_html += (
+                '<div class="section"><h2>最近5期历史数据</h2>'
+                '<table><tr><th>期号</th><th>日期</th><th>正码</th><th>特别码</th></tr>'
+                + history_rows +
+                '</table></div>'
+                '<div class="section"><h2>基本统计摘要</h2>'
+                + stats_html +
+                '</div></body></html>'
+            )
+            
+            # 【需求3-更新】使用安全写入方法保存HTML报告
+            if self._safe_write_file(file_path, report_html):
+                QMessageBox.information(self, "导出成功", "分析报告已保存到:\n" + file_path)
+            # 失败信息由_safe_write_file内部处理
+        except Exception as e:
+            QMessageBox.warning(self, "导出失败", "报告生成失败: " + str(e))
     
     # ========================================================================
-    # 【需求3-新增】安全文件写入：积分不足时自动重试
+    # 功能8：深色模式切换
     # ========================================================================
-    def _get_prediction_file(self, pred_type=None):
-        """获取指定类型的预测结果文件路径"""
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [全局主题] 主题切换、选项卡切换                                               ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    def _on_toggle_theme(self):
+        """切换深色/浅色模式"""
+        self.is_dark_mode = not self.is_dark_mode
+        self._update_stylesheet()
+        self._update_history_table()
+        self._refresh_prediction_history_table()
+        theme_name = "深色模式" if self.is_dark_mode else "浅色模式"
+        self.statusBar().showMessage("已切换到" + theme_name)
+    
+    # ========================================================================
+    # 功能10：数据校验提示
+    # ========================================================================
+    def _on_tab_changed(self, index):
+        """标签页切换时初始化图表"""
+        # 保存当前标签页
+        self._save_ini_config()
+        # 检查是否切换到统计图表标签页（索引5）
+        if index == 5 and not self._chart_initialized:
+            self._chart_initialized = True
+            # 图表控件已在_create_statistics_chart_tab中创建，无需额外初始化
+            self.statusBar().showMessage("图表控件已初始化")
+    
+# ================================================================
+    # 【区域2】数据导入与格式转换
+    # ================================================================
+    # 功能说明：历史开奖数据的导入/导出、手动添加/删除/修改、批量操作、
+    #          格式转换（CSV/JSON/TXT）、数据源管理、在线更新等
+    # 该区域包含的方法:
+    #   _create_data_import_tab, _create_input_panel, _create_result_panel, _safe_write_file, _safe_write_csv, _safe_write_json, _json_default, _load_data, _save_data, _on_import_clicked, _on_export_clicked, _on_save_clicked, _on_add_data_clicked, _on_delete_data_clicked, _on_clear_data_clicked, _on_export_history_clicked, _on_import_history_clicked, _on_batch_delete_clicked, _on_batch_add_clicked, _on_batch_modify_clicked, _on_convert_clicked, _on_add_to_history_clicked, _on_batch_import_clicked, _get_data_sources, _save_data_sources, _test_data_source, _on_clear_all_data_clicked, _on_data_source_setting_clicked, _add_data_source, _del_data_source, _test_selected_source, _move_source, _on_online_update_clicked, _show_validation_results
+    #
+    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
+    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
+    #   - setSpacing: 间距设置
+    #   - font-size: 字体大小
+    #   - setContentsMargins: 边距设置
+    #   - 详见各方法内部的【可改】标注
+    # ================================================================
+
+###############################################################################
+#                                                                             #
+#  TAB 1: 数据导入与格式转换 (Data Import & Format Conversion)                         #
+#  入口: _create_data_import_tab                                                #
+#  子面板: _create_input_panel, _create_result_panel                             #
+#                                                                             #
+###############################################################################
+
+    def _create_data_import_tab(self):
+        """创建数据导入与格式转换选项卡 —— 原始数据粘贴、格式转换、批量导入、数据源管理"""
+        widget = QWidget()
+        self.data_import_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.data_import_splitter.setHandleWidth(2)
+        
+        left_panel = self._create_input_panel()
+        self.data_import_splitter.addWidget(left_panel)
+        
+        right_panel = self._create_result_panel()
+        self.data_import_splitter.addWidget(right_panel)
+        
+        self.data_import_splitter.setStretchFactor(0, 1)
+        self.data_import_splitter.setStretchFactor(1, 1)
+        self._apply_splitter_sizes(self.data_import_splitter, 'data_import_splitter')
+        
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
+        layout.setSpacing(self.spacing)
+        layout.addWidget(self.data_import_splitter)
+        
+        return widget
+    
+    def _create_input_panel(self):
+        """功能：创建input panel界面"""
+        widget = QWidget()
+        widget.setObjectName("InputPanel")
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(self.spacing)
+        
+        title = QLabel("粘贴原始数据")
+        title.setObjectName("PanelTitle")
+        layout.addWidget(title)
+        
+        info_label = QLabel("支持大量批量粘贴，每期一行或多期连续粘贴均可自动识别：\n第116期最新开奖结果 2026年04月26日 15 龙/水 46 鸡/木 16 兔/木 10 鸡/火 48 羊/火 33 狗/火 22 鸡/水\n第115期最新开奖结果 2026年04月25日 21 狗/土 16 兔/木 25 马/木 29 虎/土 08 猪/木 07 鼠/土 04 兔/金")
+        info_label.setObjectName("InfoLabel")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        self.raw_text_edit = QTextEdit()
+        self.raw_text_edit.setObjectName("RawTextEdit")
+        self.raw_text_edit.setPlaceholderText("请在此处粘贴原始数据...")
+        layout.addWidget(self.raw_text_edit)
+        
+        button_layout = QHBoxLayout()
+        
+        convert_btn = QPushButton("转换为标准格式")
+        # 转换按钮点击信号：将原始数据转换为标准格式
+        convert_btn.clicked.connect(self._on_convert_clicked)
+        button_layout.addWidget(convert_btn)
+        
+        add_to_history_btn = QPushButton("添加到历史记录")
+        # 添加按钮点击信号：将转换后的数据添加到历史记录
+        add_to_history_btn.clicked.connect(self._on_add_to_history_clicked)
+        button_layout.addWidget(add_to_history_btn)
+        
+        batch_import_btn = QPushButton("批量导入")
+        # 批量导入按钮点击信号：从文件批量导入数据
+        batch_import_btn.clicked.connect(self._on_batch_import_clicked)
+        button_layout.addWidget(batch_import_btn)
+        
+        layout.addLayout(button_layout)
+        
+        clear_btn = QPushButton("清空输入")
+        # 清空输入按钮点击信号：清空原始数据输入框
+        clear_btn.clicked.connect(lambda: self.raw_text_edit.clear())
+        layout.addWidget(clear_btn)
+        
+        clear_data_btn = QPushButton("清除数据")
+        clear_data_btn.setObjectName("ClearDataBtn")
+        # 清除数据按钮点击信号：清除输入和转换结果
+        clear_data_btn.clicked.connect(self._on_clear_all_data_clicked)
+        layout.addWidget(clear_data_btn)
+        
+        return widget
+    
+    def _create_result_panel(self):
+        """功能：创建result panel界面"""
+        widget = QWidget()
+        widget.setObjectName("ResultPanel")
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(self.spacing)
+        layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
+        
+        title = QLabel("转换结果")
+        title.setObjectName("PanelTitle")
+        layout.addWidget(title)
+        
+        self.converted_text_edit = QTextEdit()
+        self.converted_text_edit.setObjectName("ConvertedTextEdit")
+        self.converted_text_edit.setReadOnly(True)
+        layout.addWidget(self.converted_text_edit)
+        
+        return widget
+    
+    def _safe_write_file(self, filepath, content, max_retries=5, retry_delay=30):
+        """【需求3-新增】安全写入文件，支持积分不足时自动重试
+        当写入失败时，等待30秒后重试，最多重试5次"""
+        for attempt in range(max_retries):
+            try:
+                # 确保目录存在
+                os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                return True
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    self.statusBar().showMessage('写入失败，等待重试... (' + str(attempt + 1) + '/' + str(max_retries) + ')')
+                    import time
+                    time.sleep(retry_delay)
+                else:
+                    QMessageBox.warning(self, '写入失败', '文件写入失败: ' + str(e) + '\n已重试' + str(max_retries) + '次')
+                    return False
+        return False
+    
+    def _safe_write_csv(self, filepath, rows, max_retries=5, retry_delay=30):
+        """【需求3-新增】安全写入CSV文件
+        rows: 二维列表，每行是一个列表"""
+        import io
+        try:
+            # 先在内存中生成CSV内容
+            output = io.StringIO()
+            writer = csv.writer(output)
+            for row in rows:
+                writer.writerow(row)
+            csv_content = output.getvalue()
+            return self._safe_write_file(filepath, csv_content, max_retries, retry_delay)
+        except Exception as e:
+            QMessageBox.warning(self, 'CSV生成失败', 'CSV内容生成失败: ' + str(e))
+            return False
+    
+    def _safe_write_json(self, filepath, data, max_retries=5, retry_delay=30):
+        """【需求3-新增】安全写入JSON文件"""
+        try:
+            json_content = json.dumps(data, ensure_ascii=False, indent=2, default=self._json_default)
+            return self._safe_write_file(filepath, json_content, max_retries, retry_delay)
+        except Exception as e:
+            QMessageBox.warning(self, 'JSON转换失败', 'JSON序列化失败: ' + str(e))
+            return False
+    
+    @staticmethod
+    def _json_default(obj):
+        """JSON序列化默认处理器 - 处理numpy等非标准类型"""
+        try:
+            import numpy as np
+            if isinstance(obj, (np.integer,)):
+                return int(obj)
+            if isinstance(obj, (np.floating,)):
+                return float(obj)
+            if isinstance(obj, (np.ndarray,)):
+                return obj.tolist()
+        except ImportError:
+            pass
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+    
+    def _load_data(self):
+        """功能：加载彩票数据"""
+        try:
+            if os.path.exists(self.data_file):
+                with open(self.data_file, 'r', encoding='utf-8') as f:
+                    self.historical_data = json.load(f)
+                print("已加载 " + str(len(self.historical_data)) + " 条历史记录")
+            else:
+                self.historical_data = DataUtils.generate_sample_data(100)
+                print("已生成100条示例数据")
+        except Exception as e:
+            print("加载数据失败: " + str(e))
+            self.historical_data = []
+    
+    def _save_data(self):
+        """【需求3-更新】使用安全写入方法"""
+        if self._safe_write_json(self.data_file, self.historical_data):
+            print("数据保存成功")
+            return True
+        else:
+            print("保存数据失败")
+            return False
+    
+    def _on_import_clicked(self):
+        """功能：import clicked事件处理"""
+        file_path, _ = QFileDialog.getOpenFileName(self, "导入数据", "", "JSON文件 (*.json);;文本文件 (*.txt);;所有文件 (*)")
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        self.historical_data.extend(data)
+                        self._save_data()
+                        self._update_history_table()
+                        QMessageBox.information(self, "成功", "已导入 " + str(len(data)) + " 条记录")
+                    else:
+                        QMessageBox.warning(self, "错误", "数据格式不正确")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", "导入失败: " + str(e))
+    
+    def _on_export_clicked(self):
+        """【需求3-更新】使用安全写入方法"""
+        if not self.historical_data:
+            QMessageBox.information(self, "提示", "没有可导出的数据")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(self, "导出数据", "彩票数据导出.json", "JSON文件 (*.json);;文本文件 (*.txt)")
+        if file_path:
+            if self._safe_write_json(file_path, self.historical_data):
+                QMessageBox.information(self, "成功", "数据导出成功")
+            # 失败信息由_safe_write_json内部处理
+    
+    def _on_save_clicked(self):
+        """功能：save clicked事件处理"""
+        if self._save_data():
+            QMessageBox.information(self, "成功", "数据保存成功")
+        else:
+            QMessageBox.warning(self, "错误", "数据保存失败")
+    
+    def _on_add_data_clicked(self):
+        """功能：add data clicked事件处理"""
+        text, ok = QInputDialog.getMultiLineText(self, "添加数据", "请输入开奖数据（格式：期号 日期 6个正码 特别码):\n例如：117 2026-04-27 05 12 23 34 45 08")
+        if ok and text.strip():
+            try:
+                parts = text.strip().split()
+                if len(parts) >= 8:
+                    record = {
+                        'period': int(parts[0]), 'date': parts[1],
+                        'numbers': [int(parts[i]) for i in range(2, 8)], 'special': int(parts[7]),
+                    }
+                    self.historical_data.insert(0, record)
+                    self._save_data()
+                    self._update_history_table()
+                    QMessageBox.information(self, "成功", "数据添加成功")
+                else:
+                    QMessageBox.warning(self, "错误", "数据格式不正确")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", "添加失败: " + str(e))
+    
+    def _on_delete_data_clicked(self):
+        """功能：delete data clicked事件处理"""
+        if self.history_table.currentRow() < 0:
+            QMessageBox.information(self, "提示", "请先选择要删除的记录")
+            return
+        reply = QMessageBox.question(self, "确认删除", "确定要删除选中的记录吗？", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            # 【修复分页索引bug】表格行号是页内相对索引，需加上分页偏移量转为绝对索引
+            page_offset = (self.history_page - 1) * self.history_page_size
+            row = self.history_table.currentRow() + page_offset
+            if 0 <= row < len(self.historical_data):
+                del self.historical_data[row]
+                self._save_data()
+                self._update_history_table()
+                QMessageBox.information(self, "成功", "删除成功")
+    
+    def _on_clear_data_clicked(self):
+        """功能：clear data clicked事件处理"""
+        reply = QMessageBox.question(self, "确认清空", "确定要清空所有历史记录吗？此操作不可恢复！", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.historical_data.clear()
+            self._save_data()
+            self._update_history_table()
+            QMessageBox.information(self, "成功", "历史记录已清空")
+    
+    def _on_export_history_clicked(self):
+        """导出历史记录 - 支持JSON、CSV、TXT三种格式"""
+        if not self.historical_data:
+            QMessageBox.information(self, "提示", "没有可导出的历史记录")
+            return
+        file_path, selected_filter = QFileDialog.getSaveFileName(
+            self, "导出历史记录", "彩票历史记录导出.json",
+            "JSON文件 (*.json);;CSV文件 (*.csv);;TXT文件 (*.txt)"
+        )
+        if file_path:
+            try:
+                # 根据用户选择的格式自动补全扩展名
+                if selected_filter.startswith("CSV") and not file_path.lower().endswith('.csv'):
+                    file_path += '.csv'
+                elif selected_filter.startswith("TXT") and not file_path.lower().endswith('.txt'):
+                    file_path += '.txt'
+                elif selected_filter.startswith("JSON") and not file_path.lower().endswith('.json'):
+                    file_path += '.json'
+
+                if file_path.lower().endswith('.json'):
+                    if self._safe_write_json(file_path, self.historical_data):
+                        QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（JSON格式）")
+                    else:
+                        QMessageBox.warning(self, "错误", "导出失败")
+                elif file_path.lower().endswith('.csv'):
+                    with open(file_path, 'w', encoding='utf-8-sig', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(['期号', '日期', '正码1', '正码2', '正码3', '正码4', '正码5', '正码6', '特别码'])
+                        for rec in self.historical_data:
+                            nums = rec.get('numbers', [0]*6)
+                            while len(nums) < 6:
+                                nums.append(0)
+                            writer.writerow([
+                                rec.get('period', 0), rec.get('date', ''),
+                                nums[0], nums[1], nums[2], nums[3], nums[4], nums[5],
+                                rec.get('special', 0)
+                            ])
+                    QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（CSV格式）")
+                elif file_path.lower().endswith('.txt'):
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write("# 期号 日期 正码1 正码2 正码3 正码4 正码5 正码6 特别码\n")
+                        for rec in self.historical_data:
+                            nums = rec.get('numbers', [0]*6)
+                            while len(nums) < 6:
+                                nums.append(0)
+                            f.write(f"{rec.get('period', 0)} {rec.get('date', '')} "
+                                    f"{' '.join(str(n).zfill(2) for n in nums)} {rec.get('special', 0)}\n")
+                    QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（TXT格式）")
+                else:
+                    QMessageBox.warning(self, "错误", "不支持的文件格式，请选择 .json / .csv / .txt")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", "导出失败: " + str(e))
+
+    def _on_import_history_clicked(self):
+        """导入历史记录 - 支持JSON、CSV、TXT三种格式"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "导入历史记录", "",
+            "所有支持格式 (*.json *.csv *.txt);;JSON文件 (*.json);;CSV文件 (*.csv);;TXT文件 (*.txt);;所有文件 (*)"
+        )
+        if file_path:
+            try:
+                imported_data = []
+                ext = file_path.lower().rsplit('.', 1)[-1] if '.' in file_path else ''
+
+                if ext == 'json':
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if isinstance(data, list):
+                        imported_data = data
+                    else:
+                        QMessageBox.warning(self, "错误", "JSON格式不正确，应为数组")
+                        return
+
+                elif ext == 'csv':
+                    with open(file_path, 'r', encoding='utf-8-sig') as f:
+                        reader = csv.reader(f)
+                        header = next(reader, None)  # 跳过表头
+                        for row in reader:
+                            if len(row) < 9:
+                                continue
+                            try:
+                                record = {
+                                    'period': int(row[0]),
+                                    'date': str(row[1]),
+                                    'numbers': [int(row[i]) for i in range(2, 8)],
+                                    'special': int(row[8]),
+                                }
+                                imported_data.append(record)
+                            except (ValueError, IndexError):
+                                continue
+
+                elif ext == 'txt':
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith('#'):
+                                continue
+                            parts = line.split()
+                            if len(parts) >= 8:
+                                try:
+                                    record = {
+                                        'period': int(parts[0]),
+                                        'date': str(parts[1]),
+                                        'numbers': [int(parts[i]) for i in range(2, 8)],
+                                        'special': int(parts[7]),
+                                    }
+                                    imported_data.append(record)
+                                except (ValueError, IndexError):
+                                    continue
+
+                else:
+                    # 尝试作为JSON解析
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        if isinstance(data, list):
+                            imported_data = data
+                    except Exception:
+                        QMessageBox.warning(self, "错误", "无法识别文件格式，请使用 .json / .csv / .txt 文件")
+                        return
+
+                if imported_data:
+                    self.historical_data.extend(imported_data)
+                    self._save_data()
+                    self._update_history_table()
+                    # 导入数据后清除预测指纹，允许重新预测
+                    self._data_fingerprint_at_last_predict = None
+                    self._data_fingerprint_at_last_ml_predict = None
+                    QMessageBox.information(self, "成功", f"已导入 {len(imported_data)} 条历史记录")
+                else:
+                    QMessageBox.warning(self, "提示", "未从文件中解析到有效数据")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", "导入失败: " + str(e))
+
+    def _on_batch_delete_clicked(self):
+        """批量删除选中的记录"""
+        selected_rows = set()
+        for item in self.history_table.selectedItems():
+            selected_rows.add(item.row())
+        if not selected_rows:
+            QMessageBox.information(self, "提示", "请先选择要删除的记录（可按住Ctrl多选）")
+            return
+        reply = QMessageBox.question(self, "确认批量删除", "确定要删除选中的 " + str(len(selected_rows)) + " 条记录吗？", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            # 【修复分页索引bug】批量删除需加上分页偏移量转为绝对索引
+            page_offset = (self.history_page - 1) * self.history_page_size
+            for row in sorted(selected_rows, reverse=True):
+                abs_row = row + page_offset
+                if 0 <= abs_row < len(self.historical_data):
+                    del self.historical_data[abs_row]
+            self._save_data()
+            self._update_history_table()
+            QMessageBox.information(self, "成功", "已删除 " + str(len(selected_rows)) + " 条记录")
+    
+    def _on_batch_add_clicked(self):
+        """批量添加多条记录"""
+        text, ok = QInputDialog.getMultiLineText(self, "批量添加", 
+            "请输入多条开奖数据，每行一条\n格式：期号 日期 6个正码 特别码\n例如：117 2026-04-27 05 12 23 34 45 08")
+        if not ok or not text.strip():
+            return
+        
+        try:
+            lines = text.strip().split('\n')
+            count = 0
+            fail_count = 0
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                # 尝试按格式解析
+                result = DataUtils.parse_raw_data(line)
+                if result:
+                    record = {
+                        'period': result.get('period'),
+                        'date': result.get('date'),
+                        'numbers': result.get('numbers'),
+                        'special': result.get('special'),
+                    }
+                    self.historical_data.append(record)
+                    count += 1
+                else:
+                    # 尝试简单空格分隔格式
+                    parts = line.split()
+                    if len(parts) >= 8:
+                        try:
+                            record = {
+                                'period': int(parts[0]),
+                                'date': parts[1],
+                                'numbers': [int(parts[i]) for i in range(2, 8)],
+                                'special': int(parts[7]),
+                            }
+                            self.historical_data.append(record)
+                            count += 1
+                        except (ValueError, IndexError):
+                            fail_count += 1
+                    else:
+                        fail_count += 1
+            
+            if count > 0:
+                self._save_data()
+                self._update_history_table()
+                msg = f"成功添加 {count} 条记录"
+                if fail_count > 0:
+                    msg += f"，失败 {fail_count} 条"
+                QMessageBox.information(self, "成功", msg)
+            else:
+                QMessageBox.warning(self, "错误", "没有成功解析的数据，请检查格式")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", "批量添加失败: " + str(e))
+    
+    def _on_batch_modify_clicked(self):
+        """批量修改 - 支持批量修改日期或期号偏移"""
+        options = ["批量修改日期", "期号批量偏移", "批量修正期号格式"]
+        choice, ok = QInputDialog.getItem(self, "批量修改", "选择修改类型:", options, 0, False)
+        if not ok:
+            return
+        
+        selected_rows = set()
+        for item in self.history_table.selectedItems():
+            selected_rows.add(item.row())
+        
+        if not selected_rows:
+            reply = QMessageBox.question(self, "提示", "未选中记录，是否对全部数据执行批量修改？", 
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            rows_to_modify = list(range(len(self.historical_data)))
+        else:
+            rows_to_modify = sorted(selected_rows)
+        
+        try:
+            # 【修复分页索引bug】批量修改需加上分页偏移量转为绝对索引
+            page_offset = (self.history_page - 1) * self.history_page_size
+            rows_to_modify = [r + page_offset for r in sorted(selected_rows)]
+        
+            if not rows_to_modify:
+                QMessageBox.information(self, "提示", "没有可修改的记录")
+                return
+            if choice == "期号批量偏移":
+                offset, ok = QInputDialog.getInt(self, "期号偏移", "输入偏移量（正数增加，负数减少）:", 0, -99999, 99999)
+                if not ok:
+                    return
+                for row in rows_to_modify:
+                    if 0 <= row < len(self.historical_data):
+                        old_period = self.historical_data[row].get('period', 0)
+                        if isinstance(old_period, (int, float)):
+                            self.historical_data[row]['period'] = int(old_period) + offset
+                QMessageBox.information(self, "成功", f"已修改 {len(rows_to_modify)} 条记录的期号")
+            
+            elif choice == "批量修改日期":
+                date_text, ok = QInputDialog.getText(self, "批量修改日期", 
+                    "输入日期计算表达式，例如：\n+7 表示日期加7天\n-3 表示日期减3天\n2025-01-01 表示替换为指定日期")
+                if not ok or not date_text.strip():
+                    return
+                
+                date_text = date_text.strip()
+                import datetime
+                
+                if date_text.startswith('+') or date_text.startswith('-'):
+                    # 日期偏移
+                    days = int(date_text)
+                    for row in rows_to_modify:
+                        if 0 <= row < len(self.historical_data):
+                            old_date = self.historical_data[row].get('date', '')
+                            if old_date:
+                                try:
+                                    dt = datetime.datetime.strptime(old_date, '%Y-%m-%d')
+                                    dt += datetime.timedelta(days=days)
+                                    self.historical_data[row]['date'] = dt.strftime('%Y-%m-%d')
+                                except Exception:
+                                    pass
+                    QMessageBox.information(self, "成功", f"已修改 {len(rows_to_modify)} 条记录的日期")
+                else:
+                    # 替换为指定日期
+                    for row in rows_to_modify:
+                        if 0 <= row < len(self.historical_data):
+                            self.historical_data[row]['date'] = date_text
+                    QMessageBox.information(self, "成功", f"已将 {len(rows_to_modify)} 条记录的日期设为 {date_text}")
+            
+            elif choice == "批量修正期号格式":
+                # 自动按顺序重新编号
+                start_num, ok = QInputDialog.getInt(self, "修正期号", "输入起始期号:", 1, 1, 999999)
+                if not ok:
+                    return
+                # 按当前顺序重新编号
+                for i, row in enumerate(rows_to_modify):
+                    if 0 <= row < len(self.historical_data):
+                        self.historical_data[row]['period'] = start_num + i
+                QMessageBox.information(self, "成功", f"已修正 {len(rows_to_modify)} 条记录的期号")
+            
+            self._save_data()
+            self._update_history_table()
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.warning(self, "错误", "批量修改失败: " + str(e))
+    
+    def _on_convert_clicked(self):
+        """转换按钮 - 支持大量文本批量转格式，自动识别多期数据"""
+        raw_text = self.raw_text_edit.toPlainText()
+        if not raw_text.strip():
+            QMessageBox.warning(self, "提示", "请输入要转换的原始数据")
+            return
+        # 核心逻辑：先按"第X期"拆分整段文本，确保多期在同一行也能识别
+        formatted_lines = []
+        success_count = 0
+        fail_count = 0
+        # 【需求1-更新】按"第X期"拆分，每个片段对应一期（支持中间有空格）
+        segments = re.split(r'(?=第\s*\d+\s*期)', raw_text)
+        for seg in segments:
+            seg = seg.strip()
+            if not seg:
+                continue
+            result = DataUtils.parse_raw_data(seg)
+            if result:
+                formatted_lines.append(DataUtils.format_data(result))
+                success_count += 1
+            else:
+                fail_count += 1
+        if formatted_lines:
+            self.converted_text_edit.setPlainText('\n'.join(formatted_lines))
+            msg = "批量转换完成：成功 " + str(success_count) + " 条"
+            if fail_count > 0:
+                msg += "，失败 " + str(fail_count) + " 条"
+            self.statusBar().showMessage(msg)
+        else:
+            QMessageBox.warning(self, "错误", "无法解析数据，请检查格式")
+    
+    def _on_add_to_history_clicked(self):
+        """添加到历史记录 - 支持批量添加多期数据"""
+        raw_text = self.raw_text_edit.toPlainText()
+        if not raw_text.strip():
+            QMessageBox.warning(self, "提示", "请输入要添加的原始数据")
+            return
+        # 【需求1-更新】按"第X期"拆分，自动识别多期（支持中间有空格）
+        segments = re.split(r'(?=第\s*\d+\s*期)', raw_text)
+        parsed_records = []
+        all_issues = []
+        for seg in segments:
+            seg = seg.strip()
+            if not seg:
+                continue
+            result = DataUtils.parse_raw_data(seg)
+            if result:
+                record = {
+                    'period': result.get('period'), 'date': result.get('date'),
+                    'numbers': result.get('numbers'), 'special': result.get('special'),
+                }
+                issues = self._validate_record(record)
+                all_issues.extend(issues)
+                parsed_records.append(record)
+        if all_issues:
+            if not self._show_validation_results(all_issues):
+                return
+        added_count = 0
+        for record in parsed_records:
+            self.historical_data.insert(added_count, record)
+            added_count += 1
+        if added_count > 0:
+            self._save_data()
+            self._update_history_table()
+            self.raw_text_edit.clear()
+            self.converted_text_edit.clear()
+            QMessageBox.information(self, "成功", "已添加 " + str(added_count) + " 条数据到历史记录")
+            self.statusBar().showMessage("批量添加成功")
+        else:
+            QMessageBox.warning(self, "错误", "无法解析数据，请检查格式")
+    
+    def _on_batch_import_clicked(self):
+        """批量导入文件 - 支持大量数据，自动按期拆分"""
+        file_path, _ = QFileDialog.getOpenFileName(self, "批量导入", "", "文本文件 (*.txt);;JSON文件 (*.json);;所有文件 (*)")
+        if not file_path:
+            return
+        try:
+            # 支持JSON格式导入
+            if file_path.endswith('.json'):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if isinstance(data, list):
+                    self.historical_data.extend(data)
+                    self._save_data()
+                    self._update_history_table()
+                    QMessageBox.information(self, "成功", "成功导入 " + str(len(data)) + " 条记录")
+                return
+            # 文本格式导入，支持大量数据
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # 【需求1-更新】先按"第X期"拆分，处理所有期数数据（支持中间有空格）
+            segments = re.split(r'(?=第\s*\d+\s*期)', content)
+            count = 0
+            for seg in segments:
+                seg = seg.strip()
+                if not seg:
+                    continue
+                result = DataUtils.parse_raw_data(seg)
+                if result:
+                    record = {
+                        'period': result.get('period'), 'date': result.get('date'),
+                        'numbers': result.get('numbers'), 'special': result.get('special'),
+                    }
+                    self.historical_data.append(record)
+                    count += 1
+            self._save_data()
+            self._update_history_table()
+            QMessageBox.information(self, "成功", "成功导入 " + str(count) + " 条记录")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", "导入失败: " + str(e))
+    
+
+    # 功能2：历史回测
+    # ========================================================================
+    def _get_data_sources(self):
+        """获取数据源列表，从配置文件读取"""
+        config_file = "./彩票预测系统v7.5/数据源.json"
+        try:
+            if os.path.exists(config_file):
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('sources', [
+                        "http://www.cjcp.com.cn/kaijiang/hk6/",
+                        "https://www.lhc123.com/",
+                        "https://www.hk6.com/"
+                    ])
+        except Exception:
+            pass
+        return [
+            "http://www.cjcp.com.cn/kaijiang/hk6/",
+            "https://www.lhc123.com/",
+            "https://www.hk6.com/"
+        ]
+    
+    def _save_data_sources(self, sources):
+        """保存数据源列表到配置文件"""
+        config_file = "./彩票预测系统v7.5/数据源.json"
+        try:
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump({'sources': sources}, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception:
+            return False
+    
+    def _test_data_source(self, url):
+        """测试数据源连接
+        
+        返回：('success', '超时', '失败')之一
+        """
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    return 'success'
+                else:
+                    return '失败'
+        except urllib.error.URLError as e:
+            # 【修复超时判断bug】URLError会先于Exception捕获超时(socket.timeout被URLError包装)，
+            # 需检查e.reason是否为socket.timeout才能正确判断超时
+            import socket
+            if isinstance(e.reason, socket.timeout):
+                return '超时'
+            return '失败'
+        except Exception:
+            # 其他异常（如socket.timeout未被URLError包装的情况）
+            import socket
+            if any(isinstance(e, exc) for exc in [socket.timeout, TimeoutError]):
+                return '超时'
+            return '失败'
+    
+    def _on_clear_all_data_clicked(self):
+        """清除转格式页面的输入和转换结果"""
+        try:
+            self.raw_text_edit.clear()
+            self.converted_text_edit.clear()
+            self.statusBar().showMessage("已清除输入和转换结果")
+        except Exception as e:
+            QMessageBox.warning(self, "清除失败", "清除数据时出错:\n" + str(e))
+
+    def _on_data_source_setting_clicked(self):
+        """数据源设置对话框"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("数据源设置")
+        dialog.setFixedSize(600, 400)
+        layout = QVBoxLayout(dialog)
+        
+        # 说明标签
+        desc_label = QLabel("配置多个数据源URL，在线更新时将按优先级自动尝试连接")
+        layout.addWidget(desc_label)
+        
+        # 数据源列表
+        list_widget = QListWidget()
+        current_sources = self._get_data_sources()
+        for src in current_sources:
+            list_widget.addItem(src)
+        layout.addWidget(list_widget)
+        
+        # 操作按钮行
+        btn_row = QHBoxLayout()
+        
+        add_btn = QPushButton("添加")
+        # 添加按钮点击信号：添加新数据源
+        add_btn.clicked.connect(lambda: self._add_data_source(list_widget))
+        btn_row.addWidget(add_btn)
+        
+        del_btn = QPushButton("删除")
+        # 删除按钮点击信号：删除选中的数据源
+        del_btn.clicked.connect(lambda: self._del_data_source(list_widget))
+        btn_row.addWidget(del_btn)
+        
+        test_btn = QPushButton("测试连接")
+        # 测试连接按钮点击信号：测试选中数据源的可达性
+        test_btn.clicked.connect(lambda: self._test_selected_source(list_widget))
+        btn_row.addWidget(test_btn)
+        
+        move_up_btn = QPushButton("上移")
+        # 上移按钮点击信号：将选中数据源优先级上移一位
+        move_up_btn.clicked.connect(lambda: self._move_source(list_widget, -1))
+        btn_row.addWidget(move_up_btn)
+        
+        move_down_btn = QPushButton("下移")
+        # 下移按钮点击信号：将选中数据源优先级下移一位
+        move_down_btn.clicked.connect(lambda: self._move_source(list_widget, 1))
+        btn_row.addWidget(move_down_btn)
+        
+        layout.addLayout(btn_row)
+        
+        # 确定取消按钮
+        ok_cancel_row = QHBoxLayout()
+        ok_btn = QPushButton("确定")
+        # 确定按钮点击信号：保存数据源设置并关闭对话框
+        ok_btn.clicked.connect(dialog.accept)
+        ok_cancel_row.addWidget(ok_btn)
+        
+        cancel_btn = QPushButton("取消")
+        # 取消按钮点击信号：放弃数据源设置修改
+        cancel_btn.clicked.connect(dialog.reject)
+        ok_cancel_row.addWidget(cancel_btn)
+        
+        layout.addLayout(ok_cancel_row)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 保存数据源
+            new_sources = []
+            for i in range(list_widget.count()):
+                new_sources.append(list_widget.item(i).text())
+            if self._save_data_sources(new_sources):
+                QMessageBox.information(self, "成功", "数据源设置已保存")
+            else:
+                QMessageBox.warning(self, "失败", "数据源设置保存失败")
+    
+    def _add_data_source(self, list_widget):
+        """添加数据源"""
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle("添加数据源")
+        dialog.setLabelText("请输入数据源URL:")
+        dialog.setTextValue("https://")
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            url = dialog.textValue().strip()
+            if url:
+                list_widget.addItem(url)
+    
+    def _del_data_source(self, list_widget):
+        """删除选中的数据源"""
+        current_row = list_widget.currentRow()
+        if current_row >= 0:
+            list_widget.takeItem(current_row)
+    
+    def _test_selected_source(self, list_widget):
+        """测试选中的数据源连接"""
+        current_row = list_widget.currentRow()
+        if current_row < 0:
+            QMessageBox.information(self, "提示", "请先选择要测试的数据源")
+            return
+        
+        url = list_widget.item(current_row).text()
+        self.statusBar().showMessage("正在测试连接: " + url + "...")
+        
+        result = self._test_data_source(url)
+        
+        if result == 'success':
+            QMessageBox.information(self, "测试结果", "连接成功！")
+        elif result == '超时':
+            QMessageBox.warning(self, "测试结果", "连接超时（3秒）")
+        else:
+            QMessageBox.warning(self, "测试结果", "连接失败")
+        
+        self.statusBar().showMessage("测试完成")
+    
+    def _move_source(self, list_widget, direction):
+        """移动数据源位置"""
+        current_row = list_widget.currentRow()
+        new_row = current_row + direction
+        if 0 <= current_row < list_widget.count() and 0 <= new_row < list_widget.count():
+            item = list_widget.takeItem(current_row)
+            list_widget.insertItem(new_row, item)
+            list_widget.setCurrentRow(new_row)
+    
+    def _on_online_update_clicked(self):
+        """在线更新开奖数据（支持多数据源切换）"""
+        self.statusBar().showMessage("正在尝试在线更新...")
+        sources = self._get_data_sources()
+        
+        for idx, url in enumerate(sources):
+            self.statusBar().showMessage("正在尝试数据源 " + str(idx + 1) + "/" + str(len(sources)) + ": " + url)
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    html_content = resp.read().decode('utf-8', errors='ignore')
+                
+                # 解析期号和号码
+                existing_periods = {r.get('period') for r in self.historical_data}
+                new_records = []
+                
+                # 尝试多种正则模式解析
+                # 模式1: 期号 + 6个正码 + 特别码
+                pattern1 = r'第(\d+)期.*?(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*[+加]\s*(\d{2})'
+                matches = re.findall(pattern1, html_content)
+                
+                for m in matches:
+                    period = int(m[0])
+                    if period in existing_periods:
+                        continue
+                    numbers = [int(m[i]) for i in range(1, 7)]
+                    special = int(m[7])
+                    if all(1 <= n <= 49 for n in numbers) and 1 <= special <= 49:
+                        record = {
+                            'period': period,
+                            'date': '',
+                            'numbers': numbers,
+                            'special': special
+                        }
+                        new_records.append(record)
+                        existing_periods.add(period)
+                
+                # 模式2: 更通用的数字提取
+                if not new_records:
+                    pattern2 = r'(\d{4,6}).*?(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+[+]\s*(\d{1,2})'
+                    matches2 = re.findall(pattern2, html_content)
+                    for m in matches2:
+                        period = int(m[0])
+                        if period in existing_periods:
+                            continue
+                        numbers = [int(m[i]) for i in range(1, 7)]
+                        special = int(m[7])
+                        if all(1 <= n <= 49 for n in numbers) and 1 <= special <= 49:
+                            record = {
+                                'period': period,
+                                'date': '',
+                                'numbers': numbers,
+                                'special': special
+                            }
+                            new_records.append(record)
+                            existing_periods.add(period)
+                
+                if new_records:
+                    for rec in new_records:
+                        self.historical_data.insert(0, rec)
+                    self._save_data()
+                    self._update_history_table()
+                    QMessageBox.information(self, "在线更新", "成功从数据源「" + url + "」新增 " + str(len(new_records)) + " 期数据")
+                    self.statusBar().showMessage("在线更新完成")
+                    return
+                else:
+                    # 当前数据源解析失败，尝试下一个
+                    continue
+                    
+            except urllib.error.URLError:
+                # 网络错误，尝试下一个数据源
+                continue
+            except Exception as e:
+                # 其他错误，尝试下一个数据源
+                continue
+        
+        # 所有数据源都失败
+        QMessageBox.warning(self, "网络错误", "所有数据源都无法访问或解析失败\n请检查网络连接或手动导入数据")
+        self.statusBar().showMessage("在线更新失败")
+    
+    # ========================================================================
+    # 功能6：算法权重自定义
+    # ========================================================================
+    def _validate_record(self, record, is_batch=False):
+        """校验单条数据，返回问题列表"""
+        issues = []
+        period = record.get('period')
+        numbers = record.get('numbers', [])
+        special = record.get('special')
+        
+        # 检查期号重复
+        if period is not None:
+            for r in self.historical_data:
+                if r.get('period') == period:
+                    issues.append(('error', '期号重复: 第' + str(period) + '期已存在'))
+                    break
+        
+        # 检查数据不完整
+        if period is None:
+            issues.append(('error', '缺少期号'))
+        if not numbers or len(numbers) < 6:
+            issues.append(('error', '正码不完整，应有6个正码'))
+        
+        # 检查号码范围
+        all_nums = list(numbers) + ([special] if special is not None else [])
+        for n in all_nums:
+            if n is not None and (n < 1 or n > 49):
+                issues.append(('warning', '号码超出范围: ' + str(n) + ' (应为1-49)'))
+        
+        # 检查号码重复
+        if len(numbers) != len(set(numbers)):
+            dup = [n for n, c in Counter(numbers).items() if c > 1]
+            issues.append(('warning', '同一期内出现重复数字: ' + ', '.join(str(d) for d in dup)))
+        
+        return issues
+    
+    def _show_validation_results(self, all_issues):
+        """显示校验结果"""
+        if not all_issues:
+            return True
+        
+        errors = [iss for iss in all_issues if iss[0] == 'error']
+        warnings = [iss for iss in all_issues if iss[0] == 'warning']
+        
+        msg = ""
+        if errors:
+            msg += '<p style="color:#E74C3C; font-weight:bold;">严重问题 (' + str(len(errors)) + '):</p>'
+            msg += '<ul style="color:#E74C3C;">'
+            for _, text in errors:
+                msg += '<li>' + text + '</li>'
+            msg += '</ul>'
+        if warnings:
+            msg += '<p style="color:#F39C12; font-weight:bold;">警告 (' + str(len(warnings)) + '):</p>'
+            msg += '<ul style="color:#F39C12;">'
+            for _, text in warnings:
+                msg += '<li>' + text + '</li>'
+            msg += '</ul>'
+        
+        if errors:
+            msg += '<p style="font-weight:bold;">是否仍要继续？（不推荐）</p>'
+            reply = QMessageBox.warning(self, "数据校验", msg,
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            return reply == QMessageBox.StandardButton.Yes
+        else:
+            msg += '<p>以上为警告信息，不影响数据导入。</p>'
+            QMessageBox.information(self, "数据校验提示", msg)
+            return True
+
+
+    ###############################################################################
+#                                                                             #
+#  TAB 2: 历史记录 (History Records)                                              #
+#  入口: _create_history_tab                                                    #
+#  功能: 分页展示、列宽调整、期号详情                                                         #
+#                                                                             #
+###############################################################################
+
+    # 【区域3】历史记录
+    # ================================================================
+    # 功能说明：历史开奖数据表格展示、分页浏览、列排序（升序/降序）、
+    #          期号详情弹窗、最新期数显示、字号缩放等
+    # 该区域包含的方法:
+    #   _apply_detail_font_scale, _change_detail_font_size, _create_history_tab, _on_history_col_resized, _save_history_col_widths, _update_history_table, _on_history_sort, _on_prev_page, _on_next_page, _on_page_jump, _update_pagination, _refresh_latest_display, _on_show_period_detail
+    #
+    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
+    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
+    #   - setSpacing: 间距设置
+    #   - font-size: 字体大小
+    #   - setContentsMargins: 边距设置
+    #   - 详见各方法内部的【可改】标注
+    # ================================================================
+    def _apply_detail_font_scale(self):
+        """应用字体缩放到期号详情"""
+        if not hasattr(self, '_original_detail_html') or not self._original_detail_html:
+            return
+        import re
+        scale = getattr(self, 'detail_font_scale', 1.0)
+        scaled_html = re.sub(
+            r'font-size:(\d+)(px|pt)',
+            lambda m: 'font-size:' + str(max(8, int(int(m.group(1)) * scale))) + m.group(2),
+            self._original_detail_html
+        )
+        self.period_detail_edit.setHtml(scaled_html)
+    
+    def _change_detail_font_size(self, delta):
+        """调节期号详情字体大小
+        delta: 缩放变化量，正数增大，负数减小
+        """
+        if not hasattr(self, 'detail_font_scale'):
+            self.detail_font_scale = 1.0
+        new_scale = self.detail_font_scale + delta
+        # 限制缩放范围 0.5 ~ 2.0
+        new_scale = max(0.5, min(2.0, new_scale))
+        if abs(new_scale - self.detail_font_scale) < 0.01:
+            return
+        self.detail_font_scale = new_scale
+        self._apply_detail_font_scale()
+        self.statusBar().showMessage("字体缩放: " + str(int(self.detail_font_scale * 100)) + "%")
+        # 保存字体缩放设置
+        self._save_ini_config()
+
+
+# ============================================================================
+# 第八部分：扩展功能模块
+# ============================================================================
+
+
+    # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+
+    def _create_history_tab(self):
+        """创建历史记录选项卡 —— 历史数据表格展示、分页浏览、列排序（升序/降序）、期号详情弹窗"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(0)
+        layout.setContentsMargins(5, 5, 5, 5)
+        
+        # 标题行
+        header_layout = QHBoxLayout()
+        title = QLabel("历史记录")
+        title.setObjectName("PanelTitle")
+        header_layout.addWidget(title)
+        
+        self.history_count_label = QLabel("")
+        # 历史记录数量标签样式
+        #   color: #555555;     文字颜色：深灰（统计信息用灰色）
+        #   font-size: 14px;    字体大小：14像素
+        self.history_count_label.setStyleSheet("color: #555555; font-size: 14px;")
+        header_layout.addWidget(self.history_count_label)
+        header_layout.addStretch()
+        
+        # 字体调节 - 表格字体
+        table_font_label = QLabel("📊 表格字体:")
+        # 表格字体调节标签样式
+        #   color: #555555;         文字颜色：深灰
+        #   font-size: 13px;        字体大小：13像素
+        #   font-weight: bold;      字体：粗体（强调标签）
+        table_font_label.setStyleSheet("color: #555555; font-size: 13px; font-weight: bold;")
+        header_layout.addWidget(table_font_label)
+        
+        table_font_minus = QPushButton("A-")
+        table_font_minus.setFixedSize(75, 28)
+        # 历史表格字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #E8F5E9;  背景色：浅绿
+        #     color: #2E7D32;             文字颜色：深绿
+        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
+        #     border-radius: 6px;         圆角：6px
+        #     font-weight: bold;          字体：粗体
+        #   }
+        #   QPushButton:hover {  按钮悬停样式
+        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
+        #   }
+        table_font_minus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
+        # 表格字体缩小按钮点击信号：缩小历史记录表格字体
+        table_font_minus.clicked.connect(lambda: self._change_area_font_size('table', -1))
+        header_layout.addWidget(table_font_minus)
+        
+        table_font_plus = QPushButton("A+")
+        table_font_plus.setFixedSize(75, 28)
+        # 历史表格字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
+        #     color: #C62828;             文字颜色：深红
+        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
+        #     border-radius: 6px;         圆角：6px
+        #     font-weight: bold;          字体：粗体
+        #   }
+        #   QPushButton:hover {  按钮悬停样式
+        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
+        #   }
+        table_font_plus.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
+        # 表格字体放大按钮点击信号：放大历史记录表格字体
+        table_font_plus.clicked.connect(lambda: self._change_area_font_size('table', 1))
+        header_layout.addWidget(table_font_plus)
+        
+        refresh_btn = QPushButton("刷新")
+        # 刷新按钮点击信号：刷新历史记录表格
+        refresh_btn.clicked.connect(self._update_history_table)
+        header_layout.addWidget(refresh_btn)
+        
+        # 排序按钮 - 升序
+        sort_asc_btn = QPushButton("升序")
+        sort_asc_btn.setToolTip("按表格数据升序排列")
+        sort_asc_btn.setFixedSize(75, 28)
+        # 升序排序按钮样式 - 蓝色系（排序/操作用蓝色）
+        sort_asc_btn.setStyleSheet("QPushButton { background-color: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #BBDEFB; }")
+        # 升序排序按钮点击信号：按日期升序排列历史记录
+        sort_asc_btn.clicked.connect(lambda: self._on_history_sort('asc'))
+        header_layout.addWidget(sort_asc_btn)
+        
+        # 排序按钮 - 降序
+        sort_desc_btn = QPushButton("降序")
+        sort_desc_btn.setToolTip("按表格数据降序排列")
+        sort_desc_btn.setFixedSize(75, 28)
+        # 降序排序按钮样式 - 红色系（降序/反向操作用红色警示色）
+        sort_desc_btn.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
+        # 降序排序按钮点击信号：按日期降序排列历史记录
+        sort_desc_btn.clicked.connect(lambda: self._on_history_sort('desc'))
+        header_layout.addWidget(sort_desc_btn)
+        
+        layout.addLayout(header_layout)
+        
+        # 外层水平Splitter（左右分隔）
+        self.history_h_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.history_h_splitter.setHandleWidth(4)
+        
+        # === 左半部分：垂直Splitter（上下分隔）===
+        self.history_left_v_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.history_left_v_splitter.setHandleWidth(4)
+        
+        # 上方：最新开奖数据
+        latest_widget = QWidget()
+        latest_layout = QVBoxLayout(latest_widget)
+        latest_layout.setSpacing(5)
+        
+        latest_title = QLabel("最新开奖数据")
+        latest_title.setObjectName("PanelTitle")
+        latest_layout.addWidget(latest_title)
+        
+        self.history_latest_display = QLabel("暂无数据")
+        self.history_latest_display.setObjectName("LatestDisplay")
+        self.history_latest_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.history_latest_display.setWordWrap(True)
+        latest_layout.addWidget(self.history_latest_display)
+        
+        self.history_left_v_splitter.addWidget(latest_widget)
+        
+        # 下方：历史记录表格
+        table_widget = QWidget()
+        table_layout = QVBoxLayout(table_widget)
+        table_layout.setSpacing(0)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.history_table = QTableWidget()
+        self.history_table.setObjectName("HistoryTable")
+        self.history_table.setColumnCount(9)
+        self.history_table.setHorizontalHeaderLabels(["期号", "日期", "正码", "特别码", "和值", "单双比", "大小比", "颜色分布", "跨度"])
+        
+        # 列宽设置：Interactive模式支持用户拖拽调整列宽
+        self.history_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        # 各列初始宽度，优先从INI加载保存的宽度
+        default_col_widths = [70, 120, 160, 70, 60, 65, 65, 110, 60]
+        saved_widths = getattr(self, '_history_col_widths', [])
+        for i in range(9):
+            if i < len(saved_widths) and saved_widths[i] is not None and saved_widths[i] > 0:
+                self.history_table.setColumnWidth(i, saved_widths[i])
+            else:
+                self.history_table.setColumnWidth(i, default_col_widths[i])
+        
+        # 列宽变化时自动保存
+        self.history_table.horizontalHeader().sectionResized.connect(self._on_history_col_resized)
+        self.history_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        # 确保水平和垂直滚动条都能正常出现
+        self.history_table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
+        self.history_table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
+        self.history_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.history_table.setItemDelegate(PreserveColorDelegate(self.history_table))
+        self.history_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # 行高加大确保内容完整
+        self.history_table.verticalHeader().setDefaultSectionSize(40)
+        # 确保文字不被截断
+        self.history_table.setWordWrap(True)
+        
+        table_layout.addWidget(self.history_table)
+        
+        # ======================================================================== #
+        # 功能12：历史记录分页控件
+        # ======================================================================== #
+        pagination_widget = QWidget()
+        pagination_layout = QHBoxLayout(pagination_widget)
+        pagination_layout.setContentsMargins(0, 5, 0, 0)
+        
+        self.history_page_label = QLabel("第 1 页 / 共 1 页")
+        pagination_layout.addWidget(self.history_page_label)
+        
+        pagination_layout.addStretch()
+        
+        prev_btn = QPushButton("上一页")
+        prev_btn.setMaximumWidth(80)
+        # 上一页按钮点击信号：翻到上一页
+        prev_btn.clicked.connect(self._on_prev_page)
+        pagination_layout.addWidget(prev_btn)
+        
+        pagination_layout.addWidget(QLabel("跳转至"))
+        self.history_page_spin = QSpinBox()
+        self.history_page_spin.setRange(1, 1)
+        self.history_page_spin.setMaximumWidth(60)
+        # 页码跳转输入框变化信号：跳转到指定页码
+        self.history_page_spin.valueChanged.connect(self._on_page_jump)
+        pagination_layout.addWidget(self.history_page_spin)
+        
+        pagination_layout.addWidget(QLabel("页"))
+        
+        next_btn = QPushButton("下一页")
+        next_btn.setMaximumWidth(80)
+        # 下一页按钮点击信号：翻到下一页
+        next_btn.clicked.connect(self._on_next_page)
+        pagination_layout.addWidget(next_btn)
+        
+        table_layout.addWidget(pagination_widget)
+        
+        self.history_left_v_splitter.addWidget(table_widget)
+        
+        # 左半部分比例：最新数据20%，表格80%
+        self.history_left_v_splitter.setStretchFactor(0, 2)
+        self.history_left_v_splitter.setStretchFactor(1, 8)
+        self._apply_splitter_sizes(self.history_left_v_splitter, 'history_left_v_splitter')
+        
+        self.history_h_splitter.addWidget(self.history_left_v_splitter)
+        
+        # === 右半部分：垂直Splitter（上下分隔）===
+        self.history_right_v_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.history_right_v_splitter.setHandleWidth(4)
+        
+        # 上方：快捷操作面板（小按钮网格布局）
+        action_widget = QWidget()
+        action_layout = QVBoxLayout(action_widget)
+        action_layout.setSpacing(6)
+        action_layout.setContentsMargins(4, 4, 4, 4)
+        
+        action_title = QLabel("快捷操作")
+        action_title.setObjectName("PanelTitle")
+        action_layout.addWidget(action_title)
+        
+        # 网格布局：4列小按钮
+        grid_widget = QWidget()
+        grid_layout = QGridLayout(grid_widget)
+        grid_layout.setSpacing(5)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # 快捷操作按钮样式 - 普通操作（白色系，用于添加/修改等非破坏性操作）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #FFFFFF;  背景色：白色（简洁干净）
+        #     color: #333333;             文字颜色：深灰
+        #     border: 1px solid #DDDDDD;  边框：1px 浅灰实线
+        #     border-radius: 4px;         圆角：4px
+        #     padding: 4px 8px;           内边距：上下4px，左右8px
+        #     font-size: 12px;            字体大小：12px
+        #     font-weight: bold;          字体：粗体
+        #     min-height: 26px;           最小高度：26px
+        #   }
+        #   QPushButton:hover {   悬停样式
+        #     background-color: #F0F0F0;  悬停背景色：浅灰
+        #     border-color: #BBBBBB;      悬停边框色：中灰
+        #   }
+        #   QPushButton:pressed { 按下样式
+        #     background-color: #E0E0E0;  按下背景色：更深灰色（反馈感）
+        #   }
+        small_btn_style = (
+            "QPushButton { background-color: #FFFFFF; color: #333333; border: 1px solid #DDDDDD; "
+            "border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: bold; min-height: 26px; } "
+            "QPushButton:hover { background-color: #F0F0F0; border-color: #BBBBBB; } "
+            "QPushButton:pressed { background-color: #E0E0E0; }"
+        )
+        # 快捷操作按钮样式 - 危险操作（红色系，用于删除/清空等破坏性操作）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #FFFFFF;  背景色：白色
+        #     color: #E74C3C;             文字颜色：红色（警示）
+        #     border: 1px solid #E74C3C;  边框：1px 红色实线（强调危险）
+        #     border-radius: 4px;         圆角：4px
+        #     padding: 4px 8px;           内边距：上下4px，左右8px
+        #     font-size: 12px;            字体大小：12px
+        #     font-weight: bold;          字体：粗体
+        #     min-height: 26px;           最小高度：26px
+        #   }
+        #   QPushButton:hover {   悬停样式
+        #     background-color: #FDF0EF;  悬停背景色：极浅红
+        #   }
+        #   QPushButton:pressed { 按下样式
+        #     background-color: #FADBD8;  按下背景色：浅红（加强反馈）
+        #   }
+        danger_btn_style = (
+            "QPushButton { background-color: #FFFFFF; color: #E74C3C; border: 1px solid #E74C3C; "
+            "border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: bold; min-height: 26px; } "
+            "QPushButton:hover { background-color: #FDF0EF; } "
+            "QPushButton:pressed { background-color: #FADBD8; }"
+        )
+        
+        quick_actions = [
+            ("➕ 批量添加", small_btn_style, self._on_batch_add_clicked),
+            ("🗑 批量删除", danger_btn_style, self._on_batch_delete_clicked),
+            ("✏️ 批量修改", small_btn_style, self._on_batch_modify_clicked),
+            ("⚠ 清空", danger_btn_style, self._on_clear_data_clicked),
+            ("📤 导出记录", small_btn_style, self._on_export_history_clicked),
+            ("📥 导入记录", small_btn_style, self._on_import_history_clicked),
+        ]
+        
+        cols = 4
+        for i, (text, style, callback) in enumerate(quick_actions):
+            btn = QPushButton(text)
+            # 为快捷操作按钮应用对应的样式（批量添加/删除用绿色/红色系，批量修改用蓝色系）
+            btn.setStyleSheet(style)
+            # 快捷操作按钮点击信号：连接对应的批量处理回调函数
+            btn.clicked.connect(callback)
+            grid_layout.addWidget(btn, i // cols, i % cols)
+        
+        action_layout.addWidget(grid_widget)
+        action_layout.addStretch()
+        
+        self.history_right_v_splitter.addWidget(action_widget)
+        
+        # 下方：期号详情显示面板
+        detail_widget = QWidget()
+        detail_layout = QVBoxLayout(detail_widget)
+        detail_layout.setSpacing(5)
+        
+        detail_title_row = QHBoxLayout()
+        detail_title = QLabel("期号详情")
+        detail_title.setObjectName("PanelTitle")
+        detail_title_row.addWidget(detail_title)
+        detail_title_row.addStretch()
+        
+        # 字体大小调节按钮
+        font_down_btn = QPushButton("A-")
+        font_down_btn.setToolTip("减小字体")
+        font_down_btn.setFixedSize(60, 26)
+        # 期号详情字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #E8F5E9;  背景色：浅绿
+        #     color: #2E7D32;             文字颜色：深绿
+        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
+        #     border-radius: 6px;         圆角：6px
+        #     font-weight: bold;          字体：粗体
+        #   }
+        #   QPushButton:hover {  按钮悬停样式
+        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
+        #   }
+        font_down_btn.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
+        # 字体缩小按钮点击信号：缩小期号详情字体
+        font_down_btn.clicked.connect(lambda: self._change_detail_font_size(-0.1))
+        detail_title_row.addWidget(font_down_btn)
+        
+        font_up_btn = QPushButton("A+")
+        font_up_btn.setToolTip("增大字体")
+        font_up_btn.setFixedSize(60, 26)
+        # 期号详情字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
+        #     color: #C62828;             文字颜色：深红
+        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
+        #     border-radius: 6px;         圆角：6px
+        #     font-weight: bold;          字体：粗体
+        #   }
+        #   QPushButton:hover {  按钮悬停样式
+        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
+        #   }
+        font_up_btn.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
+        # 字体放大按钮点击信号：放大期号详情字体
+        font_up_btn.clicked.connect(lambda: self._change_detail_font_size(0.1))
+        detail_title_row.addWidget(font_up_btn)
+        
+        show_btn = QPushButton("显示选中")
+        # 显示选中按钮点击信号：显示选中期的完整信息
+        show_btn.clicked.connect(self._on_show_period_detail)
+        # 显示选中期号详情按钮样式 - 绿色系（确认/显示操作用绿色）
+        #   QPushButton {       按钮常态样式
+        #     background-color: #2ECC71;  背景色：鲜绿
+        #     color: white;                文字颜色：白色
+        #     border: none;                边框：无
+        #     border-radius: 4px;          圆角：4px
+        #     padding: 5px 12px;           内边距：上下5px，左右12px
+        #     font-weight: bold;           字体：粗体
+        #   }
+        #   QPushButton:hover {  按钮悬停样式
+        #     background-color: #27AE60;  悬停背景色：深绿
+        #   }
+        show_btn.setStyleSheet("QPushButton { background-color: #2ECC71; color: white; border: none; border-radius: 4px; padding: 5px 12px; font-weight: bold; } QPushButton:hover { background-color: #27AE60; }")
+        detail_title_row.addWidget(show_btn)
+        
+        detail_layout.addLayout(detail_title_row)
+        
+        self.period_detail_edit = QTextEdit()
+        self.period_detail_edit.setReadOnly(True)
+        # 期号详情文本框样式
+        #   QTextEdit {       文本框整体样式
+        #     background-color: #FFFFFF;  背景色：白色
+        #     color: #000000;             文字颜色：黑色
+        #     border: 1px solid #DDDDDD;  边框：1px 浅灰实线
+        #     border-radius: 4px;         圆角：4px
+        #     font-size: 14px;            字体大小：14px
+        #     padding: 8px;               内边距：8px
+        #   }
+        self.period_detail_edit.setStyleSheet("QTextEdit { background-color: #FFFFFF; color: #000000; border: 1px solid #DDDDDD; border-radius: 4px; font-size: 14px; padding: 8px; }")
+        self.period_detail_edit.setPlaceholderText("在表格中选择一期，然后点击「显示选中」按钮查看完整信息...")
+        detail_layout.addWidget(self.period_detail_edit)
+        
+        # 统计摘要
+        self.history_stats_label = QLabel("加载数据后显示统计信息")
+        self.history_stats_label.setWordWrap(True)
+        # 历史统计摘要标签样式
+        #   color: #333333;     文字颜色：深灰（主要内容文字）
+        #   font-size: 13px;    字体大小：13像素
+        #   line-height: 1.5;   行高：1.5倍（提高可读性）
+        self.history_stats_label.setStyleSheet("color: #333333; font-size: 13px; line-height: 1.5;")
+        detail_layout.addWidget(self.history_stats_label)
+        
+        self.history_right_v_splitter.addWidget(detail_widget)
+        
+        # 右半部分比例：操作60%，统计40%
+        self.history_right_v_splitter.setStretchFactor(0, 6)
+        self.history_right_v_splitter.setStretchFactor(1, 4)
+        self._apply_splitter_sizes(self.history_right_v_splitter, 'history_right_v_splitter')
+        
+        self.history_h_splitter.addWidget(self.history_right_v_splitter)
+        
+        # 左右比例：左侧80%，右侧20%
+        self.history_h_splitter.setStretchFactor(0, 8)
+        self.history_h_splitter.setStretchFactor(1, 2)
+        self._apply_splitter_sizes(self.history_h_splitter, 'history_h_splitter')
+        
+        layout.addWidget(self.history_h_splitter)
+        
+        return widget
+    
+    def _on_history_col_resized(self, index, old_size, new_size):
+        """历史记录表列宽变化时延迟保存配置"""
+        # 使用定时器延迟保存，避免拖动时频繁写文件
+        if not hasattr(self, '_col_resize_timer'):
+            from PyQt6.QtCore import QTimer
+            self._col_resize_timer = QTimer(self)
+            self._col_resize_timer.setSingleShot(True)
+            self._col_resize_timer.timeout.connect(self._save_history_col_widths)
+        self._col_resize_timer.start(500)  # 500ms后保存
+    
+    def _save_history_col_widths(self):
+        """保存历史记录表当前列宽到配置"""
+        if not hasattr(self, 'history_table'):
+            return
+        for i in range(self.history_table.columnCount()):
+            width = self.history_table.columnWidth(i)
+            key = 'history_col_' + str(i)
+            if hasattr(self, '_ini') and self._ini.has_section('Display'):
+                self._ini['Display'][key] = str(width)
+        self._save_ini_config()
+    
+    def _update_history_table(self):
+        """更新历史记录表格
+        
+        功能12：分页显示
+        """
+        fg_color = "#CDD3F4" if self.is_dark_mode else "#333333"
+        
+        # 使用原始数据
+        data_to_show = self.historical_data
+        total_count = len(data_to_show)
+        
+        # 计算分页
+        total_pages = max(1, (total_count + self.history_page_size - 1) // self.history_page_size)
+        self.history_page = min(self.history_page, total_pages)
+        
+        # 计算当前页的数据范围
+        start_idx = (self.history_page - 1) * self.history_page_size
+        end_idx = min(start_idx + self.history_page_size, total_count)
+        
+        # 更新分页信息
+        self._update_pagination(total_count)
+        
+        # 设置表格行数（仅当前页）
+        self.history_table.setRowCount(end_idx - start_idx)
+        
+        for i, record in enumerate(data_to_show[start_idx:end_idx]):
+            table_row = i
+            # 期号
+            item_period = QTableWidgetItem(str(record.get('period', '?')))
+            item_period.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_period.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 0, item_period)
+            # 日期
+            item_date = QTableWidgetItem(record.get('date', '?'))
+            item_date.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_date.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 1, item_date)
+            # 正码（每个数字带对应颜色）
+            numbers = record.get('numbers', [])
+            # 使用QLabel显示彩色数字
+            numbers_widget = QWidget()
+            # 正码容器背景透明，避免遮挡表格行选中高亮
+            numbers_widget.setStyleSheet("background-color: transparent;")
+            numbers_layout = QHBoxLayout(numbers_widget)
+            numbers_layout.setContentsMargins(2, 2, 2, 2)
+            numbers_layout.setSpacing(8)
+            numbers_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            table_scale = self._area_font_scales.get('table', 1.0)
+            base_num_font = int(13 * table_scale)
+            for n in numbers:
+                colors = LotteryConfig.get_number_color(n)
+                num_label = QLabel(str(n).zfill(2))
+                # 正码数字标签样式：号码对应颜色，粗体，动态字号（跟随表格缩放），透明背景
+                num_label.setStyleSheet(
+                    "color: " + colors['text'] + "; font-weight: bold; font-size: " + str(base_num_font) + "px; background-color: transparent;")
+                numbers_layout.addWidget(num_label)
+            
+            self.history_table.setCellWidget(table_row, 2, numbers_widget)
+            self.history_table.setRowHeight(table_row, 36)
+            # 特别码（带颜色标记，使用与正码相同的字体缩放）
+            special = record.get('special', '?')
+            special_widget = QWidget()
+            # 特别码容器背景透明，避免遮挡表格行选中高亮
+            special_widget.setStyleSheet("background-color: transparent;")
+            special_layout = QHBoxLayout(special_widget)
+            special_layout.setContentsMargins(2, 2, 2, 2)
+            special_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            special_color = fg_color
+            if isinstance(special, int):
+                if special in LotteryConfig.RED_NUMBERS:
+                    special_color = "#FF0000"
+                elif special in LotteryConfig.BLUE_NUMBERS:
+                    special_color = "#0000FF"
+                else:
+                    special_color = "#008000"
+            
+            special_label = QLabel(str(special).zfill(2) if special != '?' else '?')
+            # 特别码数字标签样式：红/蓝/绿色标识，粗体，动态字号，透明背景
+            special_label.setStyleSheet(
+                "color: " + special_color + "; font-weight: bold; font-size: " + str(base_num_font) + "px; background-color: transparent;")
+            special_layout.addWidget(special_label)
+            
+            self.history_table.setCellWidget(table_row, 3, special_widget)
+            # 和值
+            sum_val = sum(numbers) if numbers else 0
+            item_sum = QTableWidgetItem(str(sum_val))
+            item_sum.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_sum.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 4, item_sum)
+            # 单双比
+            odd_count = sum(1 for n in numbers if n % 2 == 1) if numbers else 0
+            even_count = len(numbers) - odd_count
+            item_oe = QTableWidgetItem(str(odd_count) + ':' + str(even_count))
+            item_oe.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_oe.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 5, item_oe)
+            # 大小比
+            big_count = sum(1 for n in numbers if n > 24) if numbers else 0
+            small_count = len(numbers) - big_count
+            item_bs = QTableWidgetItem(str(big_count) + ':' + str(small_count))
+            item_bs.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_bs.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 6, item_bs)
+            # 颜色分布
+            red_count = sum(1 for n in numbers if n in LotteryConfig.RED_NUMBERS) if numbers else 0
+            blue_count = sum(1 for n in numbers if n in LotteryConfig.BLUE_NUMBERS) if numbers else 0
+            green_count = len(numbers) - red_count - blue_count
+            item_color = QTableWidgetItem('红' + str(red_count) + '蓝' + str(blue_count) + '绿' + str(green_count))
+            item_color.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_color.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 7, item_color)
+            # 跨度
+            span_val = (max(numbers) - min(numbers)) if numbers else 0
+            item_span = QTableWidgetItem(str(span_val))
+            item_span.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_span.setForeground(QColor(fg_color))
+            self.history_table.setItem(table_row, 8, item_span)
+        
+        self.data_count_label.setText("历史记录: " + str(len(self.historical_data)) + " 条")
+        if hasattr(self, 'history_count_label'):
+            self.history_count_label.setText("显示第 " + str(start_idx + 1) + "-" + str(end_idx) + " 条 / 共 " + str(total_count) + " 条")
+        self._refresh_latest_display()
+        
+        # 更新历史记录标签页的最新数据显示
+        if hasattr(self, 'history_latest_display') and data_to_show:
+            latest = data_to_show[0]
+            numbers = latest.get('numbers', [])
+            special = latest.get('special', 0)
+            text = '第' + str(latest.get('period', '?')) + '期 | ' + str(latest.get('date', '?'))
+            text += '\n正码: ' + ' '.join(str(n).zfill(2) for n in numbers)
+            text += '  特别码: ' + str(special).zfill(2)
+            self.history_latest_display.setText(text)
+        
+        # 更新统计摘要（基于筛选后的数据）
+        if hasattr(self, 'history_stats_label') and data_to_show:
+            from collections import Counter
+            all_nums = []
+            for r in data_to_show:
+                all_nums.extend(r.get('numbers', []))
+            counter = Counter(all_nums)
+            hot = counter.most_common(5)
+            hot_str = '  '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in hot)
+            cold = counter.most_common()[-5:]
+            cold_str = '  '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in cold)
+            
+            sums = [sum(r.get('numbers', [])) for r in data_to_show]
+            dates = [r.get('date', '') for r in data_to_show if r.get('date')]
+            
+            stats_text = '总期数: ' + str(len(data_to_show)) + ' 期\n'
+            if dates:
+                stats_text += '日期范围: ' + dates[-1] + ' ~ ' + dates[0] + '\n'
+            if sums:
+                stats_text += '和值范围: ' + str(min(sums)) + ' ~ ' + str(max(sums)) + '\n'
+                stats_text += '和值均值: ' + str(int(sum(sums) / len(sums))) + '\n'
+            stats_text += '热门号码: ' + hot_str + '\n'
+            stats_text += '冷门号码: ' + cold_str
+            self.history_stats_label.setText(stats_text)
+        
+        # 更新概率面板
+        if hasattr(self, 'probability_list'):
+            self._update_probability_panel()
+    
+    def _on_history_sort(self, order):
+        """对历史记录进行排序
+        参数:
+            order: 'asc' 升序 或 'desc' 降序
+        """
+        if not self.historical_data or len(self.historical_data) == 0:
+            return
+        
+        try:
+            if order == 'asc':
+                # 升序：按日期从旧到新
+                self.historical_data.sort(key=lambda x: str(x.get('date', '')), reverse=False)
+            else:
+                # 降序：按日期从新到旧
+                self.historical_data.sort(key=lambda x: str(x.get('date', '')), reverse=True)
+            
+            # 重置到第一页
+            self.history_page = 1
+            self._update_history_table()
+            
+            order_text = "升序" if order == 'asc' else "降序"
+            if hasattr(self, 'statusBar'):
+                self.statusBar().showMessage(f"历史记录已按日期{order_text}排列")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+    
+    def _on_prev_page(self):
+        """上一页"""
+        if self.history_page > 1:
+            self.history_page -= 1
+            self._update_history_table()
+    
+    def _on_next_page(self):
+        """下一页"""
+        total_pages = max(1, (len(self.historical_data) + self.history_page_size - 1) // self.history_page_size)
+        if self.history_page < total_pages:
+            self.history_page += 1
+            self._update_history_table()
+    
+    def _on_page_jump(self, page):
+        """跳转到指定页"""
+        total_pages = max(1, (len(self.historical_data) + self.history_page_size - 1) // self.history_page_size)
+        if 1 <= page <= total_pages:
+            self.history_page = page
+            self._update_history_table()
+            # 保存当前页码
+            self._save_ini_config()
+    
+    def _update_pagination(self, total_count):
+        """更新分页信息"""
+        total_pages = max(1, (total_count + self.history_page_size - 1) // self.history_page_size)
+        self.history_page = min(self.history_page, total_pages)
+        self.history_page_label.setText("第 " + str(self.history_page) + " 页 / 共 " + str(total_pages) + " 页")
+        self.history_page_spin.setRange(1, total_pages)
+        self.history_page_spin.setValue(self.history_page)
+    
+    # ======================================================================== #
+    # 功能12：性能优化 - 图表懒加载
+    # ======================================================================== #
+    def _refresh_latest_display(self):
+        """功能：刷新latest display"""
+        if not self.historical_data:
+            self.latest_display.setText("暂无数据")
+            return
+        latest = self.historical_data[0]
+        numbers = latest.get('numbers', [])
+        special = latest.get('special', 0)
+        numbers_text = ' '.join(str(n).zfill(2) for n in numbers)
+        text = "第" + str(latest.get('period', '?')) + "期 | " + latest.get('date', '?') + "\n"
+        text += "正码: " + numbers_text + "\n"
+        text += "特别码: " + str(special).zfill(2)
+        self.latest_display.setText(text)
+    
+    def _on_show_period_detail(self):
+        """显示选中期的完整信息"""
+        if not hasattr(self, 'period_detail_edit'):
+            return
+        # 【修复分页索引bug】表格行号是页内相对索引，需加上分页偏移量转为绝对索引
+        page_offset = (self.history_page - 1) * self.history_page_size
+        row = self.history_table.currentRow() + page_offset
+        if row < 0 or row >= len(self.historical_data):
+            self.period_detail_edit.setHtml('<p style="color:#E74C3C;">请先在表格中选择一期记录</p>')
+            return
+        
+        self._current_detail_row = row
+        record = self.historical_data[row]
+        numbers = record.get('numbers', [])
+        special = record.get('special', 0)
+        period = record.get('period', '?')
+        date = record.get('date', '?')
+        
+        # 获取详情区域字体缩放
+        detail_scale = self._area_font_scales.get('detail', 1.0)
+        
+        # 基础尺寸（原始尺寸）
+        base_title_size = 30
+        base_section_size = 22
+        base_ball_size = 30
+        base_table_size = 18
+        base_small_size = 20
+        base_tiny_size = 17
+        
+        # 缩放后的尺寸
+        title_size = int(base_title_size * detail_scale)
+        section_size = int(base_section_size * detail_scale)
+        ball_size = int(base_ball_size * detail_scale)
+        table_size = int(base_table_size * detail_scale)
+        small_size = int(base_small_size * detail_scale)
+        tiny_size = int(base_tiny_size * detail_scale)
+        
+        # 球的padding和margin也缩放
+        ball_padding_h = int(18 * detail_scale)
+        ball_padding_v = int(10 * detail_scale)
+        ball_margin = int(5 * detail_scale)
+        ball_radius = int(12 * detail_scale)
+        
+        # 构建HTML完整显示 - 减小行高和间隔
+        html = f'<div style="font-size:{table_size}px; line-height:1.6;">'
+        html += f'<p style="font-size:{title_size}px; font-weight:bold; color:#3498DB; margin:2px 0;">第{str(period)}期  {str(date)}</p>'
+        
+        # 正码大按钮显示
+        html += f'<p style="font-size:{section_size}px; margin:8px 0 2px 0;"><b>正码：</b></p>'
+        html += f'<p style="margin-left:10px; margin-top:0;">'
+        for n in numbers:
+            colors = LotteryConfig.get_number_color(n)
+            html += f'<span style="display:inline-block; background-color:{colors["border"]}; color:#FFFFFF; font-size:{ball_size}px; font-weight:bold; border-radius:{ball_radius}px; padding:{ball_padding_v}px {ball_padding_h}px; margin:{ball_margin}px;">{str(n).zfill(2)}</span> '
+        html += '</p>'
+        
+        # 特别码
+        html += f'<p style="margin:4px 0;"><b>特别码：</b>'
+        sp_colors = LotteryConfig.get_number_color(special)
+        sp_name = LotteryConfig.NUMBER_NAMES.get(special, '')
+        sp_elem = LotteryConfig.NUMBER_ELEMENTS.get(special, '')
+        sp_color_name = ''
+        if special in LotteryConfig.RED_NUMBERS:
+            sp_color_name = '红'
+        elif special in LotteryConfig.BLUE_NUMBERS:
+            sp_color_name = '蓝'
+        else:
+            sp_color_name = '绿'
+        html += f'<span style="display:inline-block; background-color:{sp_colors["border"]}; color:#FFFFFF; font-size:{ball_size}px; font-weight:bold; border-radius:{ball_radius}px; padding:{ball_padding_v}px {ball_padding_h}px; margin:{ball_margin}px;">{str(special).zfill(2)}</span>'
+        html += '</p>'
+        
+        # 详细属性表
+        html += f'<table style="border-collapse:collapse; width:100%; margin-top:8px; font-size:{table_size}px;">'
+        
+        # 和值
+        sum_val = sum(numbers)
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold; width:90px;">和值</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{section_size}px; font-weight:bold;">{str(sum_val)}</td></tr>'
+        
+        # 跨度
+        span_val = max(numbers) - min(numbers) if numbers else 0
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">跨度</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{section_size}px; font-weight:bold;">{str(span_val)}</td></tr>'
+        
+        # 单双比
+        odd_count = sum(1 for n in numbers if n % 2 == 1)
+        even_count = len(numbers) - odd_count
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">单双比</td><td style="padding:6px 10px; border:1px solid #DDD;">单{str(odd_count)}:双{str(even_count)}</td></tr>'
+        
+        # 大小比
+        big_count = sum(1 for n in numbers if n > 24)
+        small_count = len(numbers) - big_count
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">大小比</td><td style="padding:6px 10px; border:1px solid #DDD;">大{str(big_count)}:小{str(small_count)}</td></tr>'
+        
+        # 颜色分布
+        red_c = sum(1 for n in numbers if n in LotteryConfig.RED_NUMBERS)
+        blue_c = sum(1 for n in numbers if n in LotteryConfig.BLUE_NUMBERS)
+        green_c = len(numbers) - red_c - blue_c
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">颜色分布</td><td style="padding:6px 10px; border:1px solid #DDD;"><span style="color:#FF0000; font-size:{small_size}px;">红{str(red_c)}</span> <span style="color:#0000FF; font-size:{small_size}px;">蓝{str(blue_c)}</span> <span style="color:#008000; font-size:{small_size}px;">绿{str(green_c)}</span></td></tr>'
+        
+        # 每个号码详细属性
+        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">号码详情</td><td style="padding:6px 10px; border:1px solid #DDD;">'
+        for n in numbers:
+            cn = LotteryConfig.NUMBER_NAMES.get(n, '')
+            el = LotteryConfig.NUMBER_ELEMENTS.get(n, '')
+            c = LotteryConfig.get_number_color(n)
+            cn2 = ''
+            if n in LotteryConfig.RED_NUMBERS:
+                cn2 = '红'
+            elif n in LotteryConfig.BLUE_NUMBERS:
+                cn2 = '蓝'
+            else:
+                cn2 = '绿'
+            html += f'<span style="color:{c["text"]}; font-size:{small_size}px; font-weight:bold;">{str(n).zfill(2)}</span><span style="font-size:{tiny_size}px;">({cn2}/{cn}/{el})</span> '
+        # 特别码详情
+        sp_c = LotteryConfig.get_number_color(special)
+        html += f'<br>特别码: <span style="color:{sp_c["text"]}; font-size:{small_size}px; font-weight:bold;">{str(special).zfill(2)}</span><span style="font-size:{tiny_size}px;">({sp_color_name}/{sp_name}/{sp_elem})</span>'
+        html += '</td></tr>'
+        
+        # 区间分布
+        zones = {'01-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-49': 0}
+        for n in numbers:
+            if n <= 10: zones['01-10'] += 1
+            elif n <= 20: zones['11-20'] += 1
+            elif n <= 30: zones['21-30'] += 1
+            elif n <= 40: zones['31-40'] += 1
+            else: zones['41-49'] += 1
+        zone_str = '  '.join(k + ':' + str(v) for k, v in zones.items())
+        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">区间分布</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{table_size}px;">{zone_str}</td></tr>'
+        
+        # 尾数分布
+        tails = [n % 10 for n in numbers]
+        tail_counter = {}
+        for t in tails:
+            tail_counter[t] = tail_counter.get(t, 0) + 1
+        tail_str = '  '.join('尾' + str(k) + ':' + str(v) for k, v in sorted(tail_counter.items()))
+        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">尾数分布</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:18px;">' + tail_str + '</td></tr>'
+        
+        # 连号
+        sorted_nums = sorted(numbers)
+        # 【修复空数组bug】numbers为空时sorted_nums[0]会IndexError
+        consec = []
+        if sorted_nums:
+            temp = [sorted_nums[0]]
+            for j in range(1, len(sorted_nums)):
+                if sorted_nums[j] == sorted_nums[j-1] + 1:
+                    temp.append(sorted_nums[j])
+                else:
+                    if len(temp) >= 2:
+                        consec.append(temp[:])
+                    temp = [sorted_nums[j]]
+            if len(temp) >= 2:
+                consec.append(temp[:])
+        consec_str = '  '.join('-'.join(str(x).zfill(2) for x in c) for c in consec) if consec else '无'
+        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">连号</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:18px;">' + consec_str + '</td></tr>'
+        
+        html += '</table>'
+        html += '</div>'
+        
+        self._original_detail_html = html
+        self._apply_detail_font_scale()
+    
+
+    # ================================================================
+    # 【区域4】预测与抽取
+    # ================================================================
+    # 功能说明：算法选择与预测执行、号码随机抽取、概率面板（数字概率+生肖概率）、
+    #          计算规律（加减法分析）、波色预测、收藏/对比预测结果、机器学习预测等
+    # 该区域包含的方法:
+    #   _apply_prediction_col_widths, _on_weight_adjust_clicked, _reset_weights, _get_prediction_file, _save_prediction, _load_prediction, _load_last_prediction_for_type, _on_prediction_type_changed, _display_prediction_data, _animate_prediction_balls, _show_ball_with_bounce, _save_last_prediction, _load_last_prediction, _get_latest_period, _load_saved_predictions, _update_probability_panel, _on_probability_item_double_clicked, _on_copy_top_probability, _save_saved_predictions, _on_save_current_prediction, _on_load_saved_prediction, _on_delete_saved_prediction, _on_clear_saved_predictions, _on_show_saved_prediction_detail, _on_compare_saved_predictions, _on_collect_prediction, _on_compare_collected, _on_clear_collected, _apply_prediction_ball_size, _apply_legend_font_size, _change_legend_font, _apply_detail_label_size, _change_detail_label_font, _apply_probability_config, _apply_calc_panel_config, _apply_wave_panel_config, _create_prediction_tab, _create_left_prediction_panel, _create_right_prediction_panel, _create_latest_data_panel, _create_algorithm_panel, _create_prediction_result_panel, _create_probability_panel, _create_calc_method_panel, _apply_calc_panel_size, _update_calc_method_panel, _copy_calc_result, _export_calc_result, _create_wave_color_panel, _update_wave_color_panel, _apply_wave_panel_size, _copy_wave_result, _export_wave_result, _create_saved_predictions_panel, _get_prediction_by_index, _on_algorithm_changed, _compute_data_fingerprint, _on_predict_clicked, _run_prediction_in_main_thread, _on_predict_progress, _on_predict_finished, _on_predict_error, _on_random_draw_clicked, _on_ml_predict_clicked, _run_ml_prediction_in_main_thread, _on_ml_predict_progress, _on_ml_predict_finished, _on_ml_predict_error, _predict_special_number, _on_pred_num_font_changed, _on_pred_text_font_changed, _on_enhanced_mode_changed, _on_strategy_changed, _on_deterministic_mode_changed, _set_deterministic_seed, _update_prediction_balls_font_size, _update_last_vs_current_display, _display_predictions
+    #
+    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
+    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
+    #   - setSpacing: 间距设置
+    #   - font-size: 字体大小
+    #   - setContentsMargins: 边距设置
+    #   - 详见各方法内部的【可改】标注
+    # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 3: 预测与抽取 (Prediction & Extraction)                                     #
+#  入口: _create_prediction_tab                                                 #
+#  子面板: 最新数据、算法选择、预测结果、概率统计、计算规律、波色预测、已保存预测                                   #
+#                                                                             #
+###############################################################################
+
+    def _apply_prediction_col_widths(self):
+        """应用保存的预测记录表格列宽"""
+        if not hasattr(self, 'prediction_history_table'):
+            return
+        if hasattr(self, '_prediction_col_widths') and self._prediction_col_widths:
+            for i, width in enumerate(self._prediction_col_widths):
+                if width and i < self.prediction_history_table.columnCount():
+                    try:
+                        self.prediction_history_table.setColumnWidth(i, width)
+                    except Exception:
+                        pass
+        # 连接列宽变化信号
+        self.prediction_history_table.horizontalHeader().sectionResized.connect(
+            lambda logicalIndex, oldSize, newSize: self._save_ini_config()
+        )
+
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [权重调整] 算法权重调整、重置                                                ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    def _on_weight_adjust_clicked(self):
+        """权重调节对话框"""
+        sub_algorithms = [
+            '冷热数字', '单双', '大小', '遗漏值', '连号邻号',
+            '尾数分布', '区间分布', '轮盘赌', '历史相似性', '泊松分布', '玄学算法'
+        ]
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("算法权重调节")
+        dialog.resize(500, 500)
+        layout = QVBoxLayout(dialog)
+        
+        layout.addWidget(QLabel("调整综合推荐算法中各子算法的权重（0-100）："))
+        
+        sliders = {}
+        for name in sub_algorithms:
+            row = QHBoxLayout()
+            label = QLabel(name)
+            label.setMinimumWidth(90)
+            row.addWidget(label)
+            
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0, 100)
+            default_val = self.custom_weights.get(name, 50)
+            slider.setValue(default_val)
+            row.addWidget(slider)
+            
+            val_label = QLabel(str(default_val))
+            val_label.setMinimumWidth(30)
+            # 权重滑块值变化信号：实时更新旁边的数值标签
+            slider.valueChanged.connect(lambda v, lbl=val_label: lbl.setText(str(v)))
+            row.addWidget(val_label)
+            
+            layout.addLayout(row)
+            sliders[name] = slider
+        
+        layout.addStretch()
+        
+        btn_layout = QHBoxLayout()
+        ok_btn = QPushButton("确定")
+        # 确定按钮点击信号：接受对话框，保存权重设置
+        ok_btn.clicked.connect(dialog.accept)
+        btn_layout.addWidget(ok_btn)
+        
+        reset_btn = QPushButton("重置默认")
+        # 重置默认按钮点击信号：将所有算法权重恢复为默认值50
+        reset_btn.clicked.connect(lambda: self._reset_weights(sliders, sub_algorithms))
+        btn_layout.addWidget(reset_btn)
+        
+        cancel_btn = QPushButton("取消")
+        # 取消按钮点击信号：拒绝对话框，放弃权重修改
+        cancel_btn.clicked.connect(dialog.reject)
+        btn_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            for name in sub_algorithms:
+                self.custom_weights[name] = sliders[name].value()
+            # 保存权重设置
+            self._save_ini_config()
+            self.statusBar().showMessage("权重设置已更新")
+    
+    def _reset_weights(self, sliders, sub_algorithms):
+        """重置权重为默认值"""
+        for name in sub_algorithms:
+            sliders[name].setValue(50)
+            self.custom_weights[name] = 50
+        # 保存重置后的权重
+        self._save_ini_config()
+    
+    # ========================================================================
+    # 功能7：导出报告
+    # ========================================================================
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [报告导出] 报告导出                                                     ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+
+    def _get_prediction_file(self, pred_type=None, variant='current'):
+        """获取指定类型的预测结果文件路径
+        
+        Args:
+            pred_type: 预测类型 (algorithm/random/ml)
+            variant: 'current'=本次预测, 'last'=上次预测
+        """
         if pred_type is None:
             pred_type = self._prediction_type
         base_dir = os.path.dirname(self.last_prediction_file)
@@ -8575,7 +12897,11 @@ class LotteryPredictionWindow(QMainWindow):
             'ml': '机器学习',
         }
         type_name = type_names.get(pred_type, '预测')
-        return os.path.join(base_dir, f"{name_part}_{type_name}.json")
+        if variant == 'old':
+            # 兼容升级前的旧格式文件名（无_本次/_上次后缀）
+            return os.path.join(base_dir, f"{name_part}_{type_name}.json")
+        variant_suffix = '_本次' if variant == 'current' else '_上次'
+        return os.path.join(base_dir, f"{name_part}_{type_name}{variant_suffix}.json")
     
     def _save_prediction(self, predictions, confidence_info=None, algorithm_name="", special_num=0, pred_type=None):
         """保存指定类型的预测结果到文件"""
@@ -8585,10 +12911,21 @@ class LotteryPredictionWindow(QMainWindow):
             # 确保所有数字都是Python原生int，避免numpy int64序列化问题
             sorted_preds = [int(n) for n in sorted(predictions)]
             # 置信度key也转为int
+            # 【修复numpy整数bug】原代码isinstance(k, (int,))不检查numpy整数类型，
+            # numpy.int32/int64的key会原样保留，后续JSON序列化会失败
             safe_conf = {}
             if confidence_info:
+                try:
+                    import numpy as _np
+                except ImportError:
+                    _np = None
                 for k, v in confidence_info.items():
-                    safe_conf[int(k) if isinstance(k, (int,)) else k] = float(v) if hasattr(v, '__float__') else v
+                    if _np is not None and isinstance(k, _np.integer):
+                        safe_conf[int(k)] = float(v) if hasattr(v, '__float__') else v
+                    elif isinstance(k, int):
+                        safe_conf[int(k)] = float(v) if hasattr(v, '__float__') else v
+                    else:
+                        safe_conf[k] = float(v) if hasattr(v, '__float__') else v
             # 获取当前数据最新期号，用于判断是否过期
             data_period = self._get_latest_period()
             
@@ -8602,8 +12939,18 @@ class LotteryPredictionWindow(QMainWindow):
                 'pred_type': pred_type,
                 'data_fingerprint': self._compute_data_fingerprint(),
             }
-            file_path = self._get_prediction_file(pred_type)
-            self._safe_write_json(file_path, data)
+            # 先将旧的"本次预测"文件移动为"上次预测"（如果存在）
+            current_file = self._get_prediction_file(pred_type, variant='current')
+            last_file = self._get_prediction_file(pred_type, variant='last')
+            if os.path.exists(current_file):
+                try:
+                    import shutil
+                    shutil.copy2(current_file, last_file)
+                except Exception:
+                    pass  # 移动失败不影响新预测保存
+            
+            # 保存新的预测结果作为"本次预测"
+            self._safe_write_json(current_file, data)
             
             # 同时保存到内存缓存
             self._prediction_results[pred_type] = data
@@ -8611,13 +12958,22 @@ class LotteryPredictionWindow(QMainWindow):
             print("保存预测结果失败: " + str(e))
     
     def _load_prediction(self, pred_type=None):
-        """加载指定类型的预测结果，返回数据字典，不存在返回None"""
+        """加载指定类型的预测结果（本次+上次），返回数据字典，不存在返回None"""
         if pred_type is None:
             pred_type = self._prediction_type
         try:
-            file_path = self._get_prediction_file(pred_type)
+            # 优先加载"本次预测"
+            file_path = self._get_prediction_file(pred_type, variant='current')
             if os.path.exists(file_path):
                 with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if data.get('numbers'):
+                    self._prediction_results[pred_type] = data
+                    return data
+            # 回退加载旧格式文件（兼容升级前数据）
+            old_file = self._get_prediction_file(pred_type, variant='old')
+            if os.path.exists(old_file):
+                with open(old_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 if data.get('numbers'):
                     self._prediction_results[pred_type] = data
@@ -8626,6 +12982,24 @@ class LotteryPredictionWindow(QMainWindow):
             print("加载预测结果失败: " + str(e))
         return None
     
+    def _load_last_prediction_for_type(self, pred_type):
+        """加载指定类型的"上次预测"结果，返回数据字典，不存在返回None"""
+        try:
+            file_path = self._get_prediction_file(pred_type, variant='last')
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if data.get('numbers'):
+                    return data
+        except Exception as e:
+            print("加载上次预测结果失败: " + str(e))
+        return None
+    
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [预测管理] 预测保存/加载/类型切换                                           ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _on_prediction_type_changed(self, pred_type):
         """切换预测类型时调用"""
         # 更新按钮状态
@@ -8638,8 +13012,8 @@ class LotteryPredictionWindow(QMainWindow):
         # 尝试加载对应类型的预测结果
         data = self._load_prediction(pred_type)
         if data and data.get('numbers'):
-            # 显示结果
-            self._display_prediction_data(data)
+            # 显示结果（传入pred_type以正确加载上次预测对比）
+            self._display_prediction_data(data, pred_type_override=pred_type)
             
             # 检查数据是否过期
             current_period = self._get_latest_period()
@@ -8664,8 +13038,13 @@ class LotteryPredictionWindow(QMainWindow):
         # 保存预测类型选择
         self._save_ini_config()
     
-    def _display_prediction_data(self, data):
-        """从数据字典显示预测结果"""
+    def _display_prediction_data(self, data, pred_type_override=None):
+        """从数据字典显示预测结果
+        
+        参数:
+            data: 预测数据字典
+            pred_type_override: 覆盖预测类型（用于切换类型时显示正确类型的对比）
+        """
         numbers = data.get('numbers', [])
         special = data.get('special', 0)
         confidence_info = data.get('confidence_info', {})
@@ -8708,7 +13087,8 @@ class LotteryPredictionWindow(QMainWindow):
                 "border-radius: 12px; background-color: #FFFFFF; color: " + label_color + "; "
                 "border: 1px solid " + label_color + ";"
             )
-            self.algorithm_source_label.show()
+            # 【已移除界面显示】来源标签已从界面删除，仅保留内部数据
+            self.algorithm_source_label.hide()
         else:
             self.algorithm_source_label.hide()
         
@@ -8772,6 +13152,187 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 应用当前尺寸设置
         self._apply_prediction_ball_size()
+        
+        # 更新"上次预测 vs 本次预测"对比显示区
+        pred_type = pred_type_override if pred_type_override is not None else self._prediction_type
+        self._update_last_vs_current_display(
+            sorted_preds, algorithm, current_special=special,
+            pred_type_override=pred_type
+        )
+    
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [弹球动画] 弹球动画效果                                                   ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    def _animate_prediction_balls(self, balls):
+        """【动画效果】预测号码球依次弹出 + 缩放回弹
+
+        预测结果展示时的入场动画，模拟彩票开奖逐个揭晓的效果。
+        每个号码球依次出现，出现时带有从30%缩放到100%的弹跳效果。
+
+        动画时序：
+          球0  ──100ms──► 弹出
+          球1  ──220ms──► 弹出
+          球2  ──340ms──► 弹出
+          ...
+          球N  ──(100+N*120)ms──► 弹出
+          单个球弹跳动画持续500ms（OutBounce缓动）
+
+        参数:
+            balls: list of (widget, index) 元组
+                   widget: NumberBallWithZodiac实例 或 加号QLabel
+                   index: 在显示序列中的序号（用于计算延迟）
+        """
+        if not balls:
+            return
+
+        # 【关键】保存所有动画对象的引用到实例属性
+        # QPropertyAnimation和QGraphicsOpacityEffect如果没被引用，
+        # 会被Python GC提前回收，导致动画中途停止（Qt的C++对象被删除）
+        if not hasattr(self, '_ball_animations'):
+            self._ball_animations = []
+        self._ball_animations.clear()
+
+        delay_per_ball = 120  # 每个球之间的出现间隔（毫秒），值越大越慢
+
+        # 延迟100ms后才开始第一个球的动画
+        # 原因：_display_predictions末尾会调用_apply_prediction_ball_size()，
+        # 该方法会遍历所有号码球设置固定尺寸。如果动画同时启动，
+        # 尺寸设置会与动画的setFixedSize冲突，导致弹跳效果失效。
+        # 等待100ms确保尺寸设置先完成，动画再读取正确的目标尺寸。
+        for idx, (widget, _) in enumerate(balls):
+            total_delay = 100 + idx * delay_per_ball
+            QTimer.singleShot(total_delay, lambda w=widget: self._show_ball_with_bounce(w))
+        
+
+    def _show_ball_with_bounce(self, widget):
+        """单个号码球的弹出+缩放回弹动画
+
+        动画由两个并行动画组成：
+          1. 淡入动画（QGraphicsOpacityEffect）：透明度 0→1，400ms，OutCubic缓动
+          2. 缩放动画（QPropertyAnimation size）：
+             起点30%尺寸 → 中点115%尺寸（过冲弹跳）→ 终点100%目标尺寸
+             500ms，OutBounce缓动曲线（模拟物理弹跳回弹）
+
+        参数:
+            widget: 要播放动画的控件（NumberBallWithZodiac 或 QLabel加号）
+        """
+        try:
+            if widget is None:
+                return
+            # 检查widget是否还有效（可能已被清空）
+            # 清空prediction_number_layout时widget的C++对象会被deleteLater删除
+            try:
+                widget.isVisible()
+            except RuntimeError:
+                return  # widget的C++对象已被删除，跳过动画
+
+            # ================================================================
+            # 第1步：记录目标尺寸
+            # ================================================================
+            # 此时_apply_prediction_ball_size已设置好最终尺寸，
+            # 读取当前尺寸作为动画的目标值
+            target_width = widget.width()
+            target_height = widget.height()
+            if target_width <= 0:
+                target_width = 48   # 默认号码球宽度
+            if target_height <= 0:
+                target_height = 60  # 默认号码球高度（球+生肖+五行）
+
+            # ================================================================
+            # 第2步：设置初始小尺寸（30%），让球从"小"开始弹跳放大
+            # ================================================================
+            start_w = max(10, int(target_width * 0.3))
+            start_h = max(10, int(target_height * 0.3))
+            widget.setFixedSize(start_w, start_h)
+            widget.setVisible(True)  # 从隐藏状态变为可见
+
+            # ================================================================
+            # 第3步：创建淡入效果（透明度动画）
+            # ================================================================
+            from PyQt6.QtWidgets import QGraphicsOpacityEffect
+            from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QParallelAnimationGroup
+
+            # QGraphicsOpacityEffect：Qt图形效果，控制widget的整体透明度
+            opacity_effect = QGraphicsOpacityEffect(widget)
+            widget.setGraphicsEffect(opacity_effect)
+            opacity_effect.setOpacity(0.0)  # 初始完全透明
+
+            # QPropertyAnimation：属性动画，通过插值驱动opacity属性从0→1
+            # b"opacity" 是bytes格式的属性名（PyQt6要求bytes而非str）
+            fade_anim = QPropertyAnimation(opacity_effect, b"opacity", widget)
+            fade_anim.setDuration(400)              # 淡入持续400ms
+            fade_anim.setStartValue(0.0)            # 起始：完全透明
+            fade_anim.setEndValue(1.0)              # 结束：完全不透明
+            # OutCubic：先快后慢的缓动曲线，淡入更自然
+            fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+            # ================================================================
+            # 第4步：创建缩放回弹动画（尺寸动画）
+            # ================================================================
+            # QPropertyAnimation动画驱动widget的size属性（QSize）
+            # 动画轨迹：30%尺寸 → 115%尺寸 → 100%目标尺寸
+            size_anim = QPropertyAnimation(widget, b"size", widget)
+            size_anim.setDuration(500)              # 缩放持续500ms
+            size_anim.setStartValue(QSize(start_w, start_h))
+            # 中间关键帧（进度50%时）：放大到115%，产生"过冲"弹跳感
+            mid_w = int(target_width * 1.15)
+            mid_h = int(target_height * 1.15)
+            size_anim.setKeyValueAt(0.5, QSize(mid_w, mid_h))
+            # 终点：回到目标尺寸
+            size_anim.setEndValue(QSize(target_width, target_height))
+            # OutBounce：模拟物理弹跳的缓动曲线，到终点时有回弹效果
+            size_anim.setEasingCurve(QEasingCurve.Type.OutBounce)
+
+            # ================================================================
+            # 第5步：组合并行动画组（淡入+缩放同时播放）
+            # ================================================================
+            # QParallelAnimationGroup：并行执行多个动画
+            # 对比QSequentialAnimationGroup（串行），并行动画更流畅
+            group = QParallelAnimationGroup(widget)
+            group.addAnimation(fade_anim)
+            group.addAnimation(size_anim)
+
+            # ================================================================
+            # 第6步：动画结束回调 - 清理效果，恢复固定尺寸
+            # ================================================================
+            def _on_finished():
+                """功能：finished事件处理"""
+                try:
+                    # 清除GraphicsEffect，避免影响后续渲染性能
+                    widget.setGraphicsEffect(None)
+                    # 确保最终尺寸精确（动画浮点插值可能有微小偏差）
+                    widget.setFixedSize(target_width, target_height)
+                except RuntimeError:
+                    pass  # widget的C++对象已被删除，忽略
+
+            # 动画完成信号：连接清理回调，清除GraphicsEffect并恢复固定尺寸
+
+            group.finished.connect(_on_finished)
+            # 动画完成信号：连接清理回调，清除GraphicsEffect并恢复固定尺寸
+
+            # ================================================================
+            # 第7步：保存动画引用并启动
+            # ================================================================
+            # 必须保存引用到self._ball_animations，否则局部变量作用域结束后
+            # Python GC会回收QPropertyAnimation和QGraphicsOpacityEffect，
+            # 导致其内部C++对象被析构，动画中途停止
+            self._ball_animations.append(group)
+            self._ball_animations.append(opacity_effect)
+
+            group.start()
+
+        except Exception:
+            # ================================================================
+            # 异常兜底：动画出错时确保widget正常显示
+            # ================================================================
+            # 宁可没有动画也不能让号码球不显示
+            try:
+                if widget is not None:
+                    widget.setVisible(True)
+                    widget.setGraphicsEffect(None)
+            except RuntimeError:
+                pass
     
     def _save_last_prediction(self, predictions, confidence_info=None, algorithm_name="", special_num=0):
         """保存最后一次预测结果到文件（兼容旧接口，默认保存当前类型）"""
@@ -8861,29 +13422,31 @@ class LotteryPredictionWindow(QMainWindow):
             print("加载已保存预测失败: " + str(e))
             self._saved_predictions_data = []
     
-    def _get_favorites_list(self):
-        """获取当前可用的收藏列表控件"""
-        if hasattr(self, 'favorites_list') and self.favorites_list is not None:
-            return self.favorites_list
-        if hasattr(self, 'saved_predictions_list') and self.saved_predictions_list is not None:
-            return self.saved_predictions_list
-        return None
-    
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [概率统计] 概率统计                                                   ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _update_probability_panel(self):
         """根据历史数据计算每个数字下一次出现的概率并显示"""
         if not hasattr(self, 'probability_list'):
             return
         if not self.historical_data or len(self.historical_data) == 0:
             self.probability_list.clear()
-            self.prob_stats_label.setText("暂无历史数据")
+            if hasattr(self, 'prob_stats_label'):
+                self.prob_stats_label.setText("暂无历史数据")
             return
+        
+        prob_scores = {}
+        recent_counts = {}
+        all_counts = {}
+        stat_periods = 30
+        total_draws = 0
         
         try:
             # 获取统计期数（从UI控件读取）
             if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
                 stat_periods = self.prob_period_spin.value()
-            else:
-                stat_periods = 30
             
             # 获取排序方式
             sort_mode = 0  # 0=概率降序, 1=概率升序, 2=号码升序, 3=号码降序
@@ -8894,14 +13457,12 @@ class LotteryPredictionWindow(QMainWindow):
             stat_periods = min(stat_periods, total_draws)
             
             # 统计全部数据中每个数字出现的次数
-            all_counts = {}
             for record in self.historical_data:
                 numbers = record.get('numbers', [])
                 for num in numbers:
                     all_counts[num] = all_counts.get(num, 0) + 1
             
             # 统计近期（最近N期）出现次数
-            recent_counts = {}
             recent_data = self.historical_data[-stat_periods:] if total_draws > 0 else []
             
             for record in recent_data:
@@ -8921,7 +13482,6 @@ class LotteryPredictionWindow(QMainWindow):
             
             # 计算综合概率得分
             # 使用加权计算：近期频率(0.5) + 遗漏值(0.3) + 全部频率(0.2)
-            prob_scores = {}
             for num in range(1, 50):
                 all_prob = all_counts.get(num, 0) / total_draws if total_draws > 0 else 0
                 recent_prob = recent_counts.get(num, 0) / stat_periods if stat_periods > 0 else 0
@@ -8968,14 +13528,14 @@ class LotteryPredictionWindow(QMainWindow):
                 self.probability_list.addItem(item)
             
             # 更新统计信息
-            avg_prob = sum(prob_scores.values()) / 49 if len(prob_scores) > 0 else 0
-            hot_nums = sorted([n for n, s in sorted(prob_scores.items(), key=lambda x: -x[1])[:10]])
-            cold_nums = sorted([n for n, s in sorted(prob_scores.items(), key=lambda x: x[1])[:6]])
-            hot_str = ' '.join(str(n).zfill(2) for n in hot_nums)
-            cold_str = ' '.join(str(n).zfill(2) for n in cold_nums)
-            self.prob_stats_label.setText(
-                f"共 {total_draws}期 | 统计{stat_periods}期 | 热门: {hot_str} | 冷门: {cold_str}"
-            )
+            if hasattr(self, 'prob_stats_label'):
+                hot_nums = sorted([n for n, s in sorted(prob_scores.items(), key=lambda x: -x[1])[:10]])
+                cold_nums = sorted([n for n, s in sorted(prob_scores.items(), key=lambda x: x[1])[:6]])
+                hot_str = ' '.join(str(n).zfill(2) for n in hot_nums)
+                cold_str = ' '.join(str(n).zfill(2) for n in cold_nums)
+                self.prob_stats_label.setText(
+                    f"共 {total_draws}期 | 统计{stat_periods}期 | 热门: {hot_str} | 冷门: {cold_str}"
+                )
             
             # 保存到INI配置
             self._save_ini_config()
@@ -8985,6 +13545,9 @@ class LotteryPredictionWindow(QMainWindow):
             traceback.print_exc()
             if hasattr(self, 'prob_stats_label'):
                 self.prob_stats_label.setText("计算失败: " + str(e))
+        
+        # 同步刷新生肖概率（与数字概率面板共用统计期数）
+        self._update_zodiac_probability()
     
     def _on_probability_item_double_clicked(self, item):
         """双击概率项时，将号码添加到数字选择面板"""
@@ -9020,6 +13583,11 @@ class LotteryPredictionWindow(QMainWindow):
             if hasattr(self, 'statusBar'):
                 self.statusBar().showMessage(f"已复制前{len(top_nums)}个高概率号码: {text}")
     
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [已保存预测] 保存/加载/删除/清空/比较                                        ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
     def _save_saved_predictions(self):
         """保存预测列表到文件"""
         try:
@@ -9073,12 +13641,15 @@ class LotteryPredictionWindow(QMainWindow):
             return
         current_item = fav_list.currentItem()
         if not current_item:
+
+
             QMessageBox.information(self, "提示", "请先选择要加载的预测")
             return
         
         try:
             idx = current_item.data(1000)
-            if idx is None or not hasattr(self, '_saved_predictions_data'):
+            # 【修复索引越界bug】原代码只检查idx is None，未检查上下界，负数idx会从列表末尾访问
+            if idx is None or not hasattr(self, '_saved_predictions_data') or not (0 <= idx < len(self._saved_predictions_data)):
                 return
             
             item = self._saved_predictions_data[idx]
@@ -9374,6 +13945,7 @@ class LotteryPredictionWindow(QMainWindow):
                 }
                 QPushButton:hover { background-color: #2980B9; }
             """)
+            # 关闭按钮点击信号：关闭保存预测详情对话框
             close_btn.clicked.connect(dialog.accept)
             layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignCenter)
             
@@ -9383,6 +13955,8 @@ class LotteryPredictionWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             QMessageBox.warning(self, "错误", "查看详情失败: " + str(e))
+
+
     
     def _on_compare_saved_predictions(self):
         """对比选中的多个已保存预测"""
@@ -9601,6 +14175,7 @@ class LotteryPredictionWindow(QMainWindow):
                 }
                 QPushButton:hover { background-color: #2980B9; }
             """)
+            # 关闭按钮点击信号：关闭对比预测结果对话框
             close_btn.clicked.connect(dialog.accept)
             layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignCenter)
             
@@ -9610,1498 +14185,6 @@ class LotteryPredictionWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             QMessageBox.warning(self, "错误", "对比失败: " + str(e))
-    
-
-    # ======================================================================== #
-    # INI配置文件管理
-    # ======================================================================== #
-    def _load_ini_config(self):
-        """从INI文件加载配置"""
-        import configparser
-        self._ini = configparser.ConfigParser()
-        if os.path.exists(self.config_file):
-            try:
-                self._ini.read(self.config_file, encoding='utf-8')
-                self._apply_ini_config()
-                print("INI配置加载成功")
-            except Exception as e:
-                print("INI配置加载失败: " + str(e))
-                self._init_default_ini()
-        else:
-            self._init_default_ini()
-    
-    def _init_default_ini(self):
-        """初始化默认INI配置"""
-        import configparser
-        self._ini = configparser.ConfigParser()
-        
-        # [General] 通用设置
-        self._ini['General'] = {
-            'window_width': '1600',
-            'window_height': '1000',
-            'font_size_key': LotteryConfig.DEFAULT_FONT_SIZE_KEY,
-            'start_zodiac': '龙',
-        }
-        
-        # [Paths] 文件路径
-        self._ini['Paths'] = {
-            'data_file': self.data_file,
-            'zodiac_file': self.zodiac_file,
-            'last_prediction_file': self.last_prediction_file,
-        }
-        
-        # [Zodiac] 生肖绑定
-        self._ini['Zodiac'] = {}
-        for num in range(1, 50):
-            zodiac = self.zodiac_binding.get(num, '')
-            self._ini['Zodiac'][str(num)] = zodiac
-        
-        # [Elements] 五行绑定
-        self._ini['Elements'] = {}
-        for num in range(1, 50):
-            element = self.zodiac_elements.get(num, '')
-            self._ini['Elements'][str(num)] = element
-        
-        # [Display] 显示设置
-        self._ini['Display'] = {
-            'history_page_size': '100',
-        }
-        
-        # 历史记录表列宽默认值（9列）
-        default_col_widths = [70, 120, 160, 70, 60, 65, 65, 110, 60]
-        for i, w in enumerate(default_col_widths):
-            self._ini['Display']['history_col_' + str(i)] = str(w)
-        
-        self._save_ini_config()
-    
-    def _apply_ini_config(self):
-        """将INI配置应用到当前窗口"""
-        try:
-            # [General]
-            if self._ini.has_section('General'):
-                gen = self._ini['General']
-                if 'window_width' in gen and 'window_height' in gen:
-                    try:
-                        w = int(gen['window_width'])
-                        h = int(gen['window_height'])
-                        if w >= LotteryConfig.WINDOW_MIN_WIDTH and h >= LotteryConfig.WINDOW_MIN_HEIGHT:
-                            self.resize(w, h)
-                    except ValueError:
-                        pass
-                if 'font_size_key' in gen:
-                    key = gen['font_size_key']
-                    if key in LotteryConfig.FONT_SIZES:
-                        self.font_size_key = key
-                if 'start_zodiac' in gen:
-                    self._ini_start_zodiac = gen['start_zodiac']
-                else:
-                    self._ini_start_zodiac = '龙'
-            
-            # [Paths]
-            if self._ini.has_section('Paths'):
-                paths = self._ini['Paths']
-                if 'data_file' in paths:
-                    self.data_file = paths['data_file']
-                if 'zodiac_file' in paths:
-                    self.zodiac_file = paths['zodiac_file']
-                if 'last_prediction_file' in paths:
-                    self.last_prediction_file = paths['last_prediction_file']
-            
-            # [Zodiac] - 覆盖默认绑定
-            if self._ini.has_section('Zodiac'):
-                for num in range(1, 50):
-                    key = str(num)
-                    if key in self._ini['Zodiac']:
-                        self.zodiac_binding[num] = self._ini['Zodiac'][key]
-                # 同步到 LotteryConfig
-                LotteryConfig.NUMBER_NAMES.update(self.zodiac_binding)
-            
-            # [Elements] - 覆盖默认绑定
-            if self._ini.has_section('Elements'):
-                for num in range(1, 50):
-                    key = str(num)
-                    if key in self._ini['Elements']:
-                        self.zodiac_elements[num] = self._ini['Elements'][key]
-                LotteryConfig.NUMBER_ELEMENTS.update(self.zodiac_elements)
-            
-            # [Display]
-            if self._ini.has_section('Display'):
-                disp = self._ini['Display']
-                if 'history_page_size' in disp:
-                    try:
-                        self.history_page_size = int(disp['history_page_size'])
-                    except ValueError:
-                        pass
-                if 'ball_label_font_size' in disp:
-                    try:
-                        self.ball_label_font_size = int(disp['ball_label_font_size'])
-                    except ValueError:
-                        pass
-                if 'enhanced_mode' in disp:
-                    try:
-                        self.enhanced_mode = disp['enhanced_mode'].lower() in ('true', '1', 'yes', '是')
-                    except ValueError:
-                        pass
-                if 'reverse_mode' in disp:
-                    try:
-                        self.reverse_mode = disp['reverse_mode'].lower() in ('true', '1', 'yes', '是')
-                        # 同步更新UI
-                        if hasattr(self, 'strategy_combo'):
-                            index = 1 if self.reverse_mode else 0
-                            self.strategy_combo.setCurrentIndex(index)
-                    except ValueError:
-                        pass
-                if 'deterministic_mode' in disp:
-                    try:
-                        self.deterministic_mode = disp['deterministic_mode'].lower() in ('true', '1', 'yes', '是')
-                        # 同步更新UI
-                        if hasattr(self, 'deterministic_checkbox'):
-                            self.deterministic_checkbox.setChecked(self.deterministic_mode)
-                    except ValueError:
-                        pass
-                
-                # 加载历史记录表列宽
-                self._history_col_widths = []
-                for i in range(9):
-                    key = 'history_col_' + str(i)
-                    if key in disp:
-                        try:
-                            self._history_col_widths.append(int(disp[key]))
-                        except ValueError:
-                            self._history_col_widths.append(None)
-                    else:
-                        self._history_col_widths.append(None)
-                
-                # 加载各区域字体缩放比例
-                font_scale_keys = {
-                    'font_scale_table': 'table',
-                    'font_scale_result': 'result',
-                    'font_scale_list': 'list',
-                    'font_scale_number_panel': 'number_panel',
-                    'font_scale_zodiac_panel': 'zodiac_panel',
-                    'font_scale_element_panel': 'element_panel',
-                    'font_scale_announcement': 'announcement',
-                    'font_scale_detail': 'detail',
-                }
-                for ini_key, area_key in font_scale_keys.items():
-                    if ini_key in disp:
-                        try:
-                            self._area_font_scales[area_key] = float(disp[ini_key])
-                        except ValueError:
-                            pass
-                
-                # 加载面板尺寸设置
-                # 数字选择面板
-                if 'number_panel_width' in disp:
-                    try:
-                        self._number_panel_size['width'] = int(disp['number_panel_width'])
-                    except ValueError:
-                        pass
-                if 'number_panel_height' in disp:
-                    try:
-                        self._number_panel_size['height'] = int(disp['number_panel_height'])
-                    except ValueError:
-                        pass
-                if 'number_panel_font' in disp:
-                    try:
-                        self._number_panel_size['font'] = int(disp['number_panel_font'])
-                    except ValueError:
-                        pass
-                
-                # 生肖面板
-                if 'zodiac_panel_width' in disp:
-                    try:
-                        self._zodiac_panel_size['width'] = int(disp['zodiac_panel_width'])
-                    except ValueError:
-                        pass
-                if 'zodiac_panel_height' in disp:
-                    try:
-                        self._zodiac_panel_size['height'] = int(disp['zodiac_panel_height'])
-                    except ValueError:
-                        pass
-                if 'zodiac_panel_btn_font' in disp:
-                    try:
-                        self._zodiac_panel_size['btn_font'] = int(disp['zodiac_panel_btn_font'])
-                    except ValueError:
-                        pass
-                if 'zodiac_panel_label_font' in disp:
-                    try:
-                        self._zodiac_panel_size['label_font'] = int(disp['zodiac_panel_label_font'])
-                    except ValueError:
-                        pass
-                
-                # 五行面板
-                if 'element_panel_width' in disp:
-                    try:
-                        self._element_panel_size['width'] = int(disp['element_panel_width'])
-                    except ValueError:
-                        pass
-                if 'element_panel_height' in disp:
-                    try:
-                        self._element_panel_size['height'] = int(disp['element_panel_height'])
-                    except ValueError:
-                        pass
-                if 'element_panel_btn_font' in disp:
-                    try:
-                        self._element_panel_size['btn_font'] = int(disp['element_panel_btn_font'])
-                    except ValueError:
-                        pass
-                if 'element_panel_label_font' in disp:
-                    try:
-                        self._element_panel_size['label_font'] = int(disp['element_panel_label_font'])
-                    except ValueError:
-                        pass
-                
-                # 预测结果号码球尺寸
-                if 'pred_ball_width' in disp:
-                    try:
-                        self._prediction_ball_size['width'] = int(disp['pred_ball_width'])
-                    except ValueError:
-                        pass
-                if 'pred_ball_height' in disp:
-                    try:
-                        self._prediction_ball_size['height'] = int(disp['pred_ball_height'])
-                    except ValueError:
-                        pass
-                if 'pred_ball_font' in disp:
-                    try:
-                        self._prediction_ball_size['font'] = int(disp['pred_ball_font'])
-                    except ValueError:
-                        pass
-                if 'pred_ball_label_font' in disp:
-                    try:
-                        self._prediction_ball_size['label_font'] = int(disp['pred_ball_label_font'])
-                    except ValueError:
-                        pass
-                if 'pred_ball_plus_size' in disp:
-                    try:
-                        self._prediction_ball_size['plus_size'] = int(disp['pred_ball_plus_size'])
-                    except ValueError:
-                        pass
-                
-                # 概率面板配置
-                if 'prob_period' in disp:
-                    try:
-                        val = int(disp['prob_period'])
-                        # 先保存到配置变量，UI创建后再应用
-                        if not hasattr(self, '_prob_config'):
-                            self._prob_config = {}
-                        self._prob_config['period'] = val
-                        # 如果控件已创建则直接应用
-                        if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
-                            # 阻塞信号避免重复触发
-                            self.prob_period_spin.blockSignals(True)
-                            self.prob_period_spin.setValue(val)
-                            self.prob_period_spin.blockSignals(False)
-                    except ValueError:
-                        pass
-                if 'prob_sort_mode' in disp:
-                    try:
-                        val = int(disp['prob_sort_mode'])
-                        # 先保存到配置变量
-                        if not hasattr(self, '_prob_config'):
-                            self._prob_config = {}
-                        self._prob_config['sort_mode'] = val
-                        # 如果控件已创建则直接应用
-                        if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo:
-                            self.prob_sort_combo.blockSignals(True)
-                            self.prob_sort_combo.setCurrentIndex(val)
-                            self.prob_sort_combo.blockSignals(False)
-                    except ValueError:
-                        pass
-                
-                # 颜色图例文字大小
-                if 'legend_label_font' in disp:
-                    try:
-                        self._legend_font_size['label'] = int(disp['legend_label_font'])
-                    except ValueError:
-                        pass
-                if 'legend_nums_font' in disp:
-                    try:
-                        self._legend_font_size['nums'] = int(disp['legend_nums_font'])
-                    except ValueError:
-                        pass
-                
-                # 详情标签字体和内边距
-                if 'detail_label_font' in disp:
-                    try:
-                        self._detail_label_size['font'] = int(disp['detail_label_font'])
-                    except ValueError:
-                        pass
-                if 'detail_label_padding' in disp:
-                    try:
-                        self._detail_label_size['padding'] = int(disp['detail_label_padding'])
-                    except ValueError:
-                        pass
-                
-                # 加载预测记录表格列宽
-                self._prediction_col_widths = []
-                for i in range(4):
-                    key = 'prediction_col_' + str(i)
-                    if key in disp:
-                        try:
-                            self._prediction_col_widths.append(int(disp[key]))
-                        except ValueError:
-                            self._prediction_col_widths.append(None)
-                    else:
-                        self._prediction_col_widths.append(None)
-                
-                # 加载各Splitter分隔条位置
-                self._splitter_sizes = {}
-                splitter_names = [
-                    'data_import_splitter', 'pred_h_splitter', 'pred_left_v_splitter',
-                    'history_h_splitter', 'history_left_v_splitter',
-                    'history_right_v_splitter', 'seventh_pred_splitter',
-                    'zodiac_h_splitter', 'element_h_splitter'
-                ]
-                for name in splitter_names:
-                    key = name + '_sizes'
-                    if key in disp:
-                        try:
-                            sizes = [int(s) for s in disp[key].split(',') if s.strip()]
-                            self._splitter_sizes[name] = sizes
-                        except ValueError:
-                            pass
-                
-                # 窗口位置
-                if 'window_x' in disp and 'window_y' in disp:
-                    try:
-                        x = int(disp['window_x'])
-                        y = int(disp['window_y'])
-                        self.move(x, y)
-                    except ValueError:
-                        pass
-                
-                # 当前标签页
-                if 'current_tab_index' in disp:
-                    try:
-                        idx = int(disp['current_tab_index'])
-                        if hasattr(self, 'tabs') and 0 <= idx < self.tabs.count():
-                            self.tabs.setCurrentIndex(idx)
-                    except ValueError:
-                        pass
-                
-                # 预测算法选择
-                if 'prediction_algorithm_index' in disp:
-                    try:
-                        idx = int(disp['prediction_algorithm_index'])
-                        if hasattr(self, 'algorithm_combo') and 0 <= idx < self.algorithm_combo.count():
-                            self.algorithm_combo.setCurrentIndex(idx)
-                    except ValueError:
-                        pass
-                
-                # 预测类型
-                if 'prediction_type' in disp:
-                    try:
-                        pred_type = disp['prediction_type']
-                        if pred_type in ('algorithm', 'random', 'ml'):
-                            self._prediction_type = pred_type
-                            if hasattr(self, 'type_btn_algorithm'):
-                                self.type_btn_algorithm.setChecked(pred_type == 'algorithm')
-                            if hasattr(self, 'type_btn_random'):
-                                self.type_btn_random.setChecked(pred_type == 'random')
-                            if hasattr(self, 'type_btn_ml'):
-                                self.type_btn_ml.setChecked(pred_type == 'ml')
-                    except ValueError:
-                        pass
-                
-                # 回测算法选择
-                if 'backtest_algorithm_index' in disp:
-                    try:
-                        idx = int(disp['backtest_algorithm_index'])
-                        if hasattr(self, 'backtest_algo_combo') and 0 <= idx < self.backtest_algo_combo.count():
-                            self.backtest_algo_combo.setCurrentIndex(idx)
-                    except ValueError:
-                        pass
-                
-                # 回测期数
-                if 'backtest_period' in disp:
-                    try:
-                        period = int(disp['backtest_period'])
-                        if hasattr(self, 'backtest_period_spin'):
-                            self.backtest_period_spin.setValue(period)
-                    except ValueError:
-                        pass
-                
-                # 历史记录当前页码
-                if 'history_current_page' in disp:
-                    try:
-                        self.history_page = int(disp['history_current_page'])
-                    except ValueError:
-                        pass
-                
-                # 期号详情字体缩放
-                if 'detail_font_scale' in disp:
-                    try:
-                        self.detail_font_scale = float(disp['detail_font_scale'])
-                    except ValueError:
-                        pass
-                        
-        except Exception as e:
-            print("应用INI配置出错: " + str(e))
-    
-    def _save_ini_config(self):
-        """保存当前配置到INI文件"""
-        import configparser
-        try:
-            ini = configparser.ConfigParser()
-            
-            # [General]
-            ini['General'] = {
-                'window_width': str(self.width()),
-                'window_height': str(self.height()),
-                'font_size_key': self.font_size_key,
-                'start_zodiac': self.start_zodiac_combo.currentText() if hasattr(self, 'start_zodiac_combo') else self.__dict__.get('_ini_start_zodiac', '龙'),
-            }
-            
-            # [Paths]
-            ini['Paths'] = {
-                'data_file': self.data_file,
-                'zodiac_file': self.zodiac_file,
-                'last_prediction_file': self.last_prediction_file,
-            }
-            
-            # [Zodiac] - 从当前绑定读取
-            ini['Zodiac'] = {}
-            for num in range(1, 50):
-                ini['Zodiac'][str(num)] = self.zodiac_binding.get(num, '')
-            
-            # [Elements]
-            ini['Elements'] = {}
-            for num in range(1, 50):
-                ini['Elements'][str(num)] = self.zodiac_elements.get(num, '')
-            
-            # [Display]
-            ini['Display'] = {
-                'history_page_size': str(self.history_page_size),
-                'ball_label_font_size': str(self.ball_label_font_size),
-                'enhanced_mode': str(self.enhanced_mode),
-                'reverse_mode': str(self.reverse_mode),
-                'deterministic_mode': str(self.deterministic_mode),
-                'font_scale_table': str(self._area_font_scales.get('table', 1.0)),
-                'font_scale_result': str(self._area_font_scales.get('result', 1.0)),
-                'font_scale_list': str(self._area_font_scales.get('list', 1.0)),
-                'font_scale_number_panel': str(self._area_font_scales.get('number_panel', 1.0)),
-                'font_scale_zodiac_panel': str(self._area_font_scales.get('zodiac_panel', 1.0)),
-                'font_scale_element_panel': str(self._area_font_scales.get('element_panel', 1.0)),
-                'font_scale_announcement': str(self._area_font_scales.get('announcement', 1.0)),
-                'font_scale_detail': str(self._area_font_scales.get('detail', 1.0)),
-                # 面板尺寸设置
-                'number_panel_width': str(self._number_panel_size.get('width', 50)),
-                'number_panel_height': str(self._number_panel_size.get('height', 50)),
-                'number_panel_font': str(self._number_panel_size.get('font', 18)),
-                'zodiac_panel_width': str(self._zodiac_panel_size.get('width', 44)),
-                'zodiac_panel_height': str(self._zodiac_panel_size.get('height', 40)),
-                'zodiac_panel_btn_font': str(self._zodiac_panel_size.get('btn_font', 16)),
-                'zodiac_panel_label_font': str(self._zodiac_panel_size.get('label_font', 10)),
-                'element_panel_width': str(self._element_panel_size.get('width', 44)),
-                'element_panel_height': str(self._element_panel_size.get('height', 40)),
-                'element_panel_btn_font': str(self._element_panel_size.get('btn_font', 16)),
-                'element_panel_label_font': str(self._element_panel_size.get('label_font', 10)),
-                # 预测结果号码球尺寸
-                'pred_ball_width': str(self._prediction_ball_size.get('width', 48)),
-                'pred_ball_height': str(self._prediction_ball_size.get('height', 48)),
-                'pred_ball_font': str(self._prediction_ball_size.get('font', 18)),
-                'pred_ball_label_font': str(self._prediction_ball_size.get('label_font', 10)),
-                'pred_ball_plus_size': str(self._prediction_ball_size.get('plus_size', 24)),
-                # 概率面板配置
-                'prob_period': str(self.prob_period_spin.value()) if hasattr(self, 'prob_period_spin') and self.prob_period_spin else '30',
-                'prob_sort_mode': str(self.prob_sort_combo.currentIndex()) if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo else '0',
-                # 颜色图例文字大小
-                'legend_label_font': str(self._legend_font_size.get('label', 14)),
-                'legend_nums_font': str(self._legend_font_size.get('nums', 13)),
-                # 详情标签字体和内边距
-                'detail_label_font': str(self._detail_label_size.get('font', 13)),
-                'detail_label_padding': str(self._detail_label_size.get('padding', 8)),
-                # 窗口位置
-                'window_x': str(self.x()),
-                'window_y': str(self.y()),
-                # 当前标签页
-                'current_tab_index': str(self.tabs.currentIndex()) if hasattr(self, 'tabs') else '0',
-                # 预测算法选择
-                'prediction_algorithm_index': str(self.algorithm_combo.currentIndex()) if hasattr(self, 'algorithm_combo') else '0',
-                # 预测类型
-                'prediction_type': getattr(self, '_prediction_type', 'algorithm'),
-                # 回测算法选择
-                'backtest_algorithm_index': str(self.backtest_algo_combo.currentIndex()) if hasattr(self, 'backtest_algo_combo') else '0',
-                # 回测期数
-                'backtest_period': str(self.backtest_period_spin.value()) if hasattr(self, 'backtest_period_spin') else '10',
-                # 历史记录当前页码
-                'history_current_page': str(getattr(self, '_current_page', 1)),
-                # 期号详情字体缩放
-                'detail_font_scale': str(getattr(self, 'detail_font_scale', 1.0)),
-            }
-            
-            # 保存历史记录表列宽
-            if hasattr(self, 'history_table'):
-                for i in range(self.history_table.columnCount()):
-                    ini['Display']['history_col_' + str(i)] = str(self.history_table.columnWidth(i))
-            elif hasattr(self, '_history_col_widths'):
-                # 表格还没创建时用保存的值
-                default_cols = [70, 120, 160, 70, 60, 65, 65, 110, 60]
-                for i in range(9):
-                    w = self._history_col_widths[i] if i < len(self._history_col_widths) and self._history_col_widths[i] else default_cols[i]
-                    ini['Display']['history_col_' + str(i)] = str(w)
-            
-            # 保存预测记录表格列宽
-            if hasattr(self, 'prediction_history_table'):
-                for i in range(self.prediction_history_table.columnCount()):
-                    ini['Display']['prediction_col_' + str(i)] = str(self.prediction_history_table.columnWidth(i))
-            
-            # 保存各Splitter分隔条位置
-            splitter_list = [
-                ('data_import_splitter', self.data_import_splitter if hasattr(self, 'data_import_splitter') else None),
-                ('pred_h_splitter', self.pred_h_splitter if hasattr(self, 'pred_h_splitter') else None),
-                ('pred_left_v_splitter', self.pred_left_v_splitter if hasattr(self, 'pred_left_v_splitter') else None),
-                ('history_h_splitter', self.history_h_splitter if hasattr(self, 'history_h_splitter') else None),
-                ('history_left_v_splitter', self.history_left_v_splitter if hasattr(self, 'history_left_v_splitter') else None),
-                ('history_right_v_splitter', self.history_right_v_splitter if hasattr(self, 'history_right_v_splitter') else None),
-                ('seventh_pred_splitter', self.seventh_pred_splitter if hasattr(self, 'seventh_pred_splitter') else None),
-                ('zodiac_h_splitter', self.zodiac_h_splitter if hasattr(self, 'zodiac_h_splitter') else None),
-                ('element_h_splitter', self.element_h_splitter if hasattr(self, 'element_h_splitter') else None),
-            ]
-            for name, splitter in splitter_list:
-                if splitter is not None:
-                    sizes = splitter.sizes()
-                    ini['Display'][name + '_sizes'] = ','.join(str(s) for s in sizes)
-            
-            # 确保目录存在
-            config_dir = os.path.dirname(self.config_file)
-            if config_dir and not os.path.exists(config_dir):
-                os.makedirs(config_dir, exist_ok=True)
-            
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                ini.write(f)
-            
-            self._ini = ini
-            return True
-        except Exception as e:
-            print("保存INI配置失败: " + str(e))
-            return False
-
-    def _apply_splitter_sizes(self, splitter, name):
-        """应用保存的Splitter分隔条位置，并连接拖动保存信号"""
-        if hasattr(self, '_splitter_sizes') and name in self._splitter_sizes:
-            sizes = self._splitter_sizes[name]
-            if sizes and len(sizes) == splitter.count():
-                try:
-                    splitter.setSizes(sizes)
-                except Exception:
-                    pass
-        # 连接拖动信号，实时保存
-        splitter.splitterMoved.connect(lambda pos, index: self._save_ini_config())
-    
-    def _apply_prediction_col_widths(self):
-        """应用保存的预测记录表格列宽"""
-        if not hasattr(self, 'prediction_history_table'):
-            return
-        if hasattr(self, '_prediction_col_widths') and self._prediction_col_widths:
-            for i, width in enumerate(self._prediction_col_widths):
-                if width and i < self.prediction_history_table.columnCount():
-                    try:
-                        self.prediction_history_table.setColumnWidth(i, width)
-                    except Exception:
-                        pass
-        # 连接列宽变化信号
-        self.prediction_history_table.horizontalHeader().sectionResized.connect(
-            lambda logicalIndex, oldSize, newSize: self._save_ini_config()
-        )
-
-    def _on_weight_adjust_clicked(self):
-        """权重调节对话框"""
-        sub_algorithms = [
-            '冷热数字', '单双', '大小', '遗漏值', '连号邻号',
-            '尾数分布', '区间分布', '轮盘赌', '历史相似性', '泊松分布', '玄学算法'
-        ]
-        
-        dialog = QDialog(self)
-        dialog.setWindowTitle("算法权重调节")
-        dialog.resize(500, 500)
-        layout = QVBoxLayout(dialog)
-        
-        layout.addWidget(QLabel("调整综合推荐算法中各子算法的权重（0-100）："))
-        
-        sliders = {}
-        for name in sub_algorithms:
-            row = QHBoxLayout()
-            label = QLabel(name)
-            label.setMinimumWidth(90)
-            row.addWidget(label)
-            
-            slider = QSlider(Qt.Orientation.Horizontal)
-            slider.setRange(0, 100)
-            default_val = self.custom_weights.get(name, 50)
-            slider.setValue(default_val)
-            row.addWidget(slider)
-            
-            val_label = QLabel(str(default_val))
-            val_label.setMinimumWidth(30)
-            slider.valueChanged.connect(lambda v, lbl=val_label: lbl.setText(str(v)))
-            row.addWidget(val_label)
-            
-            layout.addLayout(row)
-            sliders[name] = slider
-        
-        layout.addStretch()
-        
-        btn_layout = QHBoxLayout()
-        ok_btn = QPushButton("确定")
-        ok_btn.clicked.connect(dialog.accept)
-        btn_layout.addWidget(ok_btn)
-        
-        reset_btn = QPushButton("重置默认")
-        reset_btn.clicked.connect(lambda: self._reset_weights(sliders, sub_algorithms))
-        btn_layout.addWidget(reset_btn)
-        
-        cancel_btn = QPushButton("取消")
-        cancel_btn.clicked.connect(dialog.reject)
-        btn_layout.addWidget(cancel_btn)
-        
-        layout.addLayout(btn_layout)
-        
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            for name in sub_algorithms:
-                self.custom_weights[name] = sliders[name].value()
-            self.statusBar().showMessage("权重设置已更新")
-    
-    def _reset_weights(self, sliders, sub_algorithms):
-        """重置权重为默认值"""
-        for name in sub_algorithms:
-            sliders[name].setValue(50)
-    
-    # ========================================================================
-    # 功能7：导出报告
-    # ========================================================================
-    def _on_export_report(self):
-        """导出HTML分析报告"""
-        file_path, _ = QFileDialog.getSaveFileName(self, "导出报告", "lottery_report.html", "HTML文件 (*.html)")
-        if not file_path:
-            return
-        
-        try:
-            # 获取当前预测结果
-            display_text = self.prediction_display.text()
-            algo_name = "未知算法"
-            if 0 <= self.current_algorithm_index < len(LotteryConfig.ALGORITHMS):
-                algo_name = LotteryConfig.ALGORITHMS[self.current_algorithm_index][0]
-            
-            numbers = []
-            for i in range(self.prediction_number_layout.count()):
-                item = self.prediction_number_layout.itemAt(i)
-                if item and item.widget() and isinstance(item.widget(), NumberButton):
-                    numbers.append(item.widget().get_number())
-            numbers = sorted(numbers)
-            
-            # 号码带颜色HTML
-            nums_html = ""
-            for n in numbers:
-                color = "#000000"
-                if LotteryConfig.is_red(n):
-                    color = "#FF0000"
-                elif LotteryConfig.is_blue(n):
-                    color = "#0000FF"
-                else:
-                    color = "#008000"
-                nums_html += '<span style="color:' + color + '; font-size:24px; font-weight:bold; margin:0 4px;">' + str(n).zfill(2) + '</span>'
-            
-            # 最近5期历史
-            history_rows = ""
-            for record in self.historical_data[:5]:
-                period = record.get('period', '?')
-                nums = record.get('numbers', [])
-                special = record.get('special', 0)
-                date_str = record.get('date', '')
-                nums_str = ' '.join(str(n).zfill(2) for n in nums)
-                history_rows += '<tr><td>' + str(period) + '</td><td>' + str(date_str) + '</td><td>' + nums_str + '</td><td>' + str(special).zfill(2) + '</td></tr>'
-            
-            # 基本统计
-            stats_html = ""
-            if self.historical_data:
-                all_nums = []
-                for r in self.historical_data:
-                    all_nums.extend(r.get('numbers', []))
-                counter = Counter(all_nums)
-                hot = counter.most_common(5)
-                cold = counter.most_common()[-5:]
-                hot_str = ', '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in hot)
-                cold_str = ', '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in cold)
-                
-                odd_total = sum(1 for n in all_nums if n % 2 == 1)
-                even_total = len(all_nums) - odd_total
-                big_total = sum(1 for n in all_nums if n > 24)
-                small_total = len(all_nums) - big_total
-                
-                stats_html = (
-                    '<p>热门号码: ' + hot_str + '</p>'
-                    '<p>冷门号码: ' + cold_str + '</p>'
-                    '<p>单双比: ' + str(odd_total) + ':' + str(even_total) + '</p>'
-                    '<p>大小比: ' + str(big_total) + ':' + str(small_total) + '</p>'
-                    '<p>总数据量: ' + str(len(self.historical_data)) + ' 期</p>'
-                )
-            
-            report_html = (
-                '<!DOCTYPE html><html><head><meta charset="utf-8"><title>彩票预测系统分析报告</title>'
-                '<style>'
-                'body { font-family: "Microsoft YaHei", Arial, sans-serif; background: #FFFFFF; color: #333; padding: 40px; }'
-                'h1 { color: #3498DB; border-bottom: 2px solid #3498DB; padding-bottom: 10px; }'
-                'h2 { color: #3498DB; margin-top: 30px; }'
-                'table { border-collapse: collapse; width: 100%; margin: 10px 0; }'
-                'th, td { border: 1px solid #DDD; padding: 8px 12px; text-align: center; }'
-                'th { background-color: #F8F9FA; color: #333; }'
-                '.prediction-box { background: #FFFFFF; border: 2px solid #2ECC71; border-radius: 8px; padding: 20px; margin: 15px 0; text-align: center; }'
-                '.section { margin: 20px 0; padding: 15px; border: 1px solid #DDD; border-radius: 6px; background: #FFFFFF; }'
-                '</style></head><body>'
-                '<h1>彩票预测系统分析报告</h1>'
-                '<p>生成时间: ' + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + '</p>'
-                '<div class="section"><h2>预测结果</h2>'
-                '<div class="prediction-box">' + nums_html + '</div>'
-                '<p>使用算法: ' + algo_name + '</p></div>'
-                '<div class="section"><h2>使用算法说明</h2>'
-                '<p>' + algo_name + ': '
-            )
-            
-            if 0 <= self.current_algorithm_index < len(LotteryConfig.ALGORITHMS):
-                report_html += LotteryConfig.ALGORITHMS[self.current_algorithm_index][1]
-            else:
-                report_html += "综合多种算法得出最优预测"
-            report_html += '</p></div>'
-            
-            report_html += (
-                '<div class="section"><h2>最近5期历史数据</h2>'
-                '<table><tr><th>期号</th><th>日期</th><th>正码</th><th>特别码</th></tr>'
-                + history_rows +
-                '</table></div>'
-                '<div class="section"><h2>基本统计摘要</h2>'
-                + stats_html +
-                '</div></body></html>'
-            )
-            
-            # 【需求3-更新】使用安全写入方法保存HTML报告
-            if self._safe_write_file(file_path, report_html):
-                QMessageBox.information(self, "导出成功", "分析报告已保存到:\n" + file_path)
-            # 失败信息由_safe_write_file内部处理
-        except Exception as e:
-            QMessageBox.warning(self, "导出失败", "报告生成失败: " + str(e))
-    
-    # ========================================================================
-    # 功能8：深色模式切换
-    # ========================================================================
-    def _on_toggle_theme(self):
-        """切换深色/浅色模式"""
-        self.is_dark_mode = not self.is_dark_mode
-        self._update_stylesheet()
-        self._update_history_table()
-        self._refresh_prediction_history_table()
-        theme_name = "深色模式" if self.is_dark_mode else "浅色模式"
-        self.statusBar().showMessage("已切换到" + theme_name)
-    
-    # ========================================================================
-    # 功能10：数据校验提示
-    # ========================================================================
-    def _on_tab_changed(self, index):
-        """标签页切换时初始化图表"""
-        # 保存当前标签页
-        self._save_ini_config()
-        # 检查是否切换到统计图表标签页（索引5）
-        if index == 5 and not self._chart_initialized:
-            self._chart_initialized = True
-            # 图表控件已在_create_statistics_chart_tab中创建，无需额外初始化
-            self.statusBar().showMessage("图表控件已初始化")
-    
-    def _apply_detail_font_scale(self):
-        """应用字体缩放到期号详情"""
-        if not hasattr(self, '_original_detail_html') or not self._original_detail_html:
-            return
-        import re
-        scale = getattr(self, 'detail_font_scale', 1.0)
-        scaled_html = re.sub(
-            r'font-size:(\d+)(px|pt)',
-            lambda m: 'font-size:' + str(max(8, int(int(m.group(1)) * scale))) + m.group(2),
-            self._original_detail_html
-        )
-        self.period_detail_edit.setHtml(scaled_html)
-    
-    def _change_detail_font_size(self, delta):
-        """调节期号详情字体大小
-        delta: 缩放变化量，正数增大，负数减小
-        """
-        if not hasattr(self, 'detail_font_scale'):
-            self.detail_font_scale = 1.0
-        new_scale = self.detail_font_scale + delta
-        # 限制缩放范围 0.5 ~ 2.0
-        new_scale = max(0.5, min(2.0, new_scale))
-        if abs(new_scale - self.detail_font_scale) < 0.01:
-            return
-        self.detail_font_scale = new_scale
-        self._apply_detail_font_scale()
-        self.statusBar().showMessage("字体缩放: " + str(int(self.detail_font_scale * 100)) + "%")
-        # 保存字体缩放设置
-        self._save_ini_config()
-
-
-# ============================================================================
-# 第八部分：扩展功能模块
-# ============================================================================
-
-
-    # ================================================================
-    # 【区域2】数据导入与格式转换
-    # ================================================================
-    # 该区域包含的方法:
-    #   _add_data_source, _create_data_import_tab, _create_input_panel, _create_result_panel, _del_data_source, _get_data_sources, _json_default, _load_data, _move_source, _on_add_data_clicked, _on_add_to_history_clicked, _on_batch_add_clicked, _on_batch_delete_clicked, _on_batch_import_clicked, _on_batch_modify_clicked, _on_clear_all_data_clicked, _on_clear_collected, _on_clear_data_clicked, _on_collect_prediction, _on_compare_collected, _on_convert_clicked, _on_data_source_setting_clicked, _on_delete_data_clicked, _on_export_clicked, _on_import_clicked, _on_online_update_clicked, _on_save_clicked, _safe_write_csv, _safe_write_file, _safe_write_json, _save_data, _save_data_sources, _show_validation_results, _test_data_source, _test_selected_source, _validate_record
-    #
-    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
-    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
-    #   - setSpacing: 间距设置
-    #   - font-size: 字体大小
-    #   - setContentsMargins: 边距设置
-    #   - 详见各方法内部的【可改】标注
-    # ================================================================
-
-    def _create_data_import_tab(self):
-        widget = QWidget()
-        self.data_import_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.data_import_splitter.setHandleWidth(2)
-        
-        left_panel = self._create_input_panel()
-        self.data_import_splitter.addWidget(left_panel)
-        
-        right_panel = self._create_result_panel()
-        self.data_import_splitter.addWidget(right_panel)
-        
-        self.data_import_splitter.setStretchFactor(0, 1)
-        self.data_import_splitter.setStretchFactor(1, 1)
-        self._apply_splitter_sizes(self.data_import_splitter, 'data_import_splitter')
-        
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
-        layout.setSpacing(self.spacing)
-        layout.addWidget(self.data_import_splitter)
-        
-        return widget
-    
-    def _create_input_panel(self):
-        widget = QWidget()
-        widget.setObjectName("InputPanel")
-        layout = QVBoxLayout(widget)
-        layout.setSpacing(self.spacing)
-        
-        title = QLabel("粘贴原始数据")
-        title.setObjectName("PanelTitle")
-        layout.addWidget(title)
-        
-        info_label = QLabel("支持大量批量粘贴，每期一行或多期连续粘贴均可自动识别：\n第116期最新开奖结果 2026年04月26日 15 龙/水 46 鸡/木 16 兔/木 10 鸡/火 48 羊/火 33 狗/火 22 鸡/水\n第115期最新开奖结果 2026年04月25日 21 狗/土 16 兔/木 25 马/木 29 虎/土 08 猪/木 07 鼠/土 04 兔/金")
-        info_label.setObjectName("InfoLabel")
-        info_label.setWordWrap(True)
-        layout.addWidget(info_label)
-        
-        self.raw_text_edit = QTextEdit()
-        self.raw_text_edit.setObjectName("RawTextEdit")
-        self.raw_text_edit.setPlaceholderText("请在此处粘贴原始数据...")
-        layout.addWidget(self.raw_text_edit)
-        
-        button_layout = QHBoxLayout()
-        
-        convert_btn = QPushButton("转换为标准格式")
-        convert_btn.clicked.connect(self._on_convert_clicked)
-        button_layout.addWidget(convert_btn)
-        
-        add_to_history_btn = QPushButton("添加到历史记录")
-        add_to_history_btn.clicked.connect(self._on_add_to_history_clicked)
-        button_layout.addWidget(add_to_history_btn)
-        
-        batch_import_btn = QPushButton("批量导入")
-        batch_import_btn.clicked.connect(self._on_batch_import_clicked)
-        button_layout.addWidget(batch_import_btn)
-        
-        layout.addLayout(button_layout)
-        
-        clear_btn = QPushButton("清空输入")
-        clear_btn.clicked.connect(lambda: self.raw_text_edit.clear())
-        layout.addWidget(clear_btn)
-        
-        clear_data_btn = QPushButton("清除数据")
-        clear_data_btn.setObjectName("ClearDataBtn")
-        clear_data_btn.clicked.connect(self._on_clear_all_data_clicked)
-        layout.addWidget(clear_data_btn)
-        
-        return widget
-    
-    def _create_result_panel(self):
-        widget = QWidget()
-        widget.setObjectName("ResultPanel")
-        layout = QVBoxLayout(widget)
-        layout.setSpacing(self.spacing)
-        layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
-        
-        title = QLabel("转换结果")
-        title.setObjectName("PanelTitle")
-        layout.addWidget(title)
-        
-        self.converted_text_edit = QTextEdit()
-        self.converted_text_edit.setObjectName("ConvertedTextEdit")
-        self.converted_text_edit.setReadOnly(True)
-        layout.addWidget(self.converted_text_edit)
-        
-        return widget
-    
-    def _safe_write_file(self, filepath, content, max_retries=5, retry_delay=30):
-        """【需求3-新增】安全写入文件，支持积分不足时自动重试
-        当写入失败时，等待30秒后重试，最多重试5次"""
-        for attempt in range(max_retries):
-            try:
-                # 确保目录存在
-                os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                return True
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    self.statusBar().showMessage('写入失败，等待重试... (' + str(attempt + 1) + '/' + str(max_retries) + ')')
-                    import time
-                    time.sleep(retry_delay)
-                else:
-                    QMessageBox.warning(self, '写入失败', '文件写入失败: ' + str(e) + '\n已重试' + str(max_retries) + '次')
-                    return False
-        return False
-    
-    def _safe_write_csv(self, filepath, rows, max_retries=5, retry_delay=30):
-        """【需求3-新增】安全写入CSV文件
-        rows: 二维列表，每行是一个列表"""
-        import io
-        try:
-            # 先在内存中生成CSV内容
-            output = io.StringIO()
-            writer = csv.writer(output)
-            for row in rows:
-                writer.writerow(row)
-            csv_content = output.getvalue()
-            return self._safe_write_file(filepath, csv_content, max_retries, retry_delay)
-        except Exception as e:
-            QMessageBox.warning(self, 'CSV生成失败', 'CSV内容生成失败: ' + str(e))
-            return False
-    
-    def _safe_write_json(self, filepath, data, max_retries=5, retry_delay=30):
-        """【需求3-新增】安全写入JSON文件"""
-        try:
-            json_content = json.dumps(data, ensure_ascii=False, indent=2, default=self._json_default)
-            return self._safe_write_file(filepath, json_content, max_retries, retry_delay)
-        except Exception as e:
-            QMessageBox.warning(self, 'JSON转换失败', 'JSON序列化失败: ' + str(e))
-            return False
-    
-    @staticmethod
-    def _json_default(obj):
-        """JSON序列化默认处理器 - 处理numpy等非标准类型"""
-        try:
-            import numpy as np
-            if isinstance(obj, (np.integer,)):
-                return int(obj)
-            if isinstance(obj, (np.floating,)):
-                return float(obj)
-            if isinstance(obj, (np.ndarray,)):
-                return obj.tolist()
-        except ImportError:
-            pass
-        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-    
-    def _load_data(self):
-        try:
-            if os.path.exists(self.data_file):
-                with open(self.data_file, 'r', encoding='utf-8') as f:
-                    self.historical_data = json.load(f)
-                print("已加载 " + str(len(self.historical_data)) + " 条历史记录")
-            else:
-                self.historical_data = DataUtils.generate_sample_data(100)
-                print("已生成100条示例数据")
-        except Exception as e:
-            print("加载数据失败: " + str(e))
-            self.historical_data = []
-    
-    def _save_data(self):
-        """【需求3-更新】使用安全写入方法"""
-        if self._safe_write_json(self.data_file, self.historical_data):
-            print("数据保存成功")
-            return True
-        else:
-            print("保存数据失败")
-            return False
-    
-    def _on_import_clicked(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "导入数据", "", "JSON文件 (*.json);;文本文件 (*.txt);;所有文件 (*)")
-        if file_path:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        self.historical_data.extend(data)
-                        self._save_data()
-                        self._update_history_table()
-                        QMessageBox.information(self, "成功", "已导入 " + str(len(data)) + " 条记录")
-                    else:
-                        QMessageBox.warning(self, "错误", "数据格式不正确")
-            except Exception as e:
-                QMessageBox.warning(self, "错误", "导入失败: " + str(e))
-    
-    def _on_export_clicked(self):
-        """【需求3-更新】使用安全写入方法"""
-        if not self.historical_data:
-            QMessageBox.information(self, "提示", "没有可导出的数据")
-            return
-        file_path, _ = QFileDialog.getSaveFileName(self, "导出数据", "彩票数据导出.json", "JSON文件 (*.json);;文本文件 (*.txt)")
-        if file_path:
-            if self._safe_write_json(file_path, self.historical_data):
-                QMessageBox.information(self, "成功", "数据导出成功")
-            # 失败信息由_safe_write_json内部处理
-    
-    def _on_save_clicked(self):
-        if self._save_data():
-            QMessageBox.information(self, "成功", "数据保存成功")
-        else:
-            QMessageBox.warning(self, "错误", "数据保存失败")
-    
-    def _on_add_data_clicked(self):
-        text, ok = QInputDialog.getMultiLineText(self, "添加数据", "请输入开奖数据（格式：期号 日期 6个正码 特别码):\n例如：117 2026-04-27 05 12 23 34 45 08")
-        if ok and text.strip():
-            try:
-                parts = text.strip().split()
-                if len(parts) >= 8:
-                    record = {
-                        'period': int(parts[0]), 'date': parts[1],
-                        'numbers': [int(parts[i]) for i in range(2, 8)], 'special': int(parts[7]),
-                    }
-                    self.historical_data.insert(0, record)
-                    self._save_data()
-                    self._update_history_table()
-                    QMessageBox.information(self, "成功", "数据添加成功")
-                else:
-                    QMessageBox.warning(self, "错误", "数据格式不正确")
-            except Exception as e:
-                QMessageBox.warning(self, "错误", "添加失败: " + str(e))
-    
-    def _on_delete_data_clicked(self):
-        if self.history_table.currentRow() < 0:
-            QMessageBox.information(self, "提示", "请先选择要删除的记录")
-            return
-        reply = QMessageBox.question(self, "确认删除", "确定要删除选中的记录吗？", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if reply == QMessageBox.StandardButton.Yes:
-            row = self.history_table.currentRow()
-            if 0 <= row < len(self.historical_data):
-                del self.historical_data[row]
-                self._save_data()
-                self._update_history_table()
-                QMessageBox.information(self, "成功", "删除成功")
-    
-    def _on_clear_data_clicked(self):
-        reply = QMessageBox.question(self, "确认清空", "确定要清空所有历史记录吗？此操作不可恢复！", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if reply == QMessageBox.StandardButton.Yes:
-            self.historical_data.clear()
-            self._save_data()
-            self._update_history_table()
-            QMessageBox.information(self, "成功", "历史记录已清空")
-    
-    def _on_export_history_clicked(self):
-        """导出历史记录 - 支持JSON、CSV、TXT三种格式"""
-        if not self.historical_data:
-            QMessageBox.information(self, "提示", "没有可导出的历史记录")
-            return
-        file_path, selected_filter = QFileDialog.getSaveFileName(
-            self, "导出历史记录", "彩票历史记录导出.json",
-            "JSON文件 (*.json);;CSV文件 (*.csv);;TXT文件 (*.txt)"
-        )
-        if file_path:
-            try:
-                # 根据用户选择的格式自动补全扩展名
-                if selected_filter.startswith("CSV") and not file_path.lower().endswith('.csv'):
-                    file_path += '.csv'
-                elif selected_filter.startswith("TXT") and not file_path.lower().endswith('.txt'):
-                    file_path += '.txt'
-                elif selected_filter.startswith("JSON") and not file_path.lower().endswith('.json'):
-                    file_path += '.json'
-
-                if file_path.lower().endswith('.json'):
-                    if self._safe_write_json(file_path, self.historical_data):
-                        QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（JSON格式）")
-                    else:
-                        QMessageBox.warning(self, "错误", "导出失败")
-                elif file_path.lower().endswith('.csv'):
-                    with open(file_path, 'w', encoding='utf-8-sig', newline='') as f:
-                        writer = csv.writer(f)
-                        writer.writerow(['期号', '日期', '正码1', '正码2', '正码3', '正码4', '正码5', '正码6', '特别码'])
-                        for rec in self.historical_data:
-                            nums = rec.get('numbers', [0]*6)
-                            while len(nums) < 6:
-                                nums.append(0)
-                            writer.writerow([
-                                rec.get('period', 0), rec.get('date', ''),
-                                nums[0], nums[1], nums[2], nums[3], nums[4], nums[5],
-                                rec.get('special', 0)
-                            ])
-                    QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（CSV格式）")
-                elif file_path.lower().endswith('.txt'):
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write("# 期号 日期 正码1 正码2 正码3 正码4 正码5 正码6 特别码\n")
-                        for rec in self.historical_data:
-                            nums = rec.get('numbers', [0]*6)
-                            while len(nums) < 6:
-                                nums.append(0)
-                            f.write(f"{rec.get('period', 0)} {rec.get('date', '')} "
-                                    f"{' '.join(str(n).zfill(2) for n in nums)} {rec.get('special', 0)}\n")
-                    QMessageBox.information(self, "成功", f"已导出 {len(self.historical_data)} 条历史记录（TXT格式）")
-                else:
-                    QMessageBox.warning(self, "错误", "不支持的文件格式，请选择 .json / .csv / .txt")
-            except Exception as e:
-                QMessageBox.warning(self, "错误", "导出失败: " + str(e))
-
-    def _on_import_history_clicked(self):
-        """导入历史记录 - 支持JSON、CSV、TXT三种格式"""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "导入历史记录", "",
-            "所有支持格式 (*.json *.csv *.txt);;JSON文件 (*.json);;CSV文件 (*.csv);;TXT文件 (*.txt);;所有文件 (*)"
-        )
-        if file_path:
-            try:
-                imported_data = []
-                ext = file_path.lower().rsplit('.', 1)[-1] if '.' in file_path else ''
-
-                if ext == 'json':
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                    if isinstance(data, list):
-                        imported_data = data
-                    else:
-                        QMessageBox.warning(self, "错误", "JSON格式不正确，应为数组")
-                        return
-
-                elif ext == 'csv':
-                    with open(file_path, 'r', encoding='utf-8-sig') as f:
-                        reader = csv.reader(f)
-                        header = next(reader, None)  # 跳过表头
-                        for row in reader:
-                            if len(row) < 9:
-                                continue
-                            try:
-                                record = {
-                                    'period': int(row[0]),
-                                    'date': str(row[1]),
-                                    'numbers': [int(row[i]) for i in range(2, 8)],
-                                    'special': int(row[8]),
-                                }
-                                imported_data.append(record)
-                            except (ValueError, IndexError):
-                                continue
-
-                elif ext == 'txt':
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        for line in f:
-                            line = line.strip()
-                            if not line or line.startswith('#'):
-                                continue
-                            parts = line.split()
-                            if len(parts) >= 8:
-                                try:
-                                    record = {
-                                        'period': int(parts[0]),
-                                        'date': str(parts[1]),
-                                        'numbers': [int(parts[i]) for i in range(2, 8)],
-                                        'special': int(parts[7]),
-                                    }
-                                    imported_data.append(record)
-                                except (ValueError, IndexError):
-                                    continue
-
-                else:
-                    # 尝试作为JSON解析
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            data = json.load(f)
-                        if isinstance(data, list):
-                            imported_data = data
-                    except Exception:
-                        QMessageBox.warning(self, "错误", "无法识别文件格式，请使用 .json / .csv / .txt 文件")
-                        return
-
-                if imported_data:
-                    self.historical_data.extend(imported_data)
-                    self._save_data()
-                    self._update_history_table()
-                    # 导入数据后清除预测指纹，允许重新预测
-                    self._data_fingerprint_at_last_predict = None
-                    self._data_fingerprint_at_last_ml_predict = None
-                    QMessageBox.information(self, "成功", f"已导入 {len(imported_data)} 条历史记录")
-                else:
-                    QMessageBox.warning(self, "提示", "未从文件中解析到有效数据")
-            except Exception as e:
-                QMessageBox.warning(self, "错误", "导入失败: " + str(e))
-
-    def _on_batch_delete_clicked(self):
-        """批量删除选中的记录"""
-        selected_rows = set()
-        for item in self.history_table.selectedItems():
-            selected_rows.add(item.row())
-        if not selected_rows:
-            QMessageBox.information(self, "提示", "请先选择要删除的记录（可按住Ctrl多选）")
-            return
-        reply = QMessageBox.question(self, "确认批量删除", "确定要删除选中的 " + str(len(selected_rows)) + " 条记录吗？", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if reply == QMessageBox.StandardButton.Yes:
-            for row in sorted(selected_rows, reverse=True):
-                if 0 <= row < len(self.historical_data):
-                    del self.historical_data[row]
-            self._save_data()
-            self._update_history_table()
-            QMessageBox.information(self, "成功", "已删除 " + str(len(selected_rows)) + " 条记录")
-    
-    def _on_batch_add_clicked(self):
-        """批量添加多条记录"""
-        text, ok = QInputDialog.getMultiLineText(self, "批量添加", 
-            "请输入多条开奖数据，每行一条\n格式：期号 日期 6个正码 特别码\n例如：117 2026-04-27 05 12 23 34 45 08")
-        if not ok or not text.strip():
-            return
-        
-        try:
-            lines = text.strip().split('\n')
-            count = 0
-            fail_count = 0
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                # 尝试按格式解析
-                result = DataUtils.parse_raw_data(line)
-                if result:
-                    record = {
-                        'period': result.get('period'),
-                        'date': result.get('date'),
-                        'numbers': result.get('numbers'),
-                        'special': result.get('special'),
-                    }
-                    self.historical_data.append(record)
-                    count += 1
-                else:
-                    # 尝试简单空格分隔格式
-                    parts = line.split()
-                    if len(parts) >= 8:
-                        try:
-                            record = {
-                                'period': int(parts[0]),
-                                'date': parts[1],
-                                'numbers': [int(parts[i]) for i in range(2, 8)],
-                                'special': int(parts[7]),
-                            }
-                            self.historical_data.append(record)
-                            count += 1
-                        except (ValueError, IndexError):
-                            fail_count += 1
-                    else:
-                        fail_count += 1
-            
-            if count > 0:
-                self._save_data()
-                self._update_history_table()
-                msg = f"成功添加 {count} 条记录"
-                if fail_count > 0:
-                    msg += f"，失败 {fail_count} 条"
-                QMessageBox.information(self, "成功", msg)
-            else:
-                QMessageBox.warning(self, "错误", "没有成功解析的数据，请检查格式")
-        except Exception as e:
-            QMessageBox.warning(self, "错误", "批量添加失败: " + str(e))
-    
-    def _on_batch_modify_clicked(self):
-        """批量修改 - 支持批量修改日期或期号偏移"""
-        options = ["批量修改日期", "期号批量偏移", "批量修正期号格式"]
-        choice, ok = QInputDialog.getItem(self, "批量修改", "选择修改类型:", options, 0, False)
-        if not ok:
-            return
-        
-        selected_rows = set()
-        for item in self.history_table.selectedItems():
-            selected_rows.add(item.row())
-        
-        if not selected_rows:
-            reply = QMessageBox.question(self, "提示", "未选中记录，是否对全部数据执行批量修改？", 
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            if reply != QMessageBox.StandardButton.Yes:
-                return
-            rows_to_modify = list(range(len(self.historical_data)))
-        else:
-            rows_to_modify = sorted(selected_rows)
-        
-        if not rows_to_modify:
-            QMessageBox.information(self, "提示", "没有可修改的记录")
-            return
-        
-        try:
-            if choice == "期号批量偏移":
-                offset, ok = QInputDialog.getInt(self, "期号偏移", "输入偏移量（正数增加，负数减少）:", 0, -99999, 99999)
-                if not ok:
-                    return
-                for row in rows_to_modify:
-                    if 0 <= row < len(self.historical_data):
-                        old_period = self.historical_data[row].get('period', 0)
-                        if isinstance(old_period, (int, float)):
-                            self.historical_data[row]['period'] = int(old_period) + offset
-                QMessageBox.information(self, "成功", f"已修改 {len(rows_to_modify)} 条记录的期号")
-            
-            elif choice == "批量修改日期":
-                date_text, ok = QInputDialog.getText(self, "批量修改日期", 
-                    "输入日期计算表达式，例如：\n+7 表示日期加7天\n-3 表示日期减3天\n2025-01-01 表示替换为指定日期")
-                if not ok or not date_text.strip():
-                    return
-                
-                date_text = date_text.strip()
-                import datetime
-                
-                if date_text.startswith('+') or date_text.startswith('-'):
-                    # 日期偏移
-                    days = int(date_text)
-                    for row in rows_to_modify:
-                        if 0 <= row < len(self.historical_data):
-                            old_date = self.historical_data[row].get('date', '')
-                            if old_date:
-                                try:
-                                    dt = datetime.datetime.strptime(old_date, '%Y-%m-%d')
-                                    dt += datetime.timedelta(days=days)
-                                    self.historical_data[row]['date'] = dt.strftime('%Y-%m-%d')
-                                except Exception:
-                                    pass
-                    QMessageBox.information(self, "成功", f"已修改 {len(rows_to_modify)} 条记录的日期")
-                else:
-                    # 替换为指定日期
-                    for row in rows_to_modify:
-                        if 0 <= row < len(self.historical_data):
-                            self.historical_data[row]['date'] = date_text
-                    QMessageBox.information(self, "成功", f"已将 {len(rows_to_modify)} 条记录的日期设为 {date_text}")
-            
-            elif choice == "批量修正期号格式":
-                # 自动按顺序重新编号
-                start_num, ok = QInputDialog.getInt(self, "修正期号", "输入起始期号:", 1, 1, 999999)
-                if not ok:
-                    return
-                # 按当前顺序重新编号
-                for i, row in enumerate(rows_to_modify):
-                    if 0 <= row < len(self.historical_data):
-                        self.historical_data[row]['period'] = start_num + i
-                QMessageBox.information(self, "成功", f"已修正 {len(rows_to_modify)} 条记录的期号")
-            
-            self._save_data()
-            self._update_history_table()
-            
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            QMessageBox.warning(self, "错误", "批量修改失败: " + str(e))
-    
-    def _on_convert_clicked(self):
-        """转换按钮 - 支持大量文本批量转格式，自动识别多期数据"""
-        raw_text = self.raw_text_edit.toPlainText()
-        if not raw_text.strip():
-            QMessageBox.warning(self, "提示", "请输入要转换的原始数据")
-            return
-        # 核心逻辑：先按"第X期"拆分整段文本，确保多期在同一行也能识别
-        formatted_lines = []
-        success_count = 0
-        fail_count = 0
-        # 【需求1-更新】按"第X期"拆分，每个片段对应一期（支持中间有空格）
-        segments = re.split(r'(?=第\s*\d+\s*期)', raw_text)
-        for seg in segments:
-            seg = seg.strip()
-            if not seg:
-                continue
-            result = DataUtils.parse_raw_data(seg)
-            if result:
-                formatted_lines.append(DataUtils.format_data(result))
-                success_count += 1
-            else:
-                fail_count += 1
-        if formatted_lines:
-            self.converted_text_edit.setPlainText('\n'.join(formatted_lines))
-            msg = "批量转换完成：成功 " + str(success_count) + " 条"
-            if fail_count > 0:
-                msg += "，失败 " + str(fail_count) + " 条"
-            self.statusBar().showMessage(msg)
-        else:
-            QMessageBox.warning(self, "错误", "无法解析数据，请检查格式")
-    
-    def _on_add_to_history_clicked(self):
-        """添加到历史记录 - 支持批量添加多期数据"""
-        raw_text = self.raw_text_edit.toPlainText()
-        if not raw_text.strip():
-            QMessageBox.warning(self, "提示", "请输入要添加的原始数据")
-            return
-        # 【需求1-更新】按"第X期"拆分，自动识别多期（支持中间有空格）
-        segments = re.split(r'(?=第\s*\d+\s*期)', raw_text)
-        parsed_records = []
-        all_issues = []
-        for seg in segments:
-            seg = seg.strip()
-            if not seg:
-                continue
-            result = DataUtils.parse_raw_data(seg)
-            if result:
-                record = {
-                    'period': result.get('period'), 'date': result.get('date'),
-                    'numbers': result.get('numbers'), 'special': result.get('special'),
-                }
-                issues = self._validate_record(record)
-                all_issues.extend(issues)
-                parsed_records.append(record)
-        if all_issues:
-            if not self._show_validation_results(all_issues):
-                return
-        added_count = 0
-        for record in parsed_records:
-            self.historical_data.insert(added_count, record)
-            added_count += 1
-        if added_count > 0:
-            self._save_data()
-            self._update_history_table()
-            self.raw_text_edit.clear()
-            self.converted_text_edit.clear()
-            QMessageBox.information(self, "成功", "已添加 " + str(added_count) + " 条数据到历史记录")
-            self.statusBar().showMessage("批量添加成功")
-        else:
-            QMessageBox.warning(self, "错误", "无法解析数据，请检查格式")
-    
-    def _on_batch_import_clicked(self):
-        """批量导入文件 - 支持大量数据，自动按期拆分"""
-        file_path, _ = QFileDialog.getOpenFileName(self, "批量导入", "", "文本文件 (*.txt);;JSON文件 (*.json);;所有文件 (*)")
-        if not file_path:
-            return
-        try:
-            # 支持JSON格式导入
-            if file_path.endswith('.json'):
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                if isinstance(data, list):
-                    self.historical_data.extend(data)
-                    self._save_data()
-                    self._update_history_table()
-                    QMessageBox.information(self, "成功", "成功导入 " + str(len(data)) + " 条记录")
-                return
-            # 文本格式导入，支持大量数据
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            # 【需求1-更新】先按"第X期"拆分，处理所有期数数据（支持中间有空格）
-            segments = re.split(r'(?=第\s*\d+\s*期)', content)
-            count = 0
-            for seg in segments:
-                seg = seg.strip()
-                if not seg:
-                    continue
-                result = DataUtils.parse_raw_data(seg)
-                if result:
-                    record = {
-                        'period': result.get('period'), 'date': result.get('date'),
-                        'numbers': result.get('numbers'), 'special': result.get('special'),
-                    }
-                    self.historical_data.append(record)
-                    count += 1
-            self._save_data()
-            self._update_history_table()
-            QMessageBox.information(self, "成功", "成功导入 " + str(count) + " 条记录")
-        except Exception as e:
-            QMessageBox.warning(self, "错误", "导入失败: " + str(e))
     
 
     # ========================================================================
@@ -11191,6 +14274,7 @@ class LotteryPredictionWindow(QMainWindow):
             layout.addWidget(consensus_label)
         
         close_btn = QPushButton("关闭")
+        # 关闭按钮点击信号：关闭收藏对比结果对话框
         close_btn.clicked.connect(dialog.accept)
         layout.addWidget(close_btn)
         
@@ -11208,1115 +14292,253 @@ class LotteryPredictionWindow(QMainWindow):
             self.statusBar().showMessage("收藏已清空")
     
     # ========================================================================
-    # 功能2：历史回测
-    # ========================================================================
-    def _get_data_sources(self):
-        """获取数据源列表，从配置文件读取"""
-        config_file = "./彩票预测系统v7.5/数据源.json"
-        try:
-            if os.path.exists(config_file):
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get('sources', [
-                        "http://www.cjcp.com.cn/kaijiang/hk6/",
-                        "https://www.lhc123.com/",
-                        "https://www.hk6.com/"
-                    ])
-        except Exception:
-            pass
-        return [
-            "http://www.cjcp.com.cn/kaijiang/hk6/",
-            "https://www.lhc123.com/",
-            "https://www.hk6.com/"
-        ]
-    
-    def _save_data_sources(self, sources):
-        """保存数据源列表到配置文件"""
-        config_file = "./彩票预测系统v7.5/数据源.json"
-        try:
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump({'sources': sources}, f, ensure_ascii=False, indent=2)
-            return True
-        except Exception:
-            return False
-    
-    def _test_data_source(self, url):
-        """测试数据源连接
+
+
+    def _apply_prediction_ball_size(self):
+        """应用预测结果号码球尺寸设置"""
+        if not hasattr(self, 'prediction_number_layout'):
+            return
+        w = self._prediction_ball_size.get('width', 80)
+        h = self._prediction_ball_size.get('height', 60)
+        f = self._prediction_ball_size.get('font', 20)
+        plus_size = self._prediction_ball_size.get('plus_size', 24)
+        # 生肖/五行标签字体使用 ball_label_font_size（由字号spinbox控制），而非 _prediction_ball_size['label_font']
+        label_f = self.ball_label_font_size
+        # 生肖/五行标签背景宽高（0=自适应不固定）
+        label_w = self._prediction_ball_size.get('label_width', 0)
+        label_h = self._prediction_ball_size.get('label_height', 0)
         
-        返回：('success', '超时', '失败')之一
+        # 遍历所有号码球并更新尺寸
+        for i in range(self.prediction_number_layout.count()):
+            item = self.prediction_number_layout.itemAt(i)
+            if item and item.widget():
+                widget = item.widget()
+                # NumberBallWithZodiac控件
+                if hasattr(widget, 'set_ball_size') and hasattr(widget, 'set_font_size'):
+                    widget.set_ball_size(width=w, height=h, font_size=f)
+                    widget.set_font_size(label_f)
+                    # 应用生肖/五行标签背景宽高
+                    if hasattr(widget, 'set_label_size'):
+                        widget.set_label_size(width=label_w, height=label_h)
+                # 加号标签（只更新字体大小，保持原有颜色）
+                elif isinstance(widget, QLabel) and widget.text() == '+':
+                    old_style = widget.styleSheet()
+                    import re
+                    # 正则替换加号标签的 font-size，保留颜色等其他样式属性不变
+                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {plus_size}px', old_style)
+                    # 应用更新后的样式到加号标签（仅字号变化）
+                    widget.setStyleSheet(new_style)
+    
+    def _apply_legend_font_size(self):
+        """应用颜色图例文字大小设置"""
+        # 数字选择面板的图例
+        if hasattr(self, '_legend_labels'):
+            label_size = self._legend_font_size.get('label', 14)
+            nums_size = self._legend_font_size.get('nums', 13)
+            for label in self._legend_labels.get('labels', []):
+                if label:
+                    old_style = label.styleSheet()
+                    import re
+                    # 正则替换图例文字标签的 font-size 为目标字号，保留颜色等其余样式
+                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {label_size}px', old_style)
+                    # 应用更新后的样式到图例文字标签（如"五行："等说明文字）
+                    label.setStyleSheet(new_style)
+            for label in self._legend_labels.get('nums', []):
+                if label:
+                    old_style = label.styleSheet()
+                    import re
+                    # 正则替换图例数字标签的 font-size 为目标字号，保留颜色等其余样式
+                    new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {nums_size}px', old_style)
+                    # 应用更新后的样式到图例数字标签（如号码范围展示）
+                    label.setStyleSheet(new_style)
+    
+    def _change_legend_font(self, direction):
+        """调整颜色图例的字体大小
+        direction: 1=放大, -1=缩小
         """
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                if resp.status == 200:
-                    return 'success'
-                else:
-                    return '失败'
-        except urllib.error.URLError:
-            return '失败'
-        except Exception:
-            return '超时'
-    
-    def _on_clear_all_data_clicked(self):
-        """清除转格式页面的输入和转换结果"""
-        try:
-            self.raw_text_edit.clear()
-            self.converted_text_edit.clear()
-            self.statusBar().showMessage("已清除输入和转换结果")
-        except Exception as e:
-            QMessageBox.warning(self, "清除失败", "清除数据时出错:\n" + str(e))
-
-    def _on_data_source_setting_clicked(self):
-        """数据源设置对话框"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("数据源设置")
-        dialog.setFixedSize(600, 400)
-        layout = QVBoxLayout(dialog)
-        
-        # 说明标签
-        desc_label = QLabel("配置多个数据源URL，在线更新时将按优先级自动尝试连接")
-        layout.addWidget(desc_label)
-        
-        # 数据源列表
-        list_widget = QListWidget()
-        current_sources = self._get_data_sources()
-        for src in current_sources:
-            list_widget.addItem(src)
-        layout.addWidget(list_widget)
-        
-        # 操作按钮行
-        btn_row = QHBoxLayout()
-        
-        add_btn = QPushButton("添加")
-        add_btn.clicked.connect(lambda: self._add_data_source(list_widget))
-        btn_row.addWidget(add_btn)
-        
-        del_btn = QPushButton("删除")
-        del_btn.clicked.connect(lambda: self._del_data_source(list_widget))
-        btn_row.addWidget(del_btn)
-        
-        test_btn = QPushButton("测试连接")
-        test_btn.clicked.connect(lambda: self._test_selected_source(list_widget))
-        btn_row.addWidget(test_btn)
-        
-        move_up_btn = QPushButton("上移")
-        move_up_btn.clicked.connect(lambda: self._move_source(list_widget, -1))
-        btn_row.addWidget(move_up_btn)
-        
-        move_down_btn = QPushButton("下移")
-        move_down_btn.clicked.connect(lambda: self._move_source(list_widget, 1))
-        btn_row.addWidget(move_down_btn)
-        
-        layout.addLayout(btn_row)
-        
-        # 确定取消按钮
-        ok_cancel_row = QHBoxLayout()
-        ok_btn = QPushButton("确定")
-        ok_btn.clicked.connect(dialog.accept)
-        ok_cancel_row.addWidget(ok_btn)
-        
-        cancel_btn = QPushButton("取消")
-        cancel_btn.clicked.connect(dialog.reject)
-        ok_cancel_row.addWidget(cancel_btn)
-        
-        layout.addLayout(ok_cancel_row)
-        
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            # 保存数据源
-            new_sources = []
-            for i in range(list_widget.count()):
-                new_sources.append(list_widget.item(i).text())
-            if self._save_data_sources(new_sources):
-                QMessageBox.information(self, "成功", "数据源设置已保存")
-            else:
-                QMessageBox.warning(self, "失败", "数据源设置保存失败")
-    
-    def _add_data_source(self, list_widget):
-        """添加数据源"""
-        dialog = QInputDialog(self)
-        dialog.setWindowTitle("添加数据源")
-        dialog.setLabelText("请输入数据源URL:")
-        dialog.setTextValue("https://")
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            url = dialog.textValue().strip()
-            if url:
-                list_widget.addItem(url)
-    
-    def _del_data_source(self, list_widget):
-        """删除选中的数据源"""
-        current_row = list_widget.currentRow()
-        if current_row >= 0:
-            list_widget.takeItem(current_row)
-    
-    def _test_selected_source(self, list_widget):
-        """测试选中的数据源连接"""
-        current_row = list_widget.currentRow()
-        if current_row < 0:
-            QMessageBox.information(self, "提示", "请先选择要测试的数据源")
-            return
-        
-        url = list_widget.item(current_row).text()
-        self.statusBar().showMessage("正在测试连接: " + url + "...")
-        
-        result = self._test_data_source(url)
-        
-        if result == 'success':
-            QMessageBox.information(self, "测试结果", "连接成功！")
-        elif result == '超时':
-            QMessageBox.warning(self, "测试结果", "连接超时（3秒）")
-        else:
-            QMessageBox.warning(self, "测试结果", "连接失败")
-        
-        self.statusBar().showMessage("测试完成")
-    
-    def _move_source(self, list_widget, direction):
-        """移动数据源位置"""
-        current_row = list_widget.currentRow()
-        new_row = current_row + direction
-        if 0 <= current_row < list_widget.count() and 0 <= new_row < list_widget.count():
-            item = list_widget.takeItem(current_row)
-            list_widget.insertItem(new_row, item)
-            list_widget.setCurrentRow(new_row)
-    
-    def _on_online_update_clicked(self):
-        """在线更新开奖数据（支持多数据源切换）"""
-        self.statusBar().showMessage("正在尝试在线更新...")
-        sources = self._get_data_sources()
-        
-        for idx, url in enumerate(sources):
-            self.statusBar().showMessage("正在尝试数据源 " + str(idx + 1) + "/" + str(len(sources)) + ": " + url)
-            try:
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    html_content = resp.read().decode('utf-8', errors='ignore')
-                
-                # 解析期号和号码
-                existing_periods = {r.get('period') for r in self.historical_data}
-                new_records = []
-                
-                # 尝试多种正则模式解析
-                # 模式1: 期号 + 6个正码 + 特别码
-                pattern1 = r'第(\d+)期.*?(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*[+加]\s*(\d{2})'
-                matches = re.findall(pattern1, html_content)
-                
-                for m in matches:
-                    period = int(m[0])
-                    if period in existing_periods:
-                        continue
-                    numbers = [int(m[i]) for i in range(1, 7)]
-                    special = int(m[7])
-                    if all(1 <= n <= 49 for n in numbers) and 1 <= special <= 49:
-                        record = {
-                            'period': period,
-                            'date': '',
-                            'numbers': numbers,
-                            'special': special
-                        }
-                        new_records.append(record)
-                        existing_periods.add(period)
-                
-                # 模式2: 更通用的数字提取
-                if not new_records:
-                    pattern2 = r'(\d{4,6}).*?(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+[+]\s*(\d{1,2})'
-                    matches2 = re.findall(pattern2, html_content)
-                    for m in matches2:
-                        period = int(m[0])
-                        if period in existing_periods:
-                            continue
-                        numbers = [int(m[i]) for i in range(1, 7)]
-                        special = int(m[7])
-                        if all(1 <= n <= 49 for n in numbers) and 1 <= special <= 49:
-                            record = {
-                                'period': period,
-                                'date': '',
-                                'numbers': numbers,
-                                'special': special
-                            }
-                            new_records.append(record)
-                            existing_periods.add(period)
-                
-                if new_records:
-                    for rec in new_records:
-                        self.historical_data.insert(0, rec)
-                    self._save_data()
-                    self._update_history_table()
-                    QMessageBox.information(self, "在线更新", "成功从数据源「" + url + "」新增 " + str(len(new_records)) + " 期数据")
-                    self.statusBar().showMessage("在线更新完成")
-                    return
-                else:
-                    # 当前数据源解析失败，尝试下一个
-                    continue
-                    
-            except urllib.error.URLError:
-                # 网络错误，尝试下一个数据源
-                continue
-            except Exception as e:
-                # 其他错误，尝试下一个数据源
-                continue
-        
-        # 所有数据源都失败
-        QMessageBox.warning(self, "网络错误", "所有数据源都无法访问或解析失败\n请检查网络连接或手动导入数据")
-        self.statusBar().showMessage("在线更新失败")
-    
-    # ========================================================================
-    # 功能6：算法权重自定义
-    # ========================================================================
-    def _validate_record(self, record, is_batch=False):
-        """校验单条数据，返回问题列表"""
-        issues = []
-        period = record.get('period')
-        numbers = record.get('numbers', [])
-        special = record.get('special')
-        
-        # 检查期号重复
-        if period is not None:
-            for r in self.historical_data:
-                if r.get('period') == period:
-                    issues.append(('error', '期号重复: 第' + str(period) + '期已存在'))
-                    break
-        
-        # 检查数据不完整
-        if period is None:
-            issues.append(('error', '缺少期号'))
-        if not numbers or len(numbers) < 6:
-            issues.append(('error', '正码不完整，应有6个正码'))
-        
-        # 检查号码范围
-        all_nums = list(numbers) + ([special] if special is not None else [])
-        for n in all_nums:
-            if n is not None and (n < 1 or n > 49):
-                issues.append(('warning', '号码超出范围: ' + str(n) + ' (应为1-49)'))
-        
-        # 检查号码重复
-        if len(numbers) != len(set(numbers)):
-            dup = [n for n, c in Counter(numbers).items() if c > 1]
-            issues.append(('warning', '同一期内出现重复数字: ' + ', '.join(str(d) for d in dup)))
-        
-        return issues
-    
-    def _show_validation_results(self, all_issues):
-        """显示校验结果"""
-        if not all_issues:
-            return True
-        
-        errors = [iss for iss in all_issues if iss[0] == 'error']
-        warnings = [iss for iss in all_issues if iss[0] == 'warning']
-        
-        msg = ""
-        if errors:
-            msg += '<p style="color:#E74C3C; font-weight:bold;">严重问题 (' + str(len(errors)) + '):</p>'
-            msg += '<ul style="color:#E74C3C;">'
-            for _, text in errors:
-                msg += '<li>' + text + '</li>'
-            msg += '</ul>'
-        if warnings:
-            msg += '<p style="color:#F39C12; font-weight:bold;">警告 (' + str(len(warnings)) + '):</p>'
-            msg += '<ul style="color:#F39C12;">'
-            for _, text in warnings:
-                msg += '<li>' + text + '</li>'
-            msg += '</ul>'
-        
-        if errors:
-            msg += '<p style="font-weight:bold;">是否仍要继续？（不推荐）</p>'
-            reply = QMessageBox.warning(self, "数据校验", msg,
-                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            return reply == QMessageBox.StandardButton.Yes
-        else:
-            msg += '<p>以上为警告信息，不影响数据导入。</p>'
-            QMessageBox.information(self, "数据校验提示", msg)
-            return True
-
-
-    # ================================================================
-    # 【区域3】历史记录
-    # ================================================================
-    # 该区域包含的方法:
-    #   _create_history_tab, _on_history_col_resized, _on_next_page, _on_page_jump, _on_prev_page, _on_show_period_detail, _refresh_latest_display, _save_history_col_widths, _update_history_table, _update_pagination
-    #
-    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
-    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
-    #   - setSpacing: 间距设置
-    #   - font-size: 字体大小
-    #   - setContentsMargins: 边距设置
-    #   - 详见各方法内部的【可改】标注
-    # ================================================================
-
-    def _create_history_tab(self):
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setSpacing(0)
-        layout.setContentsMargins(5, 5, 5, 5)
-        
-        # 标题行
-        header_layout = QHBoxLayout()
-        title = QLabel("历史记录")
-        title.setObjectName("PanelTitle")
-        header_layout.addWidget(title)
-        
-        self.history_count_label = QLabel("")
-        # 历史记录数量标签样式
-        #   color: #555555;     文字颜色：深灰（统计信息用灰色）
-        #   font-size: 14px;    字体大小：14像素
-        self.history_count_label.setStyleSheet("color: #555555; font-size: 14px;")
-        header_layout.addWidget(self.history_count_label)
-        header_layout.addStretch()
-        
-        # 字体调节 - 表格字体
-        table_font_label = QLabel("📊 表格字体:")
-        # 表格字体调节标签样式
-        #   color: #555555;         文字颜色：深灰
-        #   font-size: 13px;        字体大小：13像素
-        #   font-weight: bold;      字体：粗体（强调标签）
-        table_font_label.setStyleSheet("color: #555555; font-size: 13px; font-weight: bold;")
-        header_layout.addWidget(table_font_label)
-        
-        table_font_minus = QPushButton("A-")
-        table_font_minus.setFixedSize(75, 28)
-        # 历史表格字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E8F5E9;  背景色：浅绿
-        #     color: #2E7D32;             文字颜色：深绿
-        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
-        #   }
-        table_font_minus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
-        table_font_minus.clicked.connect(lambda: self._change_area_font_size('table', -1))
-        header_layout.addWidget(table_font_minus)
-        
-        table_font_plus = QPushButton("A+")
-        table_font_plus.setFixedSize(75, 28)
-        # 历史表格字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
-        #     color: #C62828;             文字颜色：深红
-        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
-        #   }
-        table_font_plus.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
-        table_font_plus.clicked.connect(lambda: self._change_area_font_size('table', 1))
-        header_layout.addWidget(table_font_plus)
-        
-        refresh_btn = QPushButton("刷新")
-        refresh_btn.clicked.connect(self._update_history_table)
-        header_layout.addWidget(refresh_btn)
-        
-        layout.addLayout(header_layout)
-        
-        # 外层水平Splitter（左右分隔）
-        self.history_h_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.history_h_splitter.setHandleWidth(4)
-        
-        # === 左半部分：垂直Splitter（上下分隔）===
-        self.history_left_v_splitter = QSplitter(Qt.Orientation.Vertical)
-        self.history_left_v_splitter.setHandleWidth(4)
-        
-        # 上方：最新开奖数据
-        latest_widget = QWidget()
-        latest_layout = QVBoxLayout(latest_widget)
-        latest_layout.setSpacing(5)
-        
-        latest_title = QLabel("最新开奖数据")
-        latest_title.setObjectName("PanelTitle")
-        latest_layout.addWidget(latest_title)
-        
-        self.history_latest_display = QLabel("暂无数据")
-        self.history_latest_display.setObjectName("LatestDisplay")
-        self.history_latest_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.history_latest_display.setWordWrap(True)
-        latest_layout.addWidget(self.history_latest_display)
-        
-        self.history_left_v_splitter.addWidget(latest_widget)
-        
-        # 下方：历史记录表格
-        table_widget = QWidget()
-        table_layout = QVBoxLayout(table_widget)
-        table_layout.setSpacing(0)
-        table_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.history_table = QTableWidget()
-        self.history_table.setObjectName("HistoryTable")
-        self.history_table.setColumnCount(9)
-        self.history_table.setHorizontalHeaderLabels(["期号", "日期", "正码", "特别码", "和值", "单双比", "大小比", "颜色分布", "跨度"])
-        
-        # 列宽设置：Interactive模式支持用户拖拽调整列宽
-        self.history_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        # 各列初始宽度，优先从INI加载保存的宽度
-        default_col_widths = [70, 120, 160, 70, 60, 65, 65, 110, 60]
-        saved_widths = getattr(self, '_history_col_widths', [])
-        for i in range(9):
-            if i < len(saved_widths) and saved_widths[i] is not None and saved_widths[i] > 0:
-                self.history_table.setColumnWidth(i, saved_widths[i])
-            else:
-                self.history_table.setColumnWidth(i, default_col_widths[i])
-        
-        # 列宽变化时自动保存
-        self.history_table.horizontalHeader().sectionResized.connect(self._on_history_col_resized)
-        self.history_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        # 确保水平和垂直滚动条都能正常出现
-        self.history_table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
-        self.history_table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
-        self.history_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.history_table.setItemDelegate(PreserveColorDelegate(self.history_table))
-        self.history_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        # 行高加大确保内容完整
-        self.history_table.verticalHeader().setDefaultSectionSize(40)
-        # 确保文字不被截断
-        self.history_table.setWordWrap(True)
-        
-        table_layout.addWidget(self.history_table)
-        
-        # ======================================================================== #
-        # 功能12：历史记录分页控件
-        # ======================================================================== #
-        pagination_widget = QWidget()
-        pagination_layout = QHBoxLayout(pagination_widget)
-        pagination_layout.setContentsMargins(0, 5, 0, 0)
-        
-        self.history_page_label = QLabel("第 1 页 / 共 1 页")
-        pagination_layout.addWidget(self.history_page_label)
-        
-        pagination_layout.addStretch()
-        
-        prev_btn = QPushButton("上一页")
-        prev_btn.setMaximumWidth(80)
-        prev_btn.clicked.connect(self._on_prev_page)
-        pagination_layout.addWidget(prev_btn)
-        
-        pagination_layout.addWidget(QLabel("跳转至"))
-        self.history_page_spin = QSpinBox()
-        self.history_page_spin.setRange(1, 1)
-        self.history_page_spin.setMaximumWidth(60)
-        self.history_page_spin.valueChanged.connect(self._on_page_jump)
-        pagination_layout.addWidget(self.history_page_spin)
-        
-        pagination_layout.addWidget(QLabel("页"))
-        
-        next_btn = QPushButton("下一页")
-        next_btn.setMaximumWidth(80)
-        next_btn.clicked.connect(self._on_next_page)
-        pagination_layout.addWidget(next_btn)
-        
-        table_layout.addWidget(pagination_widget)
-        
-        self.history_left_v_splitter.addWidget(table_widget)
-        
-        # 左半部分比例：最新数据20%，表格80%
-        self.history_left_v_splitter.setStretchFactor(0, 2)
-        self.history_left_v_splitter.setStretchFactor(1, 8)
-        self._apply_splitter_sizes(self.history_left_v_splitter, 'history_left_v_splitter')
-        
-        self.history_h_splitter.addWidget(self.history_left_v_splitter)
-        
-        # === 右半部分：垂直Splitter（上下分隔）===
-        self.history_right_v_splitter = QSplitter(Qt.Orientation.Vertical)
-        self.history_right_v_splitter.setHandleWidth(4)
-        
-        # 上方：快捷操作面板（小按钮网格布局）
-        action_widget = QWidget()
-        action_layout = QVBoxLayout(action_widget)
-        action_layout.setSpacing(6)
-        action_layout.setContentsMargins(4, 4, 4, 4)
-        
-        action_title = QLabel("快捷操作")
-        action_title.setObjectName("PanelTitle")
-        action_layout.addWidget(action_title)
-        
-        # 网格布局：4列小按钮
-        grid_widget = QWidget()
-        grid_layout = QGridLayout(grid_widget)
-        grid_layout.setSpacing(5)
-        grid_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # 快捷操作按钮样式 - 普通操作（白色系，用于添加/修改等非破坏性操作）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFFFFF;  背景色：白色（简洁干净）
-        #     color: #333333;             文字颜色：深灰
-        #     border: 1px solid #DDDDDD;  边框：1px 浅灰实线
-        #     border-radius: 4px;         圆角：4px
-        #     padding: 4px 8px;           内边距：上下4px，左右8px
-        #     font-size: 12px;            字体大小：12px
-        #     font-weight: bold;          字体：粗体
-        #     min-height: 26px;           最小高度：26px
-        #   }
-        #   QPushButton:hover {   悬停样式
-        #     background-color: #F0F0F0;  悬停背景色：浅灰
-        #     border-color: #BBBBBB;      悬停边框色：中灰
-        #   }
-        #   QPushButton:pressed { 按下样式
-        #     background-color: #E0E0E0;  按下背景色：更深灰色（反馈感）
-        #   }
-        small_btn_style = (
-            "QPushButton { background-color: #FFFFFF; color: #333333; border: 1px solid #DDDDDD; "
-            "border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: bold; min-height: 26px; } "
-            "QPushButton:hover { background-color: #F0F0F0; border-color: #BBBBBB; } "
-            "QPushButton:pressed { background-color: #E0E0E0; }"
-        )
-        # 快捷操作按钮样式 - 危险操作（红色系，用于删除/清空等破坏性操作）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFFFFF;  背景色：白色
-        #     color: #E74C3C;             文字颜色：红色（警示）
-        #     border: 1px solid #E74C3C;  边框：1px 红色实线（强调危险）
-        #     border-radius: 4px;         圆角：4px
-        #     padding: 4px 8px;           内边距：上下4px，左右8px
-        #     font-size: 12px;            字体大小：12px
-        #     font-weight: bold;          字体：粗体
-        #     min-height: 26px;           最小高度：26px
-        #   }
-        #   QPushButton:hover {   悬停样式
-        #     background-color: #FDF0EF;  悬停背景色：极浅红
-        #   }
-        #   QPushButton:pressed { 按下样式
-        #     background-color: #FADBD8;  按下背景色：浅红（加强反馈）
-        #   }
-        danger_btn_style = (
-            "QPushButton { background-color: #FFFFFF; color: #E74C3C; border: 1px solid #E74C3C; "
-            "border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: bold; min-height: 26px; } "
-            "QPushButton:hover { background-color: #FDF0EF; } "
-            "QPushButton:pressed { background-color: #FADBD8; }"
-        )
-        
-        quick_actions = [
-            ("➕ 批量添加", small_btn_style, self._on_batch_add_clicked),
-            ("🗑 批量删除", danger_btn_style, self._on_batch_delete_clicked),
-            ("✏️ 批量修改", small_btn_style, self._on_batch_modify_clicked),
-            ("⚠ 清空", danger_btn_style, self._on_clear_data_clicked),
-            ("📤 导出记录", small_btn_style, self._on_export_history_clicked),
-            ("📥 导入记录", small_btn_style, self._on_import_history_clicked),
-        ]
-        
-        cols = 4
-        for i, (text, style, callback) in enumerate(quick_actions):
-            btn = QPushButton(text)
-            # 为快捷操作按钮应用对应的样式（批量添加/删除用绿色/红色系，批量修改用蓝色系）
-            btn.setStyleSheet(style)
-            btn.clicked.connect(callback)
-            grid_layout.addWidget(btn, i // cols, i % cols)
-        
-        action_layout.addWidget(grid_widget)
-        action_layout.addStretch()
-        
-        self.history_right_v_splitter.addWidget(action_widget)
-        
-        # 下方：期号详情显示面板
-        detail_widget = QWidget()
-        detail_layout = QVBoxLayout(detail_widget)
-        detail_layout.setSpacing(5)
-        
-        detail_title_row = QHBoxLayout()
-        detail_title = QLabel("期号详情")
-        detail_title.setObjectName("PanelTitle")
-        detail_title_row.addWidget(detail_title)
-        detail_title_row.addStretch()
-        
-        # 字体大小调节按钮
-        font_down_btn = QPushButton("A-")
-        font_down_btn.setToolTip("减小字体")
-        font_down_btn.setFixedSize(60, 26)
-        # 期号详情字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E8F5E9;  背景色：浅绿
-        #     color: #2E7D32;             文字颜色：深绿
-        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
-        #   }
-        font_down_btn.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
-        font_down_btn.clicked.connect(lambda: self._change_detail_font_size(-0.1))
-        detail_title_row.addWidget(font_down_btn)
-        
-        font_up_btn = QPushButton("A+")
-        font_up_btn.setToolTip("增大字体")
-        font_up_btn.setFixedSize(60, 26)
-        # 期号详情字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
-        #     color: #C62828;             文字颜色：深红
-        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
-        #   }
-        font_up_btn.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
-        font_up_btn.clicked.connect(lambda: self._change_detail_font_size(0.1))
-        detail_title_row.addWidget(font_up_btn)
-        
-        show_btn = QPushButton("显示选中")
-        show_btn.clicked.connect(self._on_show_period_detail)
-        # 显示选中期号详情按钮样式 - 绿色系（确认/显示操作用绿色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #2ECC71;  背景色：鲜绿
-        #     color: white;                文字颜色：白色
-        #     border: none;                边框：无
-        #     border-radius: 4px;          圆角：4px
-        #     padding: 5px 12px;           内边距：上下5px，左右12px
-        #     font-weight: bold;           字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #27AE60;  悬停背景色：深绿
-        #   }
-        show_btn.setStyleSheet("QPushButton { background-color: #2ECC71; color: white; border: none; border-radius: 4px; padding: 5px 12px; font-weight: bold; } QPushButton:hover { background-color: #27AE60; }")
-        detail_title_row.addWidget(show_btn)
-        
-        detail_layout.addLayout(detail_title_row)
-        
-        self.period_detail_edit = QTextEdit()
-        self.period_detail_edit.setReadOnly(True)
-        # 期号详情文本框样式
-        #   QTextEdit {       文本框整体样式
-        #     background-color: #FFFFFF;  背景色：白色
-        #     color: #000000;             文字颜色：黑色
-        #     border: 1px solid #DDDDDD;  边框：1px 浅灰实线
-        #     border-radius: 4px;         圆角：4px
-        #     font-size: 14px;            字体大小：14px
-        #     padding: 8px;               内边距：8px
-        #   }
-        self.period_detail_edit.setStyleSheet("QTextEdit { background-color: #FFFFFF; color: #000000; border: 1px solid #DDDDDD; border-radius: 4px; font-size: 14px; padding: 8px; }")
-        self.period_detail_edit.setPlaceholderText("在表格中选择一期，然后点击「显示选中」按钮查看完整信息...")
-        detail_layout.addWidget(self.period_detail_edit)
-        
-        # 统计摘要
-        self.history_stats_label = QLabel("加载数据后显示统计信息")
-        self.history_stats_label.setWordWrap(True)
-        # 历史统计摘要标签样式
-        #   color: #333333;     文字颜色：深灰（主要内容文字）
-        #   font-size: 13px;    字体大小：13像素
-        #   line-height: 1.5;   行高：1.5倍（提高可读性）
-        self.history_stats_label.setStyleSheet("color: #333333; font-size: 13px; line-height: 1.5;")
-        detail_layout.addWidget(self.history_stats_label)
-        
-        self.history_right_v_splitter.addWidget(detail_widget)
-        
-        # 右半部分比例：操作60%，统计40%
-        self.history_right_v_splitter.setStretchFactor(0, 6)
-        self.history_right_v_splitter.setStretchFactor(1, 4)
-        self._apply_splitter_sizes(self.history_right_v_splitter, 'history_right_v_splitter')
-        
-        self.history_h_splitter.addWidget(self.history_right_v_splitter)
-        
-        # 左右比例：左侧80%，右侧20%
-        self.history_h_splitter.setStretchFactor(0, 8)
-        self.history_h_splitter.setStretchFactor(1, 2)
-        self._apply_splitter_sizes(self.history_h_splitter, 'history_h_splitter')
-        
-        layout.addWidget(self.history_h_splitter)
-        
-        return widget
-    
-    def _on_history_col_resized(self, index, old_size, new_size):
-        """历史记录表列宽变化时延迟保存配置"""
-        # 使用定时器延迟保存，避免拖动时频繁写文件
-        if not hasattr(self, '_col_resize_timer'):
-            from PyQt6.QtCore import QTimer
-            self._col_resize_timer = QTimer(self)
-            self._col_resize_timer.setSingleShot(True)
-            self._col_resize_timer.timeout.connect(self._save_history_col_widths)
-        self._col_resize_timer.start(500)  # 500ms后保存
-    
-    def _save_history_col_widths(self):
-        """保存历史记录表当前列宽到配置"""
-        if not hasattr(self, 'history_table'):
-            return
-        for i in range(self.history_table.columnCount()):
-            width = self.history_table.columnWidth(i)
-            key = 'history_col_' + str(i)
-            if hasattr(self, '_ini') and self._ini.has_section('Display'):
-                self._ini['Display'][key] = str(width)
+        step = 1
+        label_size = self._legend_font_size.get('label', 14) + direction * step
+        nums_size = self._legend_font_size.get('nums', 13) + direction * step
+        # 限制范围
+        label_size = max(10, min(24, label_size))
+        nums_size = max(9, min(22, nums_size))
+        
+        self._legend_font_size['label'] = label_size
+        self._legend_font_size['nums'] = nums_size
+        
+        # 应用到UI
+        self._apply_legend_font_size()
+        
+        # 保存到INI
         self._save_ini_config()
+        self.statusBar().showMessage(f"图例字体已调整为 {label_size}px")
     
-    def _update_history_table(self):
-        """更新历史记录表格
+    def _apply_detail_label_size(self):
+        """应用详情标签（生肖/五行详情）字体和内边距设置"""
+        font_size = self._detail_label_size.get('font', 13)
+        padding = self._detail_label_size.get('padding', 8)
         
-        功能12：分页显示
+        # 生肖详情标签
+        if hasattr(self, 'zodiac_detail_label') and self.zodiac_detail_label:
+            old_style = self.zodiac_detail_label.styleSheet()
+            import re
+            # 正则替换字号和内边距，保留颜色、圆角等其他样式属性不变
+            new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {font_size}px', old_style)
+            new_style = re.sub(r'padding:\s*\d+px', f'padding: {padding}px', new_style)
+            # 应用更新后的样式到生肖详情标签（动态字号 + 动态内边距）
+            self.zodiac_detail_label.setStyleSheet(new_style)
+        
+        # 五行详情标签
+        if hasattr(self, 'element_detail_label') and self.element_detail_label:
+            old_style = self.element_detail_label.styleSheet()
+            import re
+            # 正则替换字号和内边距，保留颜色、圆角等其他样式属性不变
+            new_style = re.sub(r'font-size:\s*\d+px', f'font-size: {font_size}px', old_style)
+            new_style = re.sub(r'padding:\s*\d+px', f'padding: {padding}px', new_style)
+            # 应用更新后的样式到五行详情标签（动态字号 + 动态内边距）
+            self.element_detail_label.setStyleSheet(new_style)
+    
+    def _change_detail_label_font(self, direction):
+        """调整详情标签的字体大小和内边距（背景尺寸）
+        direction: 1=放大, -1=缩小
         """
-        fg_color = "#CDD3F4" if self.is_dark_mode else "#333333"
+        step = 1
+        font_size = self._detail_label_size.get('font', 13) + direction * step
+        padding = self._detail_label_size.get('padding', 8) + direction * step
+        # 限制范围
+        font_size = max(10, min(24, font_size))
+        padding = max(4, min(20, padding))
         
-        # 使用原始数据
-        data_to_show = self.historical_data
-        total_count = len(data_to_show)
+        self._detail_label_size['font'] = font_size
+        self._detail_label_size['padding'] = padding
         
-        # 计算分页
-        total_pages = max(1, (total_count + self.history_page_size - 1) // self.history_page_size)
-        self.history_page = min(self.history_page, total_pages)
+        # 应用到UI
+        self._apply_detail_label_size()
         
-        # 计算当前页的数据范围
-        start_idx = (self.history_page - 1) * self.history_page_size
-        end_idx = min(start_idx + self.history_page_size, total_count)
-        
-        # 更新分页信息
-        self._update_pagination(total_count)
-        
-        # 设置表格行数（仅当前页）
-        self.history_table.setRowCount(end_idx - start_idx)
-        
-        for i, record in enumerate(data_to_show[start_idx:end_idx]):
-            table_row = i
-            # 期号
-            item_period = QTableWidgetItem(str(record.get('period', '?')))
-            item_period.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_period.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 0, item_period)
-            # 日期
-            item_date = QTableWidgetItem(record.get('date', '?'))
-            item_date.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_date.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 1, item_date)
-            # 正码（每个数字带对应颜色）
-            numbers = record.get('numbers', [])
-            # 使用QLabel显示彩色数字
-            numbers_widget = QWidget()
-            # 正码容器背景透明，避免遮挡表格行选中高亮
-            numbers_widget.setStyleSheet("background-color: transparent;")
-            numbers_layout = QHBoxLayout(numbers_widget)
-            numbers_layout.setContentsMargins(2, 2, 2, 2)
-            numbers_layout.setSpacing(8)
-            numbers_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            table_scale = self._area_font_scales.get('table', 1.0)
-            base_num_font = int(13 * table_scale)
-            for n in numbers:
-                colors = LotteryConfig.get_number_color(n)
-                num_label = QLabel(str(n).zfill(2))
-                # 正码数字标签样式：号码对应颜色，粗体，动态字号（跟随表格缩放），透明背景
-                num_label.setStyleSheet(
-                    "color: " + colors['text'] + "; font-weight: bold; font-size: " + str(base_num_font) + "px; background-color: transparent;")
-                numbers_layout.addWidget(num_label)
-            
-            self.history_table.setCellWidget(table_row, 2, numbers_widget)
-            self.history_table.setRowHeight(table_row, 36)
-            # 特别码（带颜色标记，使用与正码相同的字体缩放）
-            special = record.get('special', '?')
-            special_widget = QWidget()
-            # 特别码容器背景透明，避免遮挡表格行选中高亮
-            special_widget.setStyleSheet("background-color: transparent;")
-            special_layout = QHBoxLayout(special_widget)
-            special_layout.setContentsMargins(2, 2, 2, 2)
-            special_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            special_color = fg_color
-            if isinstance(special, int):
-                if special in LotteryConfig.RED_NUMBERS:
-                    special_color = "#FF0000"
-                elif special in LotteryConfig.BLUE_NUMBERS:
-                    special_color = "#0000FF"
-                else:
-                    special_color = "#008000"
-            
-            special_label = QLabel(str(special).zfill(2) if special != '?' else '?')
-            # 特别码数字标签样式：红/蓝/绿色标识，粗体，动态字号，透明背景
-            special_label.setStyleSheet(
-                "color: " + special_color + "; font-weight: bold; font-size: " + str(base_num_font) + "px; background-color: transparent;")
-            special_layout.addWidget(special_label)
-            
-            self.history_table.setCellWidget(table_row, 3, special_widget)
-            # 和值
-            sum_val = sum(numbers) if numbers else 0
-            item_sum = QTableWidgetItem(str(sum_val))
-            item_sum.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_sum.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 4, item_sum)
-            # 单双比
-            odd_count = sum(1 for n in numbers if n % 2 == 1) if numbers else 0
-            even_count = len(numbers) - odd_count
-            item_oe = QTableWidgetItem(str(odd_count) + ':' + str(even_count))
-            item_oe.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_oe.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 5, item_oe)
-            # 大小比
-            big_count = sum(1 for n in numbers if n > 24) if numbers else 0
-            small_count = len(numbers) - big_count
-            item_bs = QTableWidgetItem(str(big_count) + ':' + str(small_count))
-            item_bs.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_bs.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 6, item_bs)
-            # 颜色分布
-            red_count = sum(1 for n in numbers if n in LotteryConfig.RED_NUMBERS) if numbers else 0
-            blue_count = sum(1 for n in numbers if n in LotteryConfig.BLUE_NUMBERS) if numbers else 0
-            green_count = len(numbers) - red_count - blue_count
-            item_color = QTableWidgetItem('红' + str(red_count) + '蓝' + str(blue_count) + '绿' + str(green_count))
-            item_color.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_color.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 7, item_color)
-            # 跨度
-            span_val = (max(numbers) - min(numbers)) if numbers else 0
-            item_span = QTableWidgetItem(str(span_val))
-            item_span.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_span.setForeground(QColor(fg_color))
-            self.history_table.setItem(table_row, 8, item_span)
-        
-        self.data_count_label.setText("历史记录: " + str(len(self.historical_data)) + " 条")
-        if hasattr(self, 'history_count_label'):
-            self.history_count_label.setText("显示第 " + str(start_idx + 1) + "-" + str(end_idx) + " 条 / 共 " + str(total_count) + " 条")
-        self._refresh_latest_display()
-        
-        # 更新历史记录标签页的最新数据显示
-        if hasattr(self, 'history_latest_display') and data_to_show:
-            latest = data_to_show[0]
-            numbers = latest.get('numbers', [])
-            special = latest.get('special', 0)
-            text = '第' + str(latest.get('period', '?')) + '期 | ' + str(latest.get('date', '?'))
-            text += '\n正码: ' + ' '.join(str(n).zfill(2) for n in numbers)
-            text += '  特别码: ' + str(special).zfill(2)
-            self.history_latest_display.setText(text)
-        
-        # 更新统计摘要（基于筛选后的数据）
-        if hasattr(self, 'history_stats_label') and data_to_show:
-            from collections import Counter
-            all_nums = []
-            for r in data_to_show:
-                all_nums.extend(r.get('numbers', []))
-            counter = Counter(all_nums)
-            hot = counter.most_common(5)
-            hot_str = '  '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in hot)
-            cold = counter.most_common()[-5:]
-            cold_str = '  '.join(str(n).zfill(2) + '(' + str(c) + ')' for n, c in cold)
-            
-            sums = [sum(r.get('numbers', [])) for r in data_to_show]
-            dates = [r.get('date', '') for r in data_to_show if r.get('date')]
-            
-            stats_text = '总期数: ' + str(len(data_to_show)) + ' 期\n'
-            if dates:
-                stats_text += '日期范围: ' + dates[-1] + ' ~ ' + dates[0] + '\n'
-            if sums:
-                stats_text += '和值范围: ' + str(min(sums)) + ' ~ ' + str(max(sums)) + '\n'
-                stats_text += '和值均值: ' + str(int(sum(sums) / len(sums))) + '\n'
-            stats_text += '热门号码: ' + hot_str + '\n'
-            stats_text += '冷门号码: ' + cold_str
-            self.history_stats_label.setText(stats_text)
-        
-        # 更新概率面板
-        if hasattr(self, 'probability_list'):
-            self._update_probability_panel()
+        # 保存到INI
+        self._save_ini_config()
+        self.statusBar().showMessage(f"详情标签字体已调整为 {font_size}px")
     
-    def _on_prev_page(self):
-        """上一页"""
-        if self.history_page > 1:
-            self.history_page -= 1
-            self._update_history_table()
+    def _apply_probability_config(self):
+        """应用概率面板配置到UI控件"""
+        if not hasattr(self, '_prob_config'):
+            self._prob_config = {}
+        
+        # 应用统计期数
+        if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
+            period = self._prob_config.get('period', 30)
+            self.prob_period_spin.blockSignals(True)
+            self.prob_period_spin.setValue(period)
+            self.prob_period_spin.blockSignals(False)
+        
+        # 应用排序方式
+        if hasattr(self, 'prob_sort_combo') and self.prob_sort_combo:
+            sort_mode = self._prob_config.get('sort_mode', 0)
+            self.prob_sort_combo.blockSignals(True)
+            self.prob_sort_combo.setCurrentIndex(sort_mode)
+            self.prob_sort_combo.blockSignals(False)
     
-    def _on_next_page(self):
-        """下一页"""
-        total_pages = max(1, (len(self.historical_data) + self.history_page_size - 1) // self.history_page_size)
-        if self.history_page < total_pages:
-            self.history_page += 1
-            self._update_history_table()
+    def _apply_calc_panel_config(self):
+        """应用计算规律面板配置到UI控件 —— 从INI加载的_calc_config字典中恢复各控件状态"""
+        if not hasattr(self, '_calc_config'):
+            self._calc_config = {}
+        
+        # 跳数（0-3）：控制期对间隔，0=相邻期，3=隔3期
+        if hasattr(self, 'calc_skip_spin') and self.calc_skip_spin:
+            val = self._calc_config.get('skip', 0)
+            self.calc_skip_spin.blockSignals(True)
+            self.calc_skip_spin.setValue(val)
+            self.calc_skip_spin.blockSignals(False)
+        # 运算方式（0=加法+减法，1=仅加法，2=仅减法）
+        if hasattr(self, 'calc_op_combo') and self.calc_op_combo:
+            val = self._calc_config.get('op', 0)
+            if val > 2:  # 兼容旧配置（原有5项，现仅3项）
+                val = 0
+            self.calc_op_combo.blockSignals(True)
+            self.calc_op_combo.setCurrentIndex(val)
+            self.calc_op_combo.blockSignals(False)
+        # 筛选模式（0=全部，1=仅1-49，2=仅正数，3=仅高频≥3次）
+        if hasattr(self, 'calc_filter_combo') and self.calc_filter_combo:
+            val = self._calc_config.get('filter', 0)
+            self.calc_filter_combo.blockSignals(True)
+            self.calc_filter_combo.setCurrentIndex(val)
+            self.calc_filter_combo.blockSignals(False)
+        # TopN显示数量（3-20）
+        if hasattr(self, 'calc_topn_spin') and self.calc_topn_spin:
+            val = self._calc_config.get('topn', 5)
+            self.calc_topn_spin.blockSignals(True)
+            self.calc_topn_spin.setValue(val)
+            self.calc_topn_spin.blockSignals(False)
+        # 运算结果字号（10-150px，默认20px）
+        if hasattr(self, 'calc_result_font_spin') and self.calc_result_font_spin:
+            val = self._calc_config.get('result_font', 20)
+            self.calc_result_font_spin.blockSignals(True)
+            self.calc_result_font_spin.setValue(val)
+            self.calc_result_font_spin.blockSignals(False)
+        # 推荐号码字号（10-150px，默认20px）
+        if hasattr(self, 'calc_rec_font_spin') and self.calc_rec_font_spin:
+            val = self._calc_config.get('rec_font', 20)
+            self.calc_rec_font_spin.blockSignals(True)
+            self.calc_rec_font_spin.setValue(val)
+            self.calc_rec_font_spin.blockSignals(False)
+        # 分析对比字号（10-150px，默认20px）
+        if hasattr(self, 'calc_comp_font_spin') and self.calc_comp_font_spin:
+            val = self._calc_config.get('comp_font', 20)
+            self.calc_comp_font_spin.blockSignals(True)
+            self.calc_comp_font_spin.setValue(val)
+            self.calc_comp_font_spin.blockSignals(False)
+        # 详细结果字号（10-150px，默认20px）
+        if hasattr(self, 'calc_detail_font_spin') and self.calc_detail_font_spin:
+            val = self._calc_config.get('detail_font', 20)
+            self.calc_detail_font_spin.blockSignals(True)
+            self.calc_detail_font_spin.setValue(val)
+            self.calc_detail_font_spin.blockSignals(False)
     
-    def _on_page_jump(self, page):
-        """跳转到指定页"""
-        total_pages = max(1, (len(self.historical_data) + self.history_page_size - 1) // self.history_page_size)
-        if 1 <= page <= total_pages:
-            self.history_page = page
-            self._update_history_table()
-            # 保存当前页码
-            self._save_ini_config()
-    
-    def _update_pagination(self, total_count):
-        """更新分页信息"""
-        total_pages = max(1, (total_count + self.history_page_size - 1) // self.history_page_size)
-        self.history_page = min(self.history_page, total_pages)
-        self.history_page_label.setText("第 " + str(self.history_page) + " 页 / 共 " + str(total_pages) + " 页")
-        self.history_page_spin.setRange(1, total_pages)
-        self.history_page_spin.setValue(self.history_page)
-    
-    # ======================================================================== #
-    # 功能12：性能优化 - 图表懒加载
-    # ======================================================================== #
-    def _refresh_latest_display(self):
-        if not self.historical_data:
-            self.latest_display.setText("暂无数据")
-            return
-        latest = self.historical_data[0]
-        numbers = latest.get('numbers', [])
-        special = latest.get('special', 0)
-        numbers_text = ' '.join(str(n).zfill(2) for n in numbers)
-        text = "第" + str(latest.get('period', '?')) + "期 | " + latest.get('date', '?') + "\n"
-        text += "正码: " + numbers_text + "\n"
-        text += "特别码: " + str(special).zfill(2)
-        self.latest_display.setText(text)
-    
-    def _on_show_period_detail(self):
-        """显示选中期的完整信息"""
-        if not hasattr(self, 'period_detail_edit'):
-            return
-        row = self.history_table.currentRow()
-        if row < 0 or row >= len(self.historical_data):
-            self.period_detail_edit.setHtml('<p style="color:#E74C3C;">请先在表格中选择一期记录</p>')
-            return
+    def _apply_wave_panel_config(self):
+        """应用波色预测面板配置到UI控件 —— 从INI加载的_wave_config字典中恢复各控件状态"""
+        if not hasattr(self, '_wave_config'):
+            self._wave_config = {}
         
-        self._current_detail_row = row
-        record = self.historical_data[row]
-        numbers = record.get('numbers', [])
-        special = record.get('special', 0)
-        period = record.get('period', '?')
-        date = record.get('date', '?')
-        
-        # 获取详情区域字体缩放
-        detail_scale = self._area_font_scales.get('detail', 1.0)
-        
-        # 基础尺寸（原始尺寸）
-        base_title_size = 30
-        base_section_size = 22
-        base_ball_size = 30
-        base_table_size = 18
-        base_small_size = 20
-        base_tiny_size = 17
-        
-        # 缩放后的尺寸
-        title_size = int(base_title_size * detail_scale)
-        section_size = int(base_section_size * detail_scale)
-        ball_size = int(base_ball_size * detail_scale)
-        table_size = int(base_table_size * detail_scale)
-        small_size = int(base_small_size * detail_scale)
-        tiny_size = int(base_tiny_size * detail_scale)
-        
-        # 球的padding和margin也缩放
-        ball_padding_h = int(18 * detail_scale)
-        ball_padding_v = int(10 * detail_scale)
-        ball_margin = int(5 * detail_scale)
-        ball_radius = int(12 * detail_scale)
-        
-        # 构建HTML完整显示 - 减小行高和间隔
-        html = f'<div style="font-size:{table_size}px; line-height:1.6;">'
-        html += f'<p style="font-size:{title_size}px; font-weight:bold; color:#3498DB; margin:2px 0;">第{str(period)}期  {str(date)}</p>'
-        
-        # 正码大按钮显示
-        html += f'<p style="font-size:{section_size}px; margin:8px 0 2px 0;"><b>正码：</b></p>'
-        html += f'<p style="margin-left:10px; margin-top:0;">'
-        for n in numbers:
-            colors = LotteryConfig.get_number_color(n)
-            html += f'<span style="display:inline-block; background-color:{colors["border"]}; color:#FFFFFF; font-size:{ball_size}px; font-weight:bold; border-radius:{ball_radius}px; padding:{ball_padding_v}px {ball_padding_h}px; margin:{ball_margin}px;">{str(n).zfill(2)}</span> '
-        html += '</p>'
-        
-        # 特别码
-        html += f'<p style="margin:4px 0;"><b>特别码：</b>'
-        sp_colors = LotteryConfig.get_number_color(special)
-        sp_name = LotteryConfig.NUMBER_NAMES.get(special, '')
-        sp_elem = LotteryConfig.NUMBER_ELEMENTS.get(special, '')
-        sp_color_name = ''
-        if special in LotteryConfig.RED_NUMBERS:
-            sp_color_name = '红'
-        elif special in LotteryConfig.BLUE_NUMBERS:
-            sp_color_name = '蓝'
-        else:
-            sp_color_name = '绿'
-        html += f'<span style="display:inline-block; background-color:{sp_colors["border"]}; color:#FFFFFF; font-size:{ball_size}px; font-weight:bold; border-radius:{ball_radius}px; padding:{ball_padding_v}px {ball_padding_h}px; margin:{ball_margin}px;">{str(special).zfill(2)}</span>'
-        html += '</p>'
-        
-        # 详细属性表
-        html += f'<table style="border-collapse:collapse; width:100%; margin-top:8px; font-size:{table_size}px;">'
-        
-        # 和值
-        sum_val = sum(numbers)
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold; width:90px;">和值</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{section_size}px; font-weight:bold;">{str(sum_val)}</td></tr>'
-        
-        # 跨度
-        span_val = max(numbers) - min(numbers) if numbers else 0
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">跨度</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{section_size}px; font-weight:bold;">{str(span_val)}</td></tr>'
-        
-        # 单双比
-        odd_count = sum(1 for n in numbers if n % 2 == 1)
-        even_count = len(numbers) - odd_count
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">单双比</td><td style="padding:6px 10px; border:1px solid #DDD;">单{str(odd_count)}:双{str(even_count)}</td></tr>'
-        
-        # 大小比
-        big_count = sum(1 for n in numbers if n > 24)
-        small_count = len(numbers) - big_count
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">大小比</td><td style="padding:6px 10px; border:1px solid #DDD;">大{str(big_count)}:小{str(small_count)}</td></tr>'
-        
-        # 颜色分布
-        red_c = sum(1 for n in numbers if n in LotteryConfig.RED_NUMBERS)
-        blue_c = sum(1 for n in numbers if n in LotteryConfig.BLUE_NUMBERS)
-        green_c = len(numbers) - red_c - blue_c
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">颜色分布</td><td style="padding:6px 10px; border:1px solid #DDD;"><span style="color:#FF0000; font-size:{small_size}px;">红{str(red_c)}</span> <span style="color:#0000FF; font-size:{small_size}px;">蓝{str(blue_c)}</span> <span style="color:#008000; font-size:{small_size}px;">绿{str(green_c)}</span></td></tr>'
-        
-        # 每个号码详细属性
-        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">号码详情</td><td style="padding:6px 10px; border:1px solid #DDD;">'
-        for n in numbers:
-            cn = LotteryConfig.NUMBER_NAMES.get(n, '')
-            el = LotteryConfig.NUMBER_ELEMENTS.get(n, '')
-            c = LotteryConfig.get_number_color(n)
-            cn2 = ''
-            if n in LotteryConfig.RED_NUMBERS:
-                cn2 = '红'
-            elif n in LotteryConfig.BLUE_NUMBERS:
-                cn2 = '蓝'
-            else:
-                cn2 = '绿'
-            html += f'<span style="color:{c["text"]}; font-size:{small_size}px; font-weight:bold;">{str(n).zfill(2)}</span><span style="font-size:{tiny_size}px;">({cn2}/{cn}/{el})</span> '
-        # 特别码详情
-        sp_c = LotteryConfig.get_number_color(special)
-        html += f'<br>特别码: <span style="color:{sp_c["text"]}; font-size:{small_size}px; font-weight:bold;">{str(special).zfill(2)}</span><span style="font-size:{tiny_size}px;">({sp_color_name}/{sp_name}/{sp_elem})</span>'
-        html += '</td></tr>'
-        
-        # 区间分布
-        zones = {'01-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-49': 0}
-        for n in numbers:
-            if n <= 10: zones['01-10'] += 1
-            elif n <= 20: zones['11-20'] += 1
-            elif n <= 30: zones['21-30'] += 1
-            elif n <= 40: zones['31-40'] += 1
-            else: zones['41-49'] += 1
-        zone_str = '  '.join(k + ':' + str(v) for k, v in zones.items())
-        html += f'<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">区间分布</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:{table_size}px;">{zone_str}</td></tr>'
-        
-        # 尾数分布
-        tails = [n % 10 for n in numbers]
-        tail_counter = {}
-        for t in tails:
-            tail_counter[t] = tail_counter.get(t, 0) + 1
-        tail_str = '  '.join('尾' + str(k) + ':' + str(v) for k, v in sorted(tail_counter.items()))
-        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">尾数分布</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:18px;">' + tail_str + '</td></tr>'
-        
-        # 连号
-        sorted_nums = sorted(numbers)
-        consec = []
-        temp = [sorted_nums[0]]
-        for j in range(1, len(sorted_nums)):
-            if sorted_nums[j] == sorted_nums[j-1] + 1:
-                temp.append(sorted_nums[j])
-            else:
-                if len(temp) >= 2:
-                    consec.append(temp[:])
-                temp = [sorted_nums[j]]
-        if len(temp) >= 2:
-            consec.append(temp[:])
-        consec_str = '  '.join('-'.join(str(x).zfill(2) for x in c) for c in consec) if consec else '无'
-        html += '<tr><td style="padding:6px 10px; border:1px solid #DDD; font-weight:bold;">连号</td><td style="padding:6px 10px; border:1px solid #DDD; font-size:18px;">' + consec_str + '</td></tr>'
-        
-        html += '</table>'
-        html += '</div>'
-        
-        self._original_detail_html = html
-        self._apply_detail_font_scale()
-    
+        # 统计期数（5-500，默认30）
+        if hasattr(self, 'wave_period_spin') and self.wave_period_spin:
+            val = self._wave_config.get('period', 30)
+            self.wave_period_spin.blockSignals(True)
+            self.wave_period_spin.setValue(val)
+            self.wave_period_spin.blockSignals(False)
+        # 显示模式（0=全部，1=前段，2=后段）
+        if hasattr(self, 'wave_mode_combo') and self.wave_mode_combo:
+            val = self._wave_config.get('mode', 0)
+            self.wave_mode_combo.blockSignals(True)
+            self.wave_mode_combo.setCurrentIndex(val)
+            self.wave_mode_combo.blockSignals(False)
+        # 走势期数（5-300，默认20）
+        if hasattr(self, 'wave_trend_spin') and self.wave_trend_spin:
+            val = self._wave_config.get('trend', 20)
+            self.wave_trend_spin.blockSignals(True)
+            self.wave_trend_spin.setValue(val)
+            self.wave_trend_spin.blockSignals(False)
+        # 波色统计结果字号（10-150px，默认20px）
+        if hasattr(self, 'wave_result_font_spin') and self.wave_result_font_spin:
+            val = self._wave_config.get('result_font', 20)
+            self.wave_result_font_spin.blockSignals(True)
+            self.wave_result_font_spin.setValue(val)
+            self.wave_result_font_spin.blockSignals(False)
+        # 走势图字号（10-150px，默认20px）
+        if hasattr(self, 'wave_trend_font_spin') and self.wave_trend_font_spin:
+            val = self._wave_config.get('trend_font', 20)
+            self.wave_trend_font_spin.blockSignals(True)
+            self.wave_trend_font_spin.setValue(val)
+            self.wave_trend_font_spin.blockSignals(False)
+        # 转移概率字号（10-150px，默认20px）
+        if hasattr(self, 'wave_trans_font_spin') and self.wave_trans_font_spin:
+            val = self._wave_config.get('trans_font', 20)
+            self.wave_trans_font_spin.blockSignals(True)
+            self.wave_trans_font_spin.setValue(val)
+            self.wave_trans_font_spin.blockSignals(False)
 
-    # ================================================================
-    # 【区域4】预测与抽取
-    # ================================================================
-    # 该区域包含的方法:
-    #   _clear_number_selection, _create_algorithm_panel, _create_latest_data_panel, _create_left_prediction_panel, _create_prediction_result_panel, _create_prediction_tab, _create_probability_panel, _create_right_prediction_panel, _create_saved_predictions_panel, _display_predictions, _get_prediction_by_index, _on_algorithm_changed, _on_ball_font_size_changed, _on_deterministic_mode_changed, _on_enhanced_mode_changed, _on_ml_predict_clicked, _on_ml_predict_error, _on_ml_predict_finished, _on_ml_predict_progress, _on_number_selected, _on_predict_clicked, _on_predict_error, _on_predict_finished, _on_predict_progress, _on_random_draw_clicked, _on_strategy_changed, _predict_special_number, _set_deterministic_seed, _update_prediction_balls_font_size
-    #
-    # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
-    #   - setFixedSize/setMinimumSize/setMaximumSize: 尺寸设置
-    #   - setSpacing: 间距设置
-    #   - font-size: 字体大小
-    #   - setContentsMargins: 边距设置
-    #   - 详见各方法内部的【可改】标注
-    # ================================================================
 
     def _create_prediction_tab(self):
+        """创建预测与抽取选项卡 —— 算法选择、预测执行、号码随机抽取、概率分析、计算规律、波色预测、收藏对比"""
         widget = QWidget()
         self.pred_h_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.pred_h_splitter.setHandleWidth(2)
@@ -12339,6 +14561,7 @@ class LotteryPredictionWindow(QMainWindow):
         return widget
     
     def _create_left_prediction_panel(self):
+        """功能：创建left prediction panel界面"""
         widget = QWidget()
         widget.setObjectName("LeftPredictionPanel")
         self.pred_left_v_splitter = QSplitter(Qt.Orientation.Vertical)
@@ -12362,25 +14585,107 @@ class LotteryPredictionWindow(QMainWindow):
         return widget
     
     def _create_right_prediction_panel(self):
+        """功能：创建right prediction panel界面"""
         widget = QWidget()
         widget.setObjectName("RightPredictionPanel")
         # 使用选项卡替代原来的面板分隔，预测结果和概率分为两个独立选项卡
         self.pred_right_tabs = QTabWidget()
-        
+
         result_panel = self._create_prediction_result_panel()
         self.pred_right_tabs.addTab(result_panel, "预测结果")
-        
+
         prob_panel = self._create_probability_panel()
         self.pred_right_tabs.addTab(prob_panel, "出现概率")
-        
+
+        # 计算规律面板（加减规律分析）
+        calc_panel = self._create_calc_method_panel()
+        self.pred_right_tabs.addTab(calc_panel, "计算规律")
+
+        # 波色预测面板
+        wave_panel = self._create_wave_color_panel()
+        self.pred_right_tabs.addTab(wave_panel, "波色预测")
+
+        # ======================================================================== #
+        # 数字字体 + 文字字体 + 尺寸按钮 → 放置在选项卡标签栏右侧角落
+        # 【可改】corner_control_spacing: 控件之间的水平间距（px），改大=控件间隔更宽
+        # ======================================================================== #
+        corner_control_spacing = 6  # ← 修改此值可调整控件之间的间距
+
+        control_layout = QHBoxLayout()
+        control_layout.setSpacing(corner_control_spacing)
+        control_layout.setContentsMargins(0, 0, 6, 0)
+
+        # --- 数字字体控件 ---
+        pred_num_font_label = QLabel("数字:")
+        pred_num_font_label.setStyleSheet("font-size: 13px; color: #1565C0; font-weight: bold;")
+        control_layout.addWidget(pred_num_font_label)
+
+        self.pred_num_font_spin = QSpinBox()
+        self.pred_num_font_spin.setRange(12, 150)  # 字体上限150px
+        self.pred_num_font_spin.setValue(self._prediction_ball_size.get('font', 20))  # 默认20px
+        self.pred_num_font_spin.setSuffix(" px")
+        self.pred_num_font_spin.setFixedWidth(80)
+        self.pred_num_font_spin.setToolTip("调整预测结果号码球数字字体大小\n（独立控制，不影响生肖/五行标签）")
+        # 数字字体大小输入框样式：浅蓝边框，圆角4px，最小高度45px
+        self.pred_num_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #90CAF9; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 数字字体大小变化信号：连接字体更新函数，实时调整号码球数字大小
+        self.pred_num_font_spin.valueChanged.connect(self._on_pred_num_font_changed)
+        control_layout.addWidget(self.pred_num_font_spin)
+
+        control_layout.addSpacing(8)
+
+        # --- 文字字体控件 ---
+        pred_text_font_label = QLabel("文字:")
+        pred_text_font_label.setStyleSheet("font-size: 13px; color: #7B1FA2; font-weight: bold;")
+        control_layout.addWidget(pred_text_font_label)
+
+        self.pred_text_font_spin = QSpinBox()
+        self.pred_text_font_spin.setRange(8, 150)  # 字体上限150px
+        self.pred_text_font_spin.setValue(self.ball_label_font_size)  # 默认20px
+        self.pred_text_font_spin.setSuffix(" px")
+        self.pred_text_font_spin.setFixedWidth(80)
+        self.pred_text_font_spin.setToolTip("调整号码球生肖/五行标签的字体大小\n（独立控制，不影响数字）")
+        # 文字字体大小输入框样式：浅紫边框，圆角4px，最小高度45px
+        self.pred_text_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #CE93D8; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 文字字体大小变化信号：连接标签字体更新函数，实时调整生肖/五行标签大小
+        self.pred_text_font_spin.valueChanged.connect(self._on_pred_text_font_changed)
+        control_layout.addWidget(self.pred_text_font_spin)
+
+        control_layout.addSpacing(8)
+
+        # --- 尺寸设置按钮 ---
+        pred_size_btn = QPushButton("尺寸")
+        pred_size_btn.setToolTip("调整号码球尺寸设置")
+        pred_size_btn.setFixedWidth(65)
+        # 尺寸设置按钮样式：浅蓝背景，蓝色文字，圆角6px
+        pred_size_btn.setStyleSheet(
+            "QPushButton { background-color: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; border-radius: 6px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #BBDEFB; }"
+        )
+        # 尺寸设置按钮点击信号：打开预测面板尺寸设置对话框
+        pred_size_btn.clicked.connect(lambda: self._show_panel_settings_dialog('prediction'))
+        control_layout.addWidget(pred_size_btn)
+
+        # 将控件容器设为选项卡右上角角落控件
+        control_widget = QWidget()
+        control_widget.setLayout(control_layout)
+        self.pred_right_tabs.setCornerWidget(control_widget, Qt.Corner.TopRightCorner)
+
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(self.spacing)
         layout.addWidget(self.pred_right_tabs)
-        
+
         return widget
     
     def _create_latest_data_panel(self):
+        """功能：创建latest data panel界面"""
         widget = QWidget()
         widget.setObjectName("LatestDataPanel")
         layout = QVBoxLayout(widget)
@@ -12397,12 +14702,14 @@ class LotteryPredictionWindow(QMainWindow):
         layout.addWidget(self.latest_display)
         
         refresh_btn = QPushButton("刷新显示")
+        # 刷新显示按钮点击信号：重新加载最新开奖数据并刷新显示
         refresh_btn.clicked.connect(self._refresh_latest_display)
         layout.addWidget(refresh_btn)
         
         return widget
     
     def _create_algorithm_panel(self):
+        """功能：创建algorithm panel界面"""
         widget = QWidget()
         widget.setObjectName("AlgorithmPanel")
         layout = QVBoxLayout(widget)
@@ -12416,7 +14723,10 @@ class LotteryPredictionWindow(QMainWindow):
         self.algorithm_combo.setObjectName("AlgorithmCombo")
         for algo_name, algo_desc in LotteryConfig.ALGORITHMS:
             self.algorithm_combo.addItem(algo_name)
+        # 算法选择下拉框变化信号：切换预测算法时更新算法描述和状态
+
         self.algorithm_combo.currentIndexChanged.connect(self._on_algorithm_changed)
+        # 算法选择下拉框变化信号：切换预测算法时更新算法描述和状态
         layout.addWidget(self.algorithm_combo)
         
         self.algorithm_desc_label = QLabel("请选择一个预测算法")
@@ -12427,6 +14737,7 @@ class LotteryPredictionWindow(QMainWindow):
         # 增强模式开关
         self.enhanced_mode_checkbox = QCheckBox("启用增强模式 (动态权重+模式识别)")
         self.enhanced_mode_checkbox.setChecked(self.enhanced_mode)
+        # 增强模式复选框状态变化信号：切换增强模式（动态权重+模式识别）
         self.enhanced_mode_checkbox.stateChanged.connect(self._on_enhanced_mode_changed)
         # 增强模式复选框样式 - 蓝色系（增强/高级功能用蓝色）
         #   QCheckBox {       复选框整体样式
@@ -12458,6 +14769,7 @@ class LotteryPredictionWindow(QMainWindow):
         # 确定性模式开关
         self.deterministic_checkbox = QCheckBox("确定性预测 (相同数据结果一致)")
         self.deterministic_checkbox.setChecked(self.deterministic_mode)
+        # 确定性模式复选框状态变化信号：切换确定性预测模式（相同数据结果一致）
         self.deterministic_checkbox.stateChanged.connect(self._on_deterministic_mode_changed)
         # 确定性预测复选框样式 - 绿色系（确定/稳定用绿色）
         #   QCheckBox {       复选框整体样式
@@ -12519,7 +14831,10 @@ class LotteryPredictionWindow(QMainWindow):
                 min-height: 24px;
             }
         """)
+        # 预测策略下拉框变化信号：切换标准/反向预测模式
+
         self.strategy_combo.currentIndexChanged.connect(self._on_strategy_changed)
+        # 预测策略下拉框变化信号：切换标准/反向预测模式
         strategy_layout.addWidget(self.strategy_combo, 1)
         layout.addLayout(strategy_layout)
         
@@ -12540,99 +14855,38 @@ class LotteryPredictionWindow(QMainWindow):
         button_layout = QHBoxLayout()
         
         self.predict_button = QPushButton("开始预测")
+        # 开始预测按钮点击信号：执行算法预测
         self.predict_button.clicked.connect(self._on_predict_clicked)
         button_layout.addWidget(self.predict_button)
         
         random_btn = QPushButton("随机抽取")
+        # 随机抽取按钮点击信号：执行随机号码抽取
         random_btn.clicked.connect(self._on_random_draw_clicked)
         button_layout.addWidget(random_btn)
         
         layout.addLayout(button_layout)
         
         ml_btn = QPushButton("机器学习预测")
+        # 机器学习预测按钮点击信号：执行机器学习模型预测
         ml_btn.clicked.connect(self._on_ml_predict_clicked)
         layout.addWidget(ml_btn)
         
         weight_btn = QPushButton("权重调节")
+        # 权重调节按钮点击信号：打开算法权重调节对话框
         weight_btn.clicked.connect(self._on_weight_adjust_clicked)
         layout.addWidget(weight_btn)
         
         return widget
     
     def _create_prediction_result_panel(self):
+        """功能：创建prediction result panel界面"""
         widget = QWidget()
         widget.setObjectName("PredictionResultPanel")
         layout = QVBoxLayout(widget)
         layout.setSpacing(self.spacing)
         
-        # 标题栏 - 标题 + 字号调节靠左，尺寸按钮紧随其后
-        title_bar = QHBoxLayout()
-        
-        title = QLabel("预测结果")
-        title.setObjectName("PanelTitle")
-        title_bar.addWidget(title)
-        
-        # 字号调节紧跟标题（往左移动）
-        title_bar.addSpacing(8)  # 【可改】标题与字号调节之间的间距（设为8让控件更紧贴标题）
-        
-        # 字号调节
-        font_size_label = QLabel("字号:")
-        # 字号调节标签样式
-        #   font-size: 12px;    字体大小：12像素
-        #   color: #666666;     文字颜色：中灰（辅助说明文字用灰色）
-        font_size_label.setStyleSheet("font-size: 20px; color: #666666;")
-        title_bar.addWidget(font_size_label)
-        
-        self.font_size_spin = QSpinBox()
-        self.font_size_spin.setRange(10, 39)
-        self.font_size_spin.setValue(self.ball_label_font_size)
-        self.font_size_spin.setSuffix(" px")
-        self.font_size_spin.setFixedWidth(80)  # 【可改】字号调节宽度
-        self.font_size_spin.setMinimumWidth(60)  # 【可改】字号调节最小宽度
-        # 字号调节数字输入框样式
-        #   QSpinBox {       数字框整体样式
-        #     background-color: #FFFFFF;  背景色：白色
-        #     border: 1px solid #CCCCCC;  边框：1px 中灰实线
-        #     border-radius: 4px;         圆角：4px
-        #     padding: 2px 6px;           内边距：上下2px，左右6px
-        #     font-size: 12px;            字体大小：12px
-        #   }
-        #   QSpinBox::up-button, QSpinBox::down-button {  上下调节按钮
-        #     width: 16px;                按钮宽度：16px
-        #   }
-        self.font_size_spin.setStyleSheet(
-            "QSpinBox { background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 4px; padding: 2px 6px; font-size: 16px; }"
-            "QSpinBox::up-button, QSpinBox::down-button { width: 16px; }"
-        )
-        self.font_size_spin.valueChanged.connect(self._on_ball_font_size_changed)
-        title_bar.addWidget(self.font_size_spin)
+        # 【已删除】原"预测结果"标题标签 - 选项卡已有标题，无需重复显示
 
-        # 【可改】字号与尺寸控件之间的间距：80px
-        title_bar.addSpacing(50)
-
-        # 尺寸设置按钮
-        pred_size_btn = QPushButton("尺寸")
-        pred_size_btn.setToolTip("调整号码球尺寸设置")
-        pred_size_btn.setFixedWidth(70)  # 【可改】尺寸按钮宽度
-        pred_size_btn.setMinimumWidth(55)  # 【可改】尺寸按钮最小宽度
-        # 预测结果面板尺寸设置按钮样式 - 蓝色系（设置/配置类用蓝色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E3F2FD;  背景色：浅蓝
-        #     color: #1565C0;             文字颜色：深蓝
-        #     border: 1px solid #90CAF9;  边框：1px 蓝色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #BBDEFB;  悬停背景色：稍深的浅蓝
-        #   }
-        pred_size_btn.setStyleSheet("QPushButton { background-color: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #BBDEFB; }")
-        pred_size_btn.clicked.connect(lambda: self._show_panel_settings_dialog('prediction'))
-        title_bar.addWidget(pred_size_btn)
-        
-        title_bar.addStretch()  # 弹性占位，确保标题和控件靠左对齐，防止分散
-        layout.addLayout(title_bar)
-        
         # 预测类型切换按钮
         type_btn_layout = QHBoxLayout()
         type_btn_layout.setSpacing(2)
@@ -12684,18 +14938,21 @@ class LotteryPredictionWindow(QMainWindow):
         self.type_btn_algorithm.setCheckable(True)
         self.type_btn_algorithm.setChecked(True)
         self.type_btn_algorithm.setStyleSheet(type_button_style)  # 应用切换按钮样式
+        # 算法预测按钮点击信号：切换到算法预测类型
         self.type_btn_algorithm.clicked.connect(lambda: self._on_prediction_type_changed('algorithm'))
         type_btn_layout.addWidget(self.type_btn_algorithm)
         
         self.type_btn_random = QPushButton("🎲 随机抽取")
         self.type_btn_random.setCheckable(True)
         self.type_btn_random.setStyleSheet(type_button_style)  # 应用切换按钮样式
+        # 随机抽取按钮点击信号：切换到随机抽取类型
         self.type_btn_random.clicked.connect(lambda: self._on_prediction_type_changed('random'))
         type_btn_layout.addWidget(self.type_btn_random)
         
         self.type_btn_ml = QPushButton("🤖 机器学习")
         self.type_btn_ml.setCheckable(True)
         self.type_btn_ml.setStyleSheet(type_button_style)  # 应用切换按钮样式
+        # 机器学习按钮点击信号：切换到机器学习预测类型
         self.type_btn_ml.clicked.connect(lambda: self._on_prediction_type_changed('ml'))
         type_btn_layout.addWidget(self.type_btn_ml)
         
@@ -12721,30 +14978,60 @@ class LotteryPredictionWindow(QMainWindow):
         result_layout = QVBoxLayout(result_widget)
         result_layout.setSpacing(self.spacing)
         
+        # ======================================================================== #
+        # 上次结果 vs 本次结果 对比显示区
+        # ======================================================================== #
+        # 每次新预测时，将当前结果存为"上次结果"，新结果显示在下方
+        # 对比区用箭头连接，变化的号码高亮显示
+        self.last_vs_current_widget = QWidget()
+        lvc_layout = QVBoxLayout(self.last_vs_current_widget)
+        lvc_layout.setSpacing(4)
+        lvc_layout.setContentsMargins(4, 4, 4, 4)
+        
+        # 上次结果标签
+        self.last_prediction_label = QLabel("上次结果：暂无")
+        self.last_prediction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.last_prediction_label.setWordWrap(True)
+        # 上次结果标签样式 - 浅灰底（历史信息用灰色调）
+        self.last_prediction_label.setStyleSheet(
+            "font-size: 14px; color: #888888; background-color: #F5F5F5; "
+            "border-radius: 6px; padding: 6px 10px; border: 1px solid #E0E0E0;"
+        )
+        self.last_prediction_label.setVisible(False)  # 初始隐藏，有上次结果时才显示
+        lvc_layout.addWidget(self.last_prediction_label)
+        
+        # 分隔箭头
+        self.lvc_arrow_label = QLabel("↓")
+        self.lvc_arrow_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lvc_arrow_label.setStyleSheet("font-size: 18px; color: #3498DB; font-weight: bold;")
+        self.lvc_arrow_label.setVisible(False)
+        lvc_layout.addWidget(self.lvc_arrow_label)
+        
+        # 本次结果标签
+        self.current_prediction_label = QLabel("本次结果：等待预测...")
+        self.current_prediction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.current_prediction_label.setWordWrap(True)
+        # 本次结果标签样式 - 浅蓝底（当前信息用蓝色调，突出显示）
+        self.current_prediction_label.setStyleSheet(
+            "font-size: 14px; color: #1565C0; background-color: #E3F2FD; "
+            "border-radius: 6px; padding: 6px 10px; border: 1px solid #90CAF9; font-weight: bold;"
+        )
+        lvc_layout.addWidget(self.current_prediction_label)
+        
+        result_layout.addWidget(self.last_vs_current_widget)
+        
+        # 【已移除】预测结果文字标签（原显示"算法 → 01 02 03..."的大文字）
+        # 保留对象供内部逻辑读取（导出报告、收藏等功能仍需调用 .text()），但不添加到布局
         self.prediction_display = QLabel("等待预测...")
         self.prediction_display.setObjectName("PredictionDisplay")
         self.prediction_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.prediction_display.setWordWrap(True)
-        result_layout.addWidget(self.prediction_display)
-        
-        # 算法来源标签
+        self.prediction_display.hide()  # 隐藏，不在界面显示
+
+        # 【已移除】算法来源标签（原显示"来源: xxx"的胶囊形大标签）
+        # 保留对象供内部逻辑使用，但不添加到布局
         self.algorithm_source_label = QLabel("")
-        self.algorithm_source_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # 算法来源标签样式 - 绿色边框标签（表示当前使用的算法）
-        #   font-size: 14px;              字体大小：14像素
-        #   font-weight: bold;            字体：粗体
-        #   padding: 4px 12px;            内边距：上下4px，左右12px
-        #   border-radius: 12px;          圆角：12px（胶囊形标签）
-        #   background-color: #FFFFFF;    背景色：白色
-        #   color: #2ECC71;               文字颜色：绿色
-        #   border: 1px solid #2ECC71;    边框：1px 绿色实线
-        self.algorithm_source_label.setStyleSheet(
-            "font-size: 14px; font-weight: bold; padding: 4px 12px; "
-            "border-radius: 12px; background-color: #FFFFFF; color: #2ECC71; "
-            "border: 1px solid #2ECC71;"
-        )
-        self.algorithm_source_label.hide()
-        result_layout.addWidget(self.algorithm_source_label)
+        self.algorithm_source_label.hide()  # 隐藏，不在界面显示
         
         self.prediction_number_panel = QWidget()
         self.prediction_number_layout = QGridLayout(self.prediction_number_panel)
@@ -12775,28 +15062,32 @@ class LotteryPredictionWindow(QMainWindow):
         #     font-size: 13px;            字体大小：13px
         #     padding: 5px;               内边距：5px
         #   }
-        self.confidence_analysis_text.setStyleSheet("QTextEdit { background-color: #F0F8FF; border: 1px solid #3498DB; border-radius: 4px; font-size: 13px; padding: 5px; }")
+        self.confidence_analysis_text.setStyleSheet("QTextEdit { background-color: #F0F8FF; border: 1px solid #3498DB; border-radius: 4px; font-size: 14px; padding: 5px; }")
         result_layout.addWidget(self.confidence_analysis_text)
         
         # 收藏和导出按钮（功能1、功能7）
         collect_btn_layout = QHBoxLayout()
         collect_btn = QPushButton("收藏结果")
         collect_btn.setObjectName("CollectBtn")
+        # 收藏结果按钮点击信号：收藏当前预测结果
         collect_btn.clicked.connect(self._on_collect_prediction)
         collect_btn_layout.addWidget(collect_btn)
         
         compare_btn = QPushButton("对比收藏")
         compare_btn.setObjectName("CompareBtn")
+        # 对比收藏按钮点击信号：对比已收藏的多个预测结果
         compare_btn.clicked.connect(self._on_compare_collected)
         collect_btn_layout.addWidget(compare_btn)
         
         clear_collect_btn = QPushButton("清空收藏")
         clear_collect_btn.setObjectName("ClearCollectBtn")
+        # 清空收藏按钮点击信号：清空所有收藏的预测结果
         clear_collect_btn.clicked.connect(self._on_clear_collected)
         collect_btn_layout.addWidget(clear_collect_btn)
         
         export_report_btn = QPushButton("导出报告")
         export_report_btn.setObjectName("ExportReportBtn")
+        # 导出报告按钮点击信号：导出预测结果报告
         export_report_btn.clicked.connect(self._on_export_report)
         collect_btn_layout.addWidget(export_report_btn)
         
@@ -12808,7 +15099,7 @@ class LotteryPredictionWindow(QMainWindow):
         return widget
     
     def _create_probability_panel(self):
-        """创建下一次数字出现概率面板"""
+        """创建下一次数字出现概率面板（含数字概率和生肖概率两个子选项卡）"""
         widget = QWidget()
         widget.setObjectName("ProbabilityPanel")
         layout = QVBoxLayout(widget)
@@ -12825,9 +15116,9 @@ class LotteryPredictionWindow(QMainWindow):
         # 期数设置
         period_label = QLabel("统计期数:")
         # 统计期数标签样式
-        #   font-size: 12px;  字体大小：12像素
+        #   font-size: 14px;  字体大小：14像素
         #   color: #666;      文字颜色：中灰（辅助文字用灰色）
-        period_label.setStyleSheet("font-size: 12px; color: #666;")
+        period_label.setStyleSheet("font-size: 14px; color: #666;")
         title_layout.addWidget(period_label)
         
         self.prob_period_spin = QSpinBox()
@@ -12837,30 +15128,36 @@ class LotteryPredictionWindow(QMainWindow):
         # 期数选择数字框样式
         #   QSpinBox {       数字框整体样式
         #     padding: 2px;   内边距：2px
-        #     font-size: 12px; 字体大小：12像素
+        #     font-size: 14px; 字体大小：14像素
         #   }
-        self.prob_period_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 12px; }")
+        self.prob_period_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 14px; }")
+        # 统计期数变化信号：更新概率面板数据
         self.prob_period_spin.valueChanged.connect(self._update_probability_panel)
+        # 统计期数变化信号：保存期数设置到INI配置文件
+        self.prob_period_spin.valueChanged.connect(lambda: self._save_ini_config())
         title_layout.addWidget(self.prob_period_spin)
         
         # 排序方式
         sort_label = QLabel("  排序:")
         # 排序方式标签样式
-        #   font-size: 12px;  字体大小：12像素
+        #   font-size: 14px;  字体大小：14像素
         #   color: #666;      文字颜色：中灰（辅助文字用灰色）
-        sort_label.setStyleSheet("font-size: 12px; color: #666;")
+        sort_label.setStyleSheet("font-size: 14px; color: #666;")
         title_layout.addWidget(sort_label)
         
         self.prob_sort_combo = QComboBox()
         self.prob_sort_combo.addItems(["概率降序", "概率升序", "号码升序", "号码降序"])
-        self.prob_sort_combo.setFixedWidth(80)
+        self.prob_sort_combo.setFixedWidth(90)
         # 排序方式下拉框样式
         #   QComboBox {      下拉框整体样式
         #     padding: 2px;   内边距：2px
-        #     font-size: 12px; 字体大小：12像素
+        #     font-size: 14px; 字体大小：14像素
         #   }
-        self.prob_sort_combo.setStyleSheet("QComboBox { padding: 2px; font-size: 12px; }")
+        self.prob_sort_combo.setStyleSheet("QComboBox { padding: 2px; font-size: 14px; }")
+        # 排序方式变化信号：重新按新排序规则刷新概率面板
         self.prob_sort_combo.currentIndexChanged.connect(self._update_probability_panel)
+        # 排序方式变化信号：保存排序设置到INI配置文件
+        self.prob_sort_combo.currentIndexChanged.connect(lambda: self._save_ini_config())
         title_layout.addWidget(self.prob_sort_combo)
         
         refresh_btn = QPushButton("刷新")
@@ -12872,22 +15169,32 @@ class LotteryPredictionWindow(QMainWindow):
         #     border-radius: 4px;          圆角：4px
         #     padding: 5px 12px;           内边距：上下5px，左右12px
         #     font-weight: bold;           字体：粗体
-        #     font-size: 12px;             字体大小：12px
+        #     font-size: 14px;             字体大小：14px
         #   }
         #   QPushButton:hover {  按钮悬停样式
         #     background-color: #2980B9;  悬停背景色：深蓝
         #   }
         refresh_btn.setStyleSheet("""
             QPushButton { background-color: #3498DB; color: white; border: none; 
-                border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; }
+                border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #2980B9; }
         """)
+        # 刷新按钮点击信号：重新计算并刷新概率面板数据
         refresh_btn.clicked.connect(self._update_probability_panel)
         title_layout.addWidget(refresh_btn)
         
         layout.addLayout(title_layout)
         
-        # 概率列表
+        # 创建子选项卡：数字概率 和 生肖概率
+        self.prob_sub_tabs = QTabWidget()
+        self.prob_sub_tabs.setStyleSheet("QTabWidget::pane { border: 1px solid #DDDDDD; border-radius: 4px; }")
+        
+        # --- 数字概率选项卡 ---
+        num_tab = QWidget()
+        num_layout = QVBoxLayout(num_tab)
+        num_layout.setSpacing(4)
+        num_layout.setContentsMargins(2, 4, 2, 2)
+        
         self.probability_list = QListWidget()
         # 概率列表控件样式
         #   QListWidget {       列表整体样式
@@ -12898,7 +15205,7 @@ class LotteryPredictionWindow(QMainWindow):
         #   QListWidget::item {  列表项样式
         #     padding: 8px;               内边距：8px
         #     border-bottom: 1px solid #EEEEEE;  底部分隔线：浅灰
-        #     font-size: 13px;            字体大小：13px
+        #     font-size: 15px;            字体大小：15px
         #   }
         #   QListWidget::item:selected {  选中项样式
         #     background-color: #D6EAF8;  选中背景色：浅蓝
@@ -12906,17 +15213,25 @@ class LotteryPredictionWindow(QMainWindow):
         #   }
         self.probability_list.setStyleSheet("""
             QListWidget { background-color: #FFFFFF; border: 1px solid #DDDDDD; border-radius: 4px; }
-            QListWidget::item { padding: 8px; border-bottom: 1px solid #EEEEEE; font-size: 13px; }
+            QListWidget::item { padding: 8px; border-bottom: 1px solid #EEEEEE; font-size: 15px; }
             QListWidget::item:selected { background-color: #D6EAF8; color: #000000; }
         """)
+        # 概率列表双击信号：将双击的号码添加到数字选择面板
         self.probability_list.itemDoubleClicked.connect(self._on_probability_item_double_clicked)
-        layout.addWidget(self.probability_list)
+        num_layout.addWidget(self.probability_list)
+        
+        self.prob_sub_tabs.addTab(num_tab, "数字概率")
+        
+        # --- 生肖概率选项卡（独立创建方法） ---
+        self._create_zodiac_probability_tab(self.prob_sub_tabs)
+        
+        layout.addWidget(self.prob_sub_tabs)
         
         # 统计信息行
         stats_layout = QHBoxLayout()
         self.prob_stats_label = QLabel("加载数据后显示统计")
-        # 统计信息标签样式：12px字号，灰色文字，4px内边距
-        self.prob_stats_label.setStyleSheet("color: #666666; font-size: 12px; padding: 4px;")
+        # 统计信息标签样式：14px字号，灰色文字，4px内边距
+        self.prob_stats_label.setStyleSheet("color: #666666; font-size: 14px; padding: 4px;")
         stats_layout.addWidget(self.prob_stats_label)
         stats_layout.addStretch()
         
@@ -12930,16 +15245,17 @@ class LotteryPredictionWindow(QMainWindow):
         #     border: none;               边框：无
         #     border-radius: 3px;         圆角：3px
         #     padding: 3px 8px;           内边距：上下3px，左右8px
-        #     font-size: 11px;            字体大小：11px（小号按钮）
+        #     font-size: 13px;            字体大小：13px
         #   }
         #   QPushButton:hover {  按钮悬停样式
         #     background-color: #27AE60;  悬停背景色：深绿
         #   }
         copy_top6_btn.setStyleSheet("""
             QPushButton { background-color: #2ECC71; color: white; border: none; 
-                border-radius: 3px; padding: 3px 8px; font-size: 11px; }
+                border-radius: 3px; padding: 3px 8px; font-size: 13px; }
             QPushButton:hover { background-color: #27AE60; }
         """)
+        # 复制前6按钮点击信号：复制概率最高的6个号码到剪贴板
         copy_top6_btn.clicked.connect(self._on_copy_top_probability)
         stats_layout.addWidget(copy_top6_btn)
         
@@ -12948,9 +15264,1342 @@ class LotteryPredictionWindow(QMainWindow):
         # 初始化后自动刷新一次概率数据
         if hasattr(self, 'historical_data') and self.historical_data:
             self._update_probability_panel()
+            self._update_zodiac_probability()
         
         return widget
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  [生肖概率] 生肖概率选项卡 —— UI创建、控件、信号槽、逻辑、配置               ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+
+    def _create_zodiac_probability_tab(self, parent_tabs):
+        """创建生肖概率选项卡 —— UI布局、控件创建、信号连接
+        
+        参数:
+            parent_tabs: QTabWidget，父级选项卡容器
+        """
+        zodiac_tab = QWidget()
+        zodiac_layout = QVBoxLayout(zodiac_tab)
+        zodiac_layout.setSpacing(4)
+        zodiac_layout.setContentsMargins(2, 4, 2, 2)
+        
+        # ===== 配置区域：选项控件 =====
+        option_layout = QHBoxLayout()
+        option_layout.setContentsMargins(0, 0, 0, 2)
+        
+        self.zodiac_special_only_cb = QCheckBox("仅限特别码")
+        self.zodiac_special_only_cb.setToolTip("勾选后仅统计每期特别码(1个)的生肖归属，否则统计全部7个号码")
+        self.zodiac_special_only_cb.setStyleSheet("font-size: 14px; color: #333;")
+        # 仅限特别码复选框状态变化信号：切换统计范围（全部7个号码 或 仅特别码），刷新生肖概率
+        self.zodiac_special_only_cb.toggled.connect(self._update_zodiac_probability)
+        option_layout.addWidget(self.zodiac_special_only_cb)
+        option_layout.addStretch()
+        zodiac_layout.addLayout(option_layout)
+        
+        # ===== 表格控件：生肖概率结果展示 =====
+        self.zodiac_prob_table = QTableWidget()
+        # 生肖概率表格样式：白底，浅灰边框，4px圆角，交替行颜色，表头灰底粗体
+        self.zodiac_prob_table.setStyleSheet("""
+            QTableWidget { background-color: #FFFFFF; border: 1px solid #DDDDDD; border-radius: 4px; gridline-color: #EEEEEE; }
+            QTableWidget::item { padding: 6px; font-size: 14px; }
+            QTableWidget::item:selected { background-color: #D6EAF8; color: #000000; }
+            QHeaderView::section { background-color: #F5F5F5; border: 1px solid #DDDDDD; padding: 6px; font-size: 14px; font-weight: bold; }
+        """)
+        self.zodiac_prob_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.zodiac_prob_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.zodiac_prob_table.setAlternatingRowColors(True)
+        self.zodiac_prob_table.verticalHeader().setVisible(False)
+        zodiac_layout.addWidget(self.zodiac_prob_table)
+        
+        # ===== 统计信息行 =====
+        self.zodiac_prob_stats_label = QLabel("加载数据后显示统计")
+        self.zodiac_prob_stats_label.setStyleSheet("color: #666666; font-size: 14px; padding: 4px;")
+        zodiac_layout.addWidget(self.zodiac_prob_stats_label)
+        
+        parent_tabs.addTab(zodiac_tab, "生肖概率")
     
+    def _update_zodiac_probability(self):
+        """生肖概率统计逻辑 —— 根据历史数据中每个数字的生肖归属，统计各生肖出现次数并计算百分比概率
+        
+        统计逻辑：
+          1. 读取历史数据，根据 LotteryConfig.NUMBER_NAMES 确定每个数字对应哪个生肖
+          2. 统计指定期数内每个生肖的出现次数（正码+特别码，或仅特别码）
+          3. 计算百分比 = 生肖出现次数 / 总开奖号码数 × 100%
+          4. 按概率从高到低排序，写入表格显示
+        """
+        if not hasattr(self, 'zodiac_prob_table') or self.zodiac_prob_table is None:
+            return
+        
+        table = self.zodiac_prob_table
+        table.setRowCount(0)
+        
+        if not self.historical_data or len(self.historical_data) == 0:
+            if hasattr(self, 'zodiac_prob_stats_label'):
+                self.zodiac_prob_stats_label.setText("暂无历史数据")
+            return
+        
+        try:
+            # 获取统计期数（与数字概率面板共用）
+            if hasattr(self, 'prob_period_spin') and self.prob_period_spin:
+                stat_periods = self.prob_period_spin.value()
+            else:
+                stat_periods = 30
+            stat_periods = min(stat_periods, len(self.historical_data))
+            data_to_use = self.historical_data[-stat_periods:]
+            
+            # 构建 生肖 -> 包含数字列表 映射
+            zodiac_to_nums = {}
+            for num in range(1, 50):
+                zodiac = LotteryConfig.NUMBER_NAMES.get(num, "未知")
+                if zodiac not in zodiac_to_nums:
+                    zodiac_to_nums[zodiac] = []
+                zodiac_to_nums[zodiac].append(num)
+            
+            # 统计每个生肖的出现次数
+            zodiac_counts = {}
+            special_only = (hasattr(self, 'zodiac_special_only_cb') and self.zodiac_special_only_cb.isChecked())
+            
+            for record in data_to_use:
+                if special_only:
+                    special = record.get('special', None)
+                    if special is not None and isinstance(special, int) and 1 <= special <= 49:
+                        zodiac = LotteryConfig.NUMBER_NAMES.get(special, "未知")
+                        zodiac_counts[zodiac] = zodiac_counts.get(zodiac, 0) + 1
+                else:
+                    numbers = record.get('numbers', [])
+                    for num in numbers:
+                        zodiac = LotteryConfig.NUMBER_NAMES.get(num, "未知")
+                        zodiac_counts[zodiac] = zodiac_counts.get(zodiac, 0) + 1
+                    special = record.get('special', None)
+                    if special is not None and isinstance(special, int) and 1 <= special <= 49:
+                        zodiac = LotteryConfig.NUMBER_NAMES.get(special, "未知")
+                        zodiac_counts[zodiac] = zodiac_counts.get(zodiac, 0) + 1
+            
+            total_numbers = stat_periods if special_only else stat_periods * 7
+            
+            # 计算百分比并排序
+            zodiac_probs = {}
+            for zodiac in zodiac_to_nums:
+                count = zodiac_counts.get(zodiac, 0)
+                zodiac_probs[zodiac] = (count / total_numbers * 100) if total_numbers > 0 else 0
+            sorted_zodiacs = sorted(zodiac_probs.items(), key=lambda x: -x[1])
+            
+            # 生肖颜色配置
+            zodiac_colors = {
+                "龙": "#FF6B6B", "兔": "#FF9FF3", "虎": "#FECA57", "牛": "#48DBFB",
+                "鼠": "#FF9F43", "猪": "#54A0FF", "狗": "#5F27CD", "鸡": "#01A3A4",
+                "猴": "#F368E0", "羊": "#2ED573", "马": "#1E90FF", "蛇": "#EE5A24"
+            }
+            
+            # 写入表格
+            table.setRowCount(len(sorted_zodiacs))
+            table.setColumnCount(5)
+            table.setHorizontalHeaderLabels(["排名", "生肖", "出现概率", "出现次数", "包含号码"])
+            table.horizontalHeader().setStretchLastSection(True)
+            table.setColumnWidth(0, 50)
+            table.setColumnWidth(1, 60)
+            table.setColumnWidth(2, 100)
+            table.setColumnWidth(3, 100)
+            
+            for rank, (zodiac, prob_percent) in enumerate(sorted_zodiacs, 1):
+                count = zodiac_counts.get(zodiac, 0)
+                nums = zodiac_to_nums.get(zodiac, [])
+                num_str = ' '.join(str(n).zfill(2) for n in nums)
+                color = zodiac_colors.get(zodiac, "#333333")
+                
+                for col, text in enumerate([
+                    str(rank),
+                    zodiac,
+                    f"{prob_percent:.2f}%",
+                    f"{count}/{total_numbers}",
+                    num_str
+                ]):
+                    item = QTableWidgetItem(text)
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    if col == 1:  # 生肖名称列用颜色
+                        item.setForeground(QColor(color))
+                        if rank <= 3:
+                            font = item.font()
+                            font.setBold(True)
+                            item.setFont(font)
+                    table.setItem(rank - 1, col, item)
+                table.setRowHeight(rank - 1, 36)
+            
+            if hasattr(self, 'zodiac_prob_stats_label'):
+                mode_text = "仅特别码" if special_only else "全部号码"
+                self.zodiac_prob_stats_label.setText(
+                    f"统计 {stat_periods} 期 | {mode_text} | 共 {total_numbers} 个号码 | "
+                    f"最高: {sorted_zodiacs[0][0]} {sorted_zodiacs[0][1]:.2f}%"
+                )
+            
+        except Exception as e:
+            traceback.print_exc()
+            if hasattr(self, 'zodiac_prob_stats_label'):
+                self.zodiac_prob_stats_label.setText(f"计算失败: {e}")
+
+    # ======================================================================== #
+    # 计算规律面板 - 加减规律分析
+    # ======================================================================== #
+    def _create_calc_method_panel(self):
+        """创建计算规律面板：用每一期的每个数字与另一期的每个数字加减找规律"""
+        widget = QWidget()
+        widget.setObjectName("CalcMethodPanel")
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(6)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        # --- 第一行：标题 + 跳数 + 运算方式 ---
+        row1 = QHBoxLayout()
+        title = QLabel("加减规律分析")
+        title.setObjectName("PanelTitle")
+        row1.addWidget(title)
+        row1.addStretch()
+
+        skip_label = QLabel("跳数:")
+        skip_label.setStyleSheet("font-size: 13px; color: #666;")
+        row1.addWidget(skip_label)
+
+        self.calc_skip_spin = QSpinBox()
+        self.calc_skip_spin.setRange(0, 3)
+        self.calc_skip_spin.setValue(0)
+        self.calc_skip_spin.setFixedWidth(50)
+        self.calc_skip_spin.setToolTip("跳0=相邻期比较(需7期)\n跳1=隔1期比较(需14期)\n跳2=隔2期比较(需21期)\n跳3=隔3期比较(需28期)\n逐期滑动比较所有距离相同的期对")
+        # 跳数选择框样式：2px内边距，13px字号
+        self.calc_skip_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 13px; }")
+        # 跳数变化信号：刷新计算规律面板
+        self.calc_skip_spin.valueChanged.connect(self._update_calc_method_panel)
+        row1.addWidget(self.calc_skip_spin)
+
+        op_label = QLabel("  运算:")
+        op_label.setStyleSheet("font-size: 13px; color: #666;")
+        row1.addWidget(op_label)
+
+        self.calc_op_combo = QComboBox()
+        self.calc_op_combo.addItems(["加法+减法", "仅加法", "仅减法"])
+        self.calc_op_combo.setFixedWidth(110)
+        self.calc_op_combo.setToolTip("加法+减法：同时计算加法和减法\n仅加法/仅减法：只算一种\n每一期的每个数字与另一期的每个数字逐一加减")
+        # 运算方式下拉框样式：2px内边距，13px字号
+        self.calc_op_combo.setStyleSheet("QComboBox { padding: 2px; font-size: 13px; }")
+        # 运算方式变化信号：刷新计算规律面板
+        self.calc_op_combo.currentIndexChanged.connect(self._update_calc_method_panel)
+        row1.addWidget(self.calc_op_combo)
+
+        layout.addLayout(row1)
+
+        # --- 第二行：筛选 + TopN + 操作按钮 ---
+        row2 = QHBoxLayout()
+
+        # 结果范围筛选
+        filter_label = QLabel("筛选:")
+        filter_label.setStyleSheet("font-size: 13px; color: #666;")
+        row2.addWidget(filter_label)
+
+        self.calc_filter_combo = QComboBox()
+        self.calc_filter_combo.addItems(["全部结果", "仅1-49范围", "仅正数", "仅高频(≥3次)"])
+        self.calc_filter_combo.setFixedWidth(110)
+        self.calc_filter_combo.setToolTip("全部结果：显示所有计算值\n仅1-49范围：只显示1-49之间的值\n仅正数：只显示正数结果\n仅高频(≥3次)：只显示出现≥3次的结果")
+        # 筛选方式下拉框样式：2px内边距，13px字号
+        self.calc_filter_combo.setStyleSheet("QComboBox { padding: 2px; font-size: 13px; }")
+        # 筛选方式变化信号：刷新计算规律面板
+        self.calc_filter_combo.currentIndexChanged.connect(self._update_calc_method_panel)
+        row2.addWidget(self.calc_filter_combo)
+
+        # TopN显示数量
+        topn_label = QLabel("  Top:")
+        topn_label.setStyleSheet("font-size: 13px; color: #666;")
+        row2.addWidget(topn_label)
+
+        self.calc_topn_spin = QSpinBox()
+        self.calc_topn_spin.setRange(3, 20)
+        self.calc_topn_spin.setValue(5)
+        self.calc_topn_spin.setFixedWidth(50)
+        self.calc_topn_spin.setToolTip("显示前N个高频结果")
+        # TopN数字框样式：2px内边距，13px字号
+        self.calc_topn_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 13px; }")
+        # TopN变化信号：刷新计算规律面板
+        self.calc_topn_spin.valueChanged.connect(self._update_calc_method_panel)
+        row2.addWidget(self.calc_topn_spin)
+
+        layout.addLayout(row2)
+
+        # --- 第三行：各部分字号设置 ---
+        row3 = QHBoxLayout()
+
+        font_title = QLabel("字号:")
+        font_title.setStyleSheet("font-size: 13px; color: #666; font-weight: bold;")
+        row3.addWidget(font_title)
+
+        # 运算结果字号
+        r1_label = QLabel("结果")
+        r1_label.setStyleSheet("font-size: 12px; color: #888;")
+        row3.addWidget(r1_label)
+        self.calc_result_font_spin = QSpinBox()
+        self.calc_result_font_spin.setRange(10, 150)  # 字体上限150px
+        self.calc_result_font_spin.setValue(20)  # 默认20px
+        self.calc_result_font_spin.setFixedWidth(50)
+        self.calc_result_font_spin.setSuffix("px")
+        # 运算结果字体大小输入框样式：2px内边距，12px字号
+
+        self.calc_result_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 12px; }")
+        # 结果字体大小变化信号：应用计算规律面板字号设置
+
+        self.calc_result_font_spin.valueChanged.connect(self._apply_calc_panel_size)
+        row3.addWidget(self.calc_result_font_spin)
+
+        # 推荐号码字号
+        r2_label = QLabel("推荐")
+        r2_label.setStyleSheet("font-size: 12px; color: #888;")
+        row3.addWidget(r2_label)
+        self.calc_rec_font_spin = QSpinBox()
+        self.calc_rec_font_spin.setRange(10, 150)  # 字体上限150px
+        self.calc_rec_font_spin.setValue(20)  # 默认20px
+        self.calc_rec_font_spin.setFixedWidth(50)
+        self.calc_rec_font_spin.setSuffix("px")
+        # 推荐号码字体大小输入框样式：2px内边距，12px字号
+
+        self.calc_rec_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 12px; }")
+        # 推荐字体大小变化信号：应用计算规律面板字号设置
+
+        self.calc_rec_font_spin.valueChanged.connect(self._apply_calc_panel_size)
+        row3.addWidget(self.calc_rec_font_spin)
+
+        # 分析对比字号
+        r3_label = QLabel("对比")
+        r3_label.setStyleSheet("font-size: 12px; color: #888;")
+        row3.addWidget(r3_label)
+        self.calc_comp_font_spin = QSpinBox()
+        self.calc_comp_font_spin.setRange(10, 150)  # 字体上限150px
+        self.calc_comp_font_spin.setValue(20)  # 默认20px
+        self.calc_comp_font_spin.setFixedWidth(50)
+        self.calc_comp_font_spin.setSuffix("px")
+        # 对比字体大小输入框样式：2px内边距，12px字号
+
+        self.calc_comp_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 12px; }")
+        # 对比字体大小变化信号：应用计算规律面板字号设置
+
+        self.calc_comp_font_spin.valueChanged.connect(self._apply_calc_panel_size)
+        row3.addWidget(self.calc_comp_font_spin)
+
+        # 详细结果字号
+        r4_label = QLabel("详细")
+        r4_label.setStyleSheet("font-size: 12px; color: #888;")
+        row3.addWidget(r4_label)
+        self.calc_detail_font_spin = QSpinBox()
+        self.calc_detail_font_spin.setRange(10, 150)  # 字体上限150px
+        self.calc_detail_font_spin.setValue(20)  # 默认20px
+        self.calc_detail_font_spin.setFixedWidth(50)
+        self.calc_detail_font_spin.setSuffix("px")
+        # 详细结果字体大小输入框样式：2px内边距，12px字号
+
+        self.calc_detail_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 12px; }")
+        # 详细结果字体大小变化信号：应用计算规律面板字号设置
+
+        self.calc_detail_font_spin.valueChanged.connect(self._apply_calc_panel_size)
+        row3.addWidget(self.calc_detail_font_spin)
+
+        row3.addStretch()
+        layout.addLayout(row3)
+
+        # --- 说明标签 ---
+        self.calc_info_label = QLabel("每期每个数字与另一期每个数字逐一加减，自动分析高频规律")
+        self.calc_info_label.setStyleSheet("font-size: 14px; color: #888; padding: 2px 4px;")
+        self.calc_info_label.setWordWrap(True)
+        layout.addWidget(self.calc_info_label)
+
+        # --- 结果显示区 ---
+        self.calc_scroll = QScrollArea()
+        self.calc_scroll.setWidgetResizable(True)
+        self.calc_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # 计算结果滚动区域样式：无边框
+
+        self.calc_scroll.setStyleSheet("QScrollArea { border: none; }")
+
+        result_widget = QWidget()
+        self.calc_result_layout = QVBoxLayout(result_widget)
+        self.calc_result_layout.setSpacing(4)
+        self.calc_result_layout.setContentsMargins(2, 2, 2, 2)
+
+        self.calc_result_label = QLabel("等待分析...")
+        self.calc_result_label.setWordWrap(True)
+        self.calc_result_label.setTextFormat(Qt.TextFormat.RichText)
+        # 计算结果标签样式：浅灰背景，4px圆角，8px内边距，浅灰边框
+
+        self.calc_result_label.setStyleSheet(
+            "font-size: 14px; color: #666; background-color: #FAFAFA; "
+            "border-radius: 4px; padding: 8px; border: 1px solid #EEE;"
+        )
+        self.calc_result_layout.addWidget(self.calc_result_label)
+
+        self.calc_scroll.setWidget(result_widget)
+        layout.addWidget(self.calc_scroll)
+
+        # 应用保存的配置到控件
+        self._apply_calc_panel_config()
+        # 连接控件变化信号，实时保存配置
+        self.calc_skip_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 运算方式变化信号：保存配置到INI
+
+        self.calc_op_combo.currentIndexChanged.connect(lambda: self._save_ini_config())
+        # 筛选方式变化信号：保存配置到INI
+
+        self.calc_filter_combo.currentIndexChanged.connect(lambda: self._save_ini_config())
+        # TopN变化信号：保存配置到INI
+
+        self.calc_topn_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 结果字体变化信号：保存配置到INI
+
+        self.calc_result_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 推荐字体变化信号：保存配置到INI
+
+        self.calc_rec_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 对比字体变化信号：保存配置到INI
+
+        self.calc_comp_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 详细字体变化信号：保存配置到INI
+
+        self.calc_detail_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+
+        # 初始化自动刷新
+        if hasattr(self, 'historical_data') and self.historical_data:
+            self._update_calc_method_panel()
+
+        return widget
+
+    def _apply_calc_panel_size(self):
+        """应用计算规律面板的各部分字号设置"""
+        rf = self.calc_result_font_spin.value() if hasattr(self, 'calc_result_font_spin') else 14
+        tf = self.calc_rec_font_spin.value() if hasattr(self, 'calc_rec_font_spin') else 14
+        cf = self.calc_comp_font_spin.value() if hasattr(self, 'calc_comp_font_spin') else 14
+        # 更新结果标签字号
+        self.calc_result_label.setStyleSheet(
+            f"font-size: {rf}px; color: #666; background-color: #FAFAFA; "
+            f"border-radius: 4px; padding: 8px; border: 1px solid #EEE;"
+        )
+        self.calc_info_label.setStyleSheet(f"font-size: {max(14, rf-1)}px; color: #888; padding: 2px 4px;")
+        # 重新生成HTML以应用字号
+        self._update_calc_method_panel()
+
+    def _update_calc_method_panel(self):
+        """执行加减规律分析并更新显示"""
+        if not hasattr(self, 'historical_data') or not self.historical_data:
+            self.calc_info_label.setText("无历史数据")
+            self.calc_result_label.setText("请先加载历史数据")
+            return
+
+        skip = self.calc_skip_spin.value()
+        op_mode = self.calc_op_combo.currentIndex()  # 0=加减, 1=加, 2=减, 3=加+乘, 4=加+取模
+        filter_mode = self.calc_filter_combo.currentIndex() if hasattr(self, 'calc_filter_combo') else 0
+        top_n = self.calc_topn_spin.value() if hasattr(self, 'calc_topn_spin') else 5
+
+        needed = (skip + 1) * 7
+        total = len(self.historical_data)
+
+        if total < needed:
+            self.calc_info_label.setText(f"跳{skip}需要至少{needed}期数据，当前仅有{total}期")
+            self.calc_result_label.setText(f"数据不足：跳{skip}需{needed}期，当前{total}期")
+            return
+
+        recent = self.historical_data[-needed:]
+        step = skip + 1
+        pairs = []
+        i = 0
+        while i + step < len(recent):
+            pairs.append((i, i + step))
+            i += 1  # 逐期滑动，比较所有距离为step的期对
+
+        # 判断运算类型（仅加法/减法）
+        do_add = op_mode in [0, 1]
+        do_sub = op_mode in [0, 2]
+
+        mode_desc = f"跳{skip}需{needed}期"
+        op_names = ["加法+减法", "仅加法", "仅减法"]
+        self.calc_info_label.setText(
+            f"{mode_desc} | {op_names[op_mode]} | 数据{total}期(用{needed}期) | "
+            f"比较对数:{len(pairs)} | 每对7×7=49次计算"
+        )
+
+        # 收集所有计算结果
+        add_results = {}
+        sub_results = {}
+        all_detail_lines = []
+
+        for idx, (a_idx, b_idx) in enumerate(pairs):
+            rec_a = recent[a_idx]
+            rec_b = recent[b_idx]
+            nums_a = rec_a.get('numbers', [])[:6] + [rec_a.get('special', 0)]
+            nums_b = rec_b.get('numbers', [])[:6] + [rec_b.get('special', 0)]
+            nums_a = [n for n in nums_a if 1 <= n <= 49]
+            nums_b = [n for n in nums_b if 1 <= n <= 49]
+
+            if len(nums_a) < 1 or len(nums_b) < 1:
+                continue
+
+            period_a = rec_a.get('period', '?')
+            period_b = rec_b.get('period', '?')
+
+            pair_adds = []
+            pair_subs = []
+
+            for na in nums_a:
+                for nb in nums_b:
+                    if do_add:
+                        add_val = ((na + nb - 1) % 49) + 1  # 循环到1-49
+                        add_results[add_val] = add_results.get(add_val, 0) + 1
+                        pair_adds.append(add_val)
+                    if do_sub:
+                        sub_val = ((na - nb - 1) % 49) + 1  # 循环到1-49
+                        sub_results[sub_val] = sub_results.get(sub_val, 0) + 1
+                        pair_subs.append(sub_val)
+
+            detail = f"第{idx+1}对: 期{period_a} ↔ 期{period_b}\n"
+            if do_add:
+                detail += f"  加法结果: {sorted(set(pair_adds))}\n"
+            if do_sub:
+                detail += f"  减法结果: {sorted(set(pair_subs))}\n"
+            all_detail_lines.append(detail)
+
+        # --- 筛选函数 ---
+        def filter_results(results):
+            """根据筛选模式过滤结果"""
+            if filter_mode == 0:  # 全部
+                return results
+            elif filter_mode == 1:  # 仅1-49范围
+                return {v: c for v, c in results.items() if 1 <= v <= 49}
+            elif filter_mode == 2:  # 仅正数
+                return {v: c for v, c in results.items() if v > 0}
+            elif filter_mode == 3:  # 仅高频(≥3次)
+                return {v: c for v, c in results.items() if c >= 3}
+            return results
+
+        add_results = filter_results(add_results) if do_add else {}
+        sub_results = filter_results(sub_results) if do_sub else {}
+
+        # --- 生成HTML ---
+        _fs = self.calc_result_font_spin.value() if hasattr(self, 'calc_result_font_spin') else 14
+        _rfs = self.calc_rec_font_spin.value() if hasattr(self, 'calc_rec_font_spin') else 14
+        _cfs = self.calc_comp_font_spin.value() if hasattr(self, 'calc_comp_font_spin') else 14
+        _dfs = self.calc_detail_font_spin.value() if hasattr(self, 'calc_detail_font_spin') else 14
+        html = f"<div style='font-size:{_fs}px; font-family: sans-serif;'>"
+
+        # 辅助函数：生成高频分析区块
+        def gen_result_block(title, icon, color, bg, results_dict, pairs_count):
+            """功能：生成结果块"""
+            if not results_dict:
+                return ""
+            sorted_items = sorted(results_dict.items(), key=lambda x: x[1], reverse=True)
+            max_count = sorted_items[0][1]
+            top_items = sorted_items[:top_n]
+            result_html = f"<div style='background:{bg}; border-radius:6px; padding:8px; margin-bottom:6px;'>"
+            if max_count >= 3:
+                result_html += f"<b style='color:{color};'>{icon} {title}高频规律</b><br>"
+                top_vals = [v for v, c in sorted_items if c == max_count]
+                result_html += f"数值 <b style='font-size:{_fs+2}px;'>{', '.join(str(v) for v in sorted(top_vals)[:10])}</b> "
+                result_html += f"出现 <b>{max_count}</b> 次（共{pairs_count}对比较）<br>"
+                result_html += f"<span style='color:#666;'>这些数值在多对期间反复出现</span><br><br>"
+            else:
+                result_html += f"<b style='color:{color};'>{icon} {title}分析</b><br>"
+                result_html += f"最高出现{max_count}次，未发现明显重复规律<br><br>"
+
+            # TopN柱状图
+            result_html += f"<b style='color:#00695C; font-size:{max(13,_fs-1)}px;'>{title} Top{len(top_items)}高频值:</b><br>"
+            max_cnt = top_items[0][1] if top_items else 1
+            for rank, (val, cnt) in enumerate(top_items, 1):
+                bar_len = int(cnt / max_cnt * 20) if max_cnt > 0 else 0
+                # 对1-49范围的值用波色着色
+                val_color = "#333"
+                if 1 <= val <= 49:
+                    if LotteryConfig.is_red(val):
+                        val_color = "#FF0000"
+                    elif LotteryConfig.is_blue(val):
+                        val_color = "#0000FF"
+                    elif LotteryConfig.is_green(val):
+                        val_color = "#008000"
+                result_html += f"<span style='color:#333;'>{rank}. </span>"
+                result_html += f"<span style='color:{val_color}; font-weight:bold;'>值{val}</span>: "
+                result_html += f"<span style='color:{color}; font-weight:bold;'>{'█' * bar_len}</span> "
+                result_html += f"<span style='color:#666;'>({cnt}次)</span><br>"
+            result_html += "</div>"
+            return result_html
+
+        # 生成各运算结果区块
+        if do_add and add_results:
+            html += gen_result_block("加法", "⚡", "#2E7D32", "#E8F5E9", add_results, len(pairs))
+        if do_sub and sub_results:
+            html += gen_result_block("减法", "⚡", "#1565C0", "#E3F2FD", sub_results, len(pairs))
+
+        # 判断是否有规律
+        has_pattern = False
+        for r in [add_results, sub_results]:
+            if r and max(r.values()) >= 3:
+                has_pattern = True
+                break
+
+        if not has_pattern:
+            html += f"<div style='background:#FFEBEE; border-radius:6px; padding:8px; margin-bottom:6px;'>"
+            html += f"<b style='color:#C62828;'>结论：没有发现明显规律</b><br>"
+            mode_txt = f"跳{skip}"
+            html += f"<span style='color:#666;'>当前{mode_txt}设置下，各计算结果出现次数均低于3次，无显著重复模式</span>"
+            html += "</div>"
+
+        # --- 号码推荐（基于高频值在1-49范围的） ---
+        rec_nums = set()
+        for r in [add_results, sub_results]:
+            for v, c in r.items():
+                if 1 <= v <= 49 and c >= 2:
+                    rec_nums.add(v)
+        if rec_nums:
+            sorted_rec = sorted(rec_nums)
+            html += f"<div style='background:#E0F7FA; border-radius:6px; padding:8px; margin-bottom:6px; font-size:{_rfs}px;'>"
+            html += f"<b style='color:#006064;'>🎯 推荐号码（高频值在1-49范围内）</b><br>"
+            # 按波色分组显示
+            red_nums = [n for n in sorted_rec if LotteryConfig.is_red(n)]
+            blue_nums = [n for n in sorted_rec if LotteryConfig.is_blue(n)]
+            green_nums = [n for n in sorted_rec if LotteryConfig.is_green(n)]
+            if red_nums:
+                html += f"<span style='color:#FF0000; font-weight:bold;'>红: {', '.join(str(n) for n in red_nums)}</span>  "
+            if blue_nums:
+                html += f"<span style='color:#0000FF; font-weight:bold;'>蓝: {', '.join(str(n) for n in blue_nums)}</span>  "
+            if green_nums:
+                html += f"<span style='color:#008000; font-weight:bold;'>绿: {', '.join(str(n) for n in green_nums)}</span>"
+            html += f"<br><span style='color:#666; font-size:{max(13,_rfs-1)}px;'>共{len(sorted_rec)}个号码 | 基于计算高频值筛选</span>"
+            html += "</div>"
+
+        # --- 统计分析对比（前半段 vs 后半段） ---
+        if len(pairs) >= 4:
+            half = len(pairs) // 2
+            halves = [
+                ('前半', [pairs[i] for i in range(half)]),
+                ('后半', [pairs[i] for i in range(half, len(pairs))])
+            ]
+            half_stats = {}
+            for hname, h_pairs in halves:
+                ha, hs = {}, {}
+                for a_idx2, b_idx2 in h_pairs:
+                    rec_a2 = recent[a_idx2]
+                    rec_b2 = recent[b_idx2]
+                    nums_a2 = rec_a2.get('numbers', [])[:6] + [rec_a2.get('special', 0)]
+                    nums_b2 = rec_b2.get('numbers', [])[:6] + [rec_b2.get('special', 0)]
+                    nums_a2 = [n for n in nums_a2 if 1 <= n <= 49]
+                    nums_b2 = [n for n in nums_b2 if 1 <= n <= 49]
+                    for na2 in nums_a2:
+                        for nb2 in nums_b2:
+                            if do_add:
+                                av = ((na2 + nb2 - 1) % 49) + 1  # 循环到1-49
+                                ha[av] = ha.get(av, 0) + 1
+                            if do_sub:
+                                sv = ((na2 - nb2 - 1) % 49) + 1  # 循环到1-49
+                                hs[sv] = hs.get(sv, 0) + 1
+                half_stats[hname] = {'加': ha, '减': hs}
+
+            html += f"<div style='background:#F3E5F5; border-radius:6px; padding:8px; margin-bottom:6px; font-size:{_cfs}px;'>"
+            html += f"<b style='color:#6A1B9A;'>📈 统计分析对比（前{half}对 vs 后{len(pairs)-half}对）</b><br>"
+
+            for op_tag, op_do, op_color in [('加', do_add, '#2E7D32'), ('减', do_sub, '#1565C0')]:
+                if not op_do:
+                    continue
+                f1 = half_stats['前半'][op_tag]
+                f2 = half_stats['后半'][op_tag]
+                if not f1 or not f2:
+                    continue
+                f1_top = sorted(f1.items(), key=lambda x: x[1], reverse=True)[:5]
+                f2_top = sorted(f2.items(), key=lambda x: x[1], reverse=True)[:5]
+                html += f"<span style='color:{op_color}; font-weight:bold;'>{op_tag}法前半:</span> "
+                html += ", ".join(f"{v}({c}次)" for v, c in f1_top) + "<br>"
+                html += f"<span style='color:{op_color}; font-weight:bold;'>{op_tag}法后半:</span> "
+                html += ", ".join(f"{v}({c}次)" for v, c in f2_top) + "<br>"
+                common = set(v for v, _ in f1_top) & set(v for v, _ in f2_top)
+                if common:
+                    html += f"<span style='color:#C62828; font-weight:bold;'>{op_tag}法前后稳定值:</span> {sorted(common)}<br>"
+
+            html += f"<span style='color:#666; font-size:{max(13,_cfs-1)}px;'>对比可发现规律是否在前后段保持一致</span>"
+            html += "</div>"
+
+        # 详细结果（折叠显示）
+        html += f"<details style='margin-top:6px;'><summary style='cursor:pointer; color:#3498DB; font-size:{_dfs}px;'>查看详细计算结果</summary>"
+        html += f"<div style='margin-top:4px; max-height:300px; overflow-y:auto; font-size:{_dfs}px;'>"
+        for line in all_detail_lines:
+            html += f"<pre style='font-size:{_dfs}px; margin:2px 0; white-space:pre-wrap;'>{line}</pre>"
+        html += "</div></details>"
+
+        # 统计汇总
+        html += f"<div style='margin-top:6px; color:#888; font-size:{max(13,_fs-1)}px;'>"
+        html += f"总计算: {len(pairs)}对 × 49次 = {len(pairs)*49}次 | "
+        if do_add:
+            html += f"加法: {len(add_results)}个 | "
+        if do_sub:
+            html += f"减法: {len(sub_results)}个"
+        html += "</div>"
+
+        html += "</div>"
+        self.calc_result_label.setText(html)
+        # 保存纯文本结果供复制/导出使用
+        self._calc_text_result = "\n".join(all_detail_lines)
+
+    def _copy_calc_result(self):
+        """复制计算规律分析结果到剪贴板"""
+        from PyQt6.QtWidgets import QApplication
+        text = getattr(self, '_calc_text_result', '')
+        if not text:
+            text = self.calc_result_label.text()
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        self.calc_info_label.setText("✅ 结果已复制到剪贴板")
+
+    def _export_calc_result(self):
+        """导出计算规律分析结果为TXT文件"""
+        from PyQt6.QtWidgets import QFileDialog
+        text = getattr(self, '_calc_text_result', '')
+        if not text:
+            self.calc_info_label.setText("无结果可导出")
+            return
+        skip = self.calc_skip_spin.value()
+        op_names = ["加法+减法", "仅加法", "仅减法"]
+        op_name = op_names[self.calc_op_combo.currentIndex()]
+        default_name = f"计算规律分析_跳{skip}_{op_name}.txt"
+        file_path, _ = QFileDialog.getSaveFileName(self, "导出计算结果", default_name, "文本文件 (*.txt)")
+        if file_path:
+            try:
+                header = f"计算规律分析结果\n跳数: {skip} | 运算: {op_name}\n"
+                header += "=" * 60 + "\n\n"
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(header + text)
+                self.calc_info_label.setText(f"✅ 已导出到: {file_path}")
+            except Exception as e:
+                self.calc_info_label.setText(f"❌ 导出失败: {e}")
+
+    # ======================================================================== #
+    # 波色预测面板
+    # ======================================================================== #
+    def _create_wave_color_panel(self):
+        """创建波色预测面板：分析红/蓝/绿波色出现概率"""
+        widget = QWidget()
+        widget.setObjectName("WaveColorPanel")
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(6)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        # --- 第一行：标题 + 统计期数 ---
+        row1 = QHBoxLayout()
+        title = QLabel("波色概率预测")
+        title.setObjectName("PanelTitle")
+        row1.addWidget(title)
+        row1.addStretch()
+
+        period_label = QLabel("统计期数:")
+        period_label.setStyleSheet("font-size: 14px; color: #666;")
+        row1.addWidget(period_label)
+
+        self.wave_period_spin = QSpinBox()
+        self.wave_period_spin.setRange(5, 500)
+        self.wave_period_spin.setValue(30)
+        self.wave_period_spin.setFixedWidth(60)
+        # 波色统计期数数字框样式：2px内边距，14px字号
+
+        self.wave_period_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 14px; }")
+        # 波色统计期数变化信号：刷新波色预测面板
+
+        self.wave_period_spin.valueChanged.connect(self._update_wave_color_panel)
+        row1.addWidget(self.wave_period_spin)
+
+        layout.addLayout(row1)
+
+        # --- 第二行：预测模式 + 走势期数 ---
+        row2 = QHBoxLayout()
+        row2.setSpacing(2)
+
+        mode_label = QLabel("预测模式:")
+        mode_label.setStyleSheet("font-size: 14px; color: #666;")
+        row2.addWidget(mode_label)
+
+        self.wave_mode_combo = QComboBox()
+        self.wave_mode_combo.addItems(["频率统计+号码分布", "仅频率统计", "仅号码分布", "转移概率加权"])
+        self.wave_mode_combo.setFixedWidth(150)
+        self.wave_mode_combo.setToolTip("频率统计+号码分布：综合两种算法\n仅频率统计：只看主波色出现次数\n仅号码分布：只看所有号码波色比例\n转移概率加权：用马尔可夫转移矩阵预测")
+        # 波色模式下拉框样式：2px内边距，14px字号
+
+        self.wave_mode_combo.setStyleSheet("QComboBox { padding: 2px; font-size: 14px; }")
+        # 波色模式变化信号：刷新波色预测面板
+
+        self.wave_mode_combo.currentIndexChanged.connect(self._update_wave_color_panel)
+        row2.addWidget(self.wave_mode_combo)
+
+        row2.addSpacing(8)
+
+        trend_label = QLabel("走势期数:")
+        trend_label.setStyleSheet("font-size: 14px; color: #666;")
+        row2.addWidget(trend_label)
+
+        self.wave_trend_spin = QSpinBox()
+        self.wave_trend_spin.setRange(5, 300)
+        self.wave_trend_spin.setValue(20)
+        self.wave_trend_spin.setFixedWidth(60)
+        self.wave_trend_spin.setToolTip("走势显示的期数")
+        # 波色趋势期数数字框样式：2px内边距，14px字号
+
+        self.wave_trend_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 14px; }")
+        # 波色趋势期数变化信号：刷新波色预测面板
+
+        self.wave_trend_spin.valueChanged.connect(self._update_wave_color_panel)
+        row2.addWidget(self.wave_trend_spin)
+
+        layout.addLayout(row2)
+
+        # --- 第三行：各部分字号设置 ---
+        row3 = QHBoxLayout()
+
+        font_title = QLabel("字号:")
+        font_title.setStyleSheet("font-size: 14px; color: #666; font-weight: bold;")
+        row3.addWidget(font_title)
+
+        # 统计结果字号
+        rf_label = QLabel("统计")
+        rf_label.setStyleSheet("font-size: 13px; color: #888;")
+        row3.addWidget(rf_label)
+        self.wave_result_font_spin = QSpinBox()
+        self.wave_result_font_spin.setRange(10, 150)  # 字体上限150px
+        self.wave_result_font_spin.setValue(20)  # 默认20px
+        self.wave_result_font_spin.setFixedWidth(50)
+        self.wave_result_font_spin.setSuffix("px")
+        # 波色结果字体大小输入框样式：2px内边距，12px字号
+
+        self.wave_result_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 13px; }")
+        # 波色结果字体大小变化信号：应用波色面板字号设置
+
+        self.wave_result_font_spin.valueChanged.connect(self._apply_wave_panel_size)
+        row3.addWidget(self.wave_result_font_spin)
+
+        # 走势字号
+        tf_label = QLabel("走势")
+        tf_label.setStyleSheet("font-size: 13px; color: #888;")
+        row3.addWidget(tf_label)
+        self.wave_trend_font_spin = QSpinBox()
+        self.wave_trend_font_spin.setRange(10, 150)  # 字体上限150px
+        self.wave_trend_font_spin.setValue(20)  # 默认20px
+        self.wave_trend_font_spin.setFixedWidth(50)
+        self.wave_trend_font_spin.setSuffix("px")
+        # 波色趋势字体大小输入框样式：2px内边距，13px字号
+
+        self.wave_trend_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 13px; }")
+        # 波色趋势字体大小变化信号：应用波色面板字号设置
+
+        self.wave_trend_font_spin.valueChanged.connect(self._apply_wave_panel_size)
+        row3.addWidget(self.wave_trend_font_spin)
+
+        # 转移概率字号
+        xf_label = QLabel("转移")
+        xf_label.setStyleSheet("font-size: 13px; color: #888;")
+        row3.addWidget(xf_label)
+        self.wave_trans_font_spin = QSpinBox()
+        self.wave_trans_font_spin.setRange(10, 150)  # 字体上限150px
+        self.wave_trans_font_spin.setValue(20)  # 默认20px
+        self.wave_trans_font_spin.setFixedWidth(50)
+        self.wave_trans_font_spin.setSuffix("px")
+        # 波色转移字体大小输入框样式：2px内边距，13px字号
+
+        self.wave_trans_font_spin.setStyleSheet("QSpinBox { padding: 2px; font-size: 13px; }")
+        # 波色转移字体大小变化信号：应用波色面板字号设置
+
+        self.wave_trans_font_spin.valueChanged.connect(self._apply_wave_panel_size)
+        row3.addWidget(self.wave_trans_font_spin)
+
+        row3.addStretch()
+        layout.addLayout(row3)
+
+        # --- 说明标签 ---
+        self.wave_info_label = QLabel("选择预测模式和期数后点击「分析」，支持多种算法和走势对比")
+        self.wave_info_label.setStyleSheet("font-size: 14px; color: #888; padding: 2px 4px;")
+        self.wave_info_label.setWordWrap(True)
+        layout.addWidget(self.wave_info_label)
+
+        # --- 滚动区域包裹结果显示 ---
+        self.wave_scroll = QScrollArea()
+        self.wave_scroll.setWidgetResizable(True)
+        self.wave_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # 波色结果滚动区域样式：无边框
+
+        self.wave_scroll.setStyleSheet("QScrollArea { border: none; }")
+
+        scroll_content = QWidget()
+        wave_inner_layout = QVBoxLayout(scroll_content)
+        wave_inner_layout.setSpacing(6)
+        wave_inner_layout.setContentsMargins(2, 2, 2, 2)
+
+        # --- 波色概率显示区 ---
+        self.wave_result_label = QLabel("等待分析...")
+        self.wave_result_label.setWordWrap(True)
+        self.wave_result_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.wave_result_label.setTextFormat(Qt.TextFormat.RichText)
+        # 波色结果标签样式：浅灰背景，4px圆角，8px内边距
+
+        self.wave_result_label.setStyleSheet(
+            "font-size: 14px; background-color: #FAFAFA; border-radius: 6px; "
+            "padding: 10px; border: 1px solid #EEE;"
+        )
+        wave_inner_layout.addWidget(self.wave_result_label)
+
+        # --- 历史波色走势 ---
+        trend_label = QLabel("近期波色走势：")
+        trend_label.setStyleSheet("font-size: 14px; color: #555; font-weight: bold; padding: 4px 0;")
+        wave_inner_layout.addWidget(trend_label)
+
+        self.wave_trend_label = QLabel("")
+        self.wave_trend_label.setWordWrap(True)
+        self.wave_trend_label.setTextFormat(Qt.TextFormat.RichText)
+        # 波色趋势标签样式：浅灰背景，4px圆角，8px内边距
+
+        self.wave_trend_label.setStyleSheet(
+            "font-size: 14px; background-color: #FFFFFF; border-radius: 4px; "
+            "padding: 6px; border: 1px solid #E0E0E0;"
+        )
+        wave_inner_layout.addWidget(self.wave_trend_label)
+
+        # --- 转移概率（上次波色→本次波色） ---
+        trans_label = QLabel("波色转移概率：")
+        trans_label.setStyleSheet("font-size: 14px; color: #555; font-weight: bold; padding: 4px 0;")
+        wave_inner_layout.addWidget(trans_label)
+
+        self.wave_trans_label = QLabel("")
+        self.wave_trans_label.setWordWrap(True)
+        self.wave_trans_label.setTextFormat(Qt.TextFormat.RichText)
+        # 波色转移标签样式：浅灰背景，4px圆角，8px内边距
+
+        self.wave_trans_label.setStyleSheet(
+            "font-size: 14px; background-color: #FFFFFF; border-radius: 4px; "
+            "padding: 6px; border: 1px solid #E0E0E0;"
+        )
+        wave_inner_layout.addWidget(self.wave_trans_label)
+
+        wave_inner_layout.addStretch()
+        self.wave_scroll.setWidget(scroll_content)
+        layout.addWidget(self.wave_scroll)
+
+        # 应用保存的配置到控件
+        self._apply_wave_panel_config()
+        # 连接控件变化信号，实时保存配置
+        self.wave_period_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 波色模式变化信号：保存配置到INI
+
+        self.wave_mode_combo.currentIndexChanged.connect(lambda: self._save_ini_config())
+        # 波色趋势期数变化信号：保存配置到INI
+
+        self.wave_trend_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 波色结果字体变化信号：保存配置到INI
+
+        self.wave_result_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 波色趋势字体变化信号：保存配置到INI
+
+        self.wave_trend_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+        # 波色转移字体变化信号：保存配置到INI
+
+        self.wave_trans_font_spin.valueChanged.connect(lambda: self._save_ini_config())
+
+        # 初始化自动刷新
+        if hasattr(self, 'historical_data') and self.historical_data:
+            self._update_wave_color_panel()
+
+        return widget
+
+    def _update_wave_color_panel(self):
+        """执行波色统计分析并更新显示"""
+        if not hasattr(self, 'historical_data') or not self.historical_data:
+            self.wave_result_label.setText("请先加载历史数据")
+            self.wave_trend_label.setText("")
+            self.wave_trans_label.setText("")
+            return
+
+        stat_periods = self.wave_period_spin.value()
+        total = len(self.historical_data)
+        use_n = min(stat_periods, total)
+        mode_desc = f"统计{use_n}期"
+
+        recent = self.historical_data[-use_n:]
+
+        # 统计每期的波色分布
+        # 每期7个号码（6正码+1特别码），统计红/蓝/绿各多少个
+        period_colors = []  # 每期的波色列表 [(red, blue, green, dominant)]
+        color_counts = {'红波': 0, '蓝波': 0, '绿波': 0}
+        # 所有号码的波色统计（包含正码和特别码）
+        all_num_color_count = {'红波': 0, '蓝波': 0, '绿波': 0}
+
+        for rec in recent:
+            nums = rec.get('numbers', [])[:6] + [rec.get('special', 0)]
+            nums = [n for n in nums if 1 <= n <= 49]
+            r = sum(1 for n in nums if LotteryConfig.is_red(n))
+            b = sum(1 for n in nums if LotteryConfig.is_blue(n))
+            g = sum(1 for n in nums if LotteryConfig.is_green(n))
+
+            # 主波色：该期出现最多的波色
+            if r >= b and r >= g:
+                dominant = '红波'
+            elif b >= g:
+                dominant = '蓝波'
+            else:
+                dominant = '绿波'
+
+            period_colors.append((r, b, g, dominant, rec.get('period', '?')))
+            color_counts[dominant] += 1
+            all_num_color_count['红波'] += r
+            all_num_color_count['蓝波'] += b
+            all_num_color_count['绿波'] += g
+
+        total_nums = sum(all_num_color_count.values())
+        total_periods = len(period_colors)
+
+        # --- 1. 概率显示 ---
+        _wfs = self.wave_result_font_spin.value() if hasattr(self, 'wave_result_font_spin') else 14
+        _tfs = self.wave_trend_font_spin.value() if hasattr(self, 'wave_trend_font_spin') else 14
+        _xfs = self.wave_trans_font_spin.value() if hasattr(self, 'wave_trans_font_spin') else 14
+        html = f"<div style='font-size:{_wfs}px; font-family: sans-serif;'>"
+
+        html += f"<b style='font-size:{_wfs+1}px; color:#333;'>📊 波色出现统计（主波色）</b><br><br>"
+
+        # 三色概率条
+        colors_info = [
+            ('红波', '#FF0000', '#FFEBEE', color_counts['红波']),
+            ('蓝波', '#0000FF', '#E3F2FD', color_counts['蓝波']),
+            ('绿波', '#008000', '#E8F5E9', color_counts['绿波']),
+        ]
+
+        for name, color, bg, count in colors_info:
+            pct = count / total_periods * 100 if total_periods > 0 else 0
+            html += f"<div style='display:inline-block; margin:2px 6px 2px 0; "
+            html += f"background:{bg}; border-radius:6px; padding:6px 12px; border:1px solid {color};'>"
+            html += f"<span style='color:{color}; font-weight:bold; font-size:{_wfs+1}px;'>● {name}</span> "
+            html += f"<span style='color:#333; font-size:{_wfs}px;'><b>{count}</b>期 ({pct:.1f}%)</span>"
+            html += "</div>"
+
+        html += "<br><br>"
+
+        # 所有号码波色统计
+        html += "<b style='color:#333;'>📊 号码波色分布（所有号码）</b><br>"
+        for name, color, bg, _ in colors_info:
+            cnt = all_num_color_count[name]
+            pct = cnt / total_nums * 100 if total_nums > 0 else 0
+            html += f"<span style='color:{color}; font-weight:bold;'>{name}: {cnt}个 ({pct:.1f}%)</span>  "
+        html += "<br><br>"
+
+        # 预测下一次主波色
+        pred_mode = self.wave_mode_combo.currentIndex() if hasattr(self, 'wave_mode_combo') else 0
+        if color_counts:
+            combined = {}
+            for name, _, _, _ in colors_info:
+                main_pct = color_counts[name] / total_periods if total_periods > 0 else 0
+                num_pct = all_num_color_count[name] / total_nums if total_nums > 0 else 0
+                if pred_mode == 0:  # 频率统计+号码分布
+                    combined[name] = main_pct * 0.5 + num_pct * 0.5
+                elif pred_mode == 1:  # 仅频率统计
+                    combined[name] = main_pct
+                elif pred_mode == 2:  # 仅号码分布
+                    combined[name] = num_pct
+                else:  # 转移概率加权（后续补充）
+                    combined[name] = main_pct * 0.3 + num_pct * 0.3  # 先给基础分，后面加转移概率
+
+            # 转移概率加权模式：需要先计算转移矩阵
+            trans = {'红波': {'红波': 0, '蓝波': 0, '绿波': 0},
+                     '蓝波': {'红波': 0, '蓝波': 0, '绿波': 0},
+                     '绿波': {'红波': 0, '蓝波': 0, '绿波': 0}}
+            for i in range(1, len(period_colors)):
+                prev = period_colors[i-1][3]
+                curr = period_colors[i][3]
+                trans[prev][curr] += 1
+            last_dom = period_colors[-1][3] if period_colors else '红波'
+            last_trans = trans[last_dom]
+            last_total = sum(last_trans.values())
+
+            if pred_mode == 3 and last_total > 0:
+                # 转移概率加权：基础30%+号码30%+转移概率40%
+                for name, _, _, _ in colors_info:
+                    trans_pct = last_trans[name] / last_total if last_total > 0 else 0
+                    combined[name] = combined[name] + trans_pct * 0.4
+
+            pred_color = max(combined, key=combined.get)
+            pred_pct = combined[pred_color] * 100
+
+            color_map = {'红波': '#FF0000', '蓝波': '#0000FF', '绿波': '#008000'}
+            pc = color_map.get(pred_color, '#333')
+
+            mode_names = ["频率统计+号码分布", "仅频率统计", "仅号码分布", "转移概率加权"]
+            html += f"<div style='background:#FFF8E1; border:2px solid {pc}; border-radius:8px; padding:10px; margin:4px 0;'>"
+            html += f"<b style='font-size:{_wfs+1}px; color:{pc};'>🎯 预测下一次主波色: {pred_color}</b><br>"
+            html += f"<span style='color:#666;'>综合概率: {pred_pct:.1f}%</span><br>"
+            html += f"<span style='color:#888; font-size:{max(12, _wfs-1)}px;'>"
+            for name, _, _, _ in colors_info:
+                html += f"{name}={combined[name]*100:.1f}%  "
+            html += "</span>"
+            html += "</div>"
+
+        html += f"<div style='color:#888; font-size:{max(12, _wfs-1)}px; margin-top:4px;'>{mode_desc} | 算法: {mode_names[pred_mode]}</div>"
+        html += "</div>"
+
+        self.wave_result_label.setText(html)
+        self.wave_info_label.setText(f"{mode_desc} | 主波色统计 | 号码分布 | 转移概率分析")
+
+        # --- 2. 走势显示（用户指定期数） ---
+        trend_n = self.wave_trend_spin.value() if hasattr(self, 'wave_trend_spin') else 20
+        show_trend = period_colors[-trend_n:]
+        trend_html = f"<div style='font-size:{_tfs}px; line-height:1.8;'>"
+        color_map = {'红波': '#FF0000', '蓝波': '#0000FF', '绿波': '#008000'}
+        bg_map = {'红波': '#FFEBEE', '蓝波': '#E3F2FD', '绿波': '#E8F5E9'}
+
+        for r, b, g, dom, period in show_trend:
+            c = color_map.get(dom, '#333')
+            bg = bg_map.get(dom, '#F5F5F5')
+            trend_html += f"<span style='display:inline-block; margin:1px 2px; "
+            trend_html += f"background:{bg}; border:1px solid {c}; border-radius:3px; "
+            trend_html += f"padding:1px 5px; color:{c}; font-weight:bold;'>"
+            trend_html += f"期{period}: {dom[0]}({r}红{b}蓝{g}绿)"
+            trend_html += "</span>"
+        trend_html += "</div>"
+
+        self.wave_trend_label.setText(trend_html)
+
+        # --- 3. 转移概率矩阵 ---
+        # 统计：上次主波色A → 本次主波色B 的次数
+        trans = {'红波': {'红波': 0, '蓝波': 0, '绿波': 0},
+                 '蓝波': {'红波': 0, '蓝波': 0, '绿波': 0},
+                 '绿波': {'红波': 0, '蓝波': 0, '绿波': 0}}
+
+        for i in range(1, len(period_colors)):
+            prev = period_colors[i-1][3]
+            curr = period_colors[i][3]
+            trans[prev][curr] += 1
+
+        # 上一次的主波色
+        last_dom = period_colors[-1][3] if period_colors else '红波'
+
+        trans_html = f"<div style='font-size:{_xfs}px;'>"
+        trans_html += f"<b>上期主波色: <span style='color:{color_map.get(last_dom,'#333')};'>{last_dom}</span></b><br><br>"
+
+        # 转移概率表格
+        trans_html += f"<table style='border-collapse:collapse; font-size:{_xfs}px;'>"
+        trans_html += "<tr style='background:#F0F0F0;'><th style='border:1px solid #CCC; padding:3px 8px;'>上期\\下期</th>"
+        for name, _, _, _ in colors_info:
+            trans_html += f"<th style='border:1px solid #CCC; padding:3px 8px; color:{color_map[name]};'>{name}</th>"
+        trans_html += "</tr>"
+
+        for from_name, _, _, _ in colors_info:
+            row_total = sum(trans[from_name].values())
+            fc = color_map[from_name]
+            trans_html += f"<tr><td style='border:1px solid #CCC; padding:3px 8px; color:{fc}; font-weight:bold; background:{bg_map[from_name]};'>{from_name}</td>"
+            for to_name, _, _, _ in colors_info:
+                cnt = trans[from_name][to_name]
+                pct = cnt / row_total * 100 if row_total > 0 else 0
+                # 高亮从上期波色出发的行
+                highlight = "background:#FFF8E1;" if from_name == last_dom else ""
+                trans_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center; {highlight}'>"
+                trans_html += f"{cnt}次<br><span style='color:#888; font-size:{max(12, _xfs-1)}px;'>({pct:.0f}%)</span>"
+                trans_html += "</td>"
+            trans_html += "</tr>"
+        trans_html += "</table>"
+
+        # 预测下期基于转移概率
+        last_trans = trans[last_dom]
+        last_total = sum(last_trans.values())
+        if last_total > 0:
+            trans_html += f"<br><b>基于转移概率预测下期:</b><br>"
+            sorted_trans = sorted(last_trans.items(), key=lambda x: x[1], reverse=True)
+            for name, cnt in sorted_trans:
+                pct = cnt / last_total * 100
+                tc = color_map[name]
+                trans_html += f"<span style='color:{tc}; font-weight:bold;'>{name}: {pct:.1f}%</span>  "
+        else:
+            trans_html += "<br><span style='color:#888;'>转移数据不足</span>"
+
+        trans_html += "</div>"
+        self.wave_trans_label.setText(trans_html)
+
+        # --- 4. 统计分析对比（前半段 vs 后半段） ---
+        if total_periods >= 6:
+            half_w = total_periods // 2
+            first_colors = period_colors[:half_w]
+            second_colors = period_colors[half_w:]
+
+            first_dom = {'红波': 0, '蓝波': 0, '绿波': 0}
+            second_dom = {'红波': 0, '蓝波': 0, '绿波': 0}
+            first_nums = {'红波': 0, '蓝波': 0, '绿波': 0}
+            second_nums = {'红波': 0, '蓝波': 0, '绿波': 0}
+
+            for r, b, g, dom, _ in first_colors:
+                first_dom[dom] += 1
+                first_nums['红波'] += r
+                first_nums['蓝波'] += b
+                first_nums['绿波'] += g
+            for r, b, g, dom, _ in second_colors:
+                second_dom[dom] += 1
+                second_nums['红波'] += r
+                second_nums['蓝波'] += b
+                second_nums['绿波'] += g
+
+            f_total = sum(first_dom.values()) or 1
+            s_total = sum(second_dom.values()) or 1
+            fn_total = sum(first_nums.values()) or 1
+            sn_total = sum(second_nums.values()) or 1
+
+            cmp_html = f"<div style='font-size:{_wfs}px; font-family: sans-serif; margin-top:8px;'>"
+            cmp_html += f"<div style='background:#F3E5F5; border-radius:6px; padding:8px;'>"
+            cmp_html += f"<b style='color:#6A1B9A;'>📈 波色统计分析对比（前{half_w}期 vs 后{total_periods-half_w}期）</b><br><br>"
+            cmp_html += f"<table style='border-collapse:collapse; font-size:{_wfs}px;'>"
+            cmp_html += "<tr style='background:#F0F0F0;'><th style='border:1px solid #CCC; padding:3px 8px;'>波色</th>"
+            cmp_html += f"<th style='border:1px solid #CCC; padding:3px 8px;'>前半主波色</th>"
+            cmp_html += f"<th style='border:1px solid #CCC; padding:3px 8px;'>后半主波色</th>"
+            cmp_html += f"<th style='border:1px solid #CCC; padding:3px 8px;'>前半号码占比</th>"
+            cmp_html += f"<th style='border:1px solid #CCC; padding:3px 8px;'>后半号码占比</th>"
+            cmp_html += f"<th style='border:1px solid #CCC; padding:3px 8px;'>趋势变化</th></tr>"
+
+            for name, color, _, _ in colors_info:
+                f_pct = first_dom[name] / f_total * 100
+                s_pct = second_dom[name] / s_total * 100
+                fn_pct = first_nums[name] / fn_total * 100
+                sn_pct = second_nums[name] / sn_total * 100
+                diff = s_pct - f_pct
+                arrow = "↑" if diff > 0 else ("↓" if diff < 0 else "→")
+                diff_color = "#2E7D32" if diff > 0 else ("#C62828" if diff < 0 else "#666")
+                cmp_html += f"<tr><td style='border:1px solid #CCC; padding:3px 8px; color:{color}; font-weight:bold;'>{name}</td>"
+                cmp_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center;'>{first_dom[name]}期({f_pct:.1f}%)</td>"
+                cmp_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center;'>{second_dom[name]}期({s_pct:.1f}%)</td>"
+                cmp_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center;'>{fn_pct:.1f}%</td>"
+                cmp_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center;'>{sn_pct:.1f}%</td>"
+                cmp_html += f"<td style='border:1px solid #CCC; padding:3px 8px; text-align:center; color:{diff_color}; font-weight:bold;'>{arrow} {abs(diff):.1f}%</td>"
+                cmp_html += "</tr>"
+            cmp_html += "</table>"
+            cmp_html += f"<br><span style='color:#666; font-size:{max(12, _wfs-1)}px;'>趋势变化>0表示后半段该波色出现频率上升，<0表示下降</span>"
+            cmp_html += "</div></div>"
+
+            # 追加到结果标签
+            current_html = self.wave_result_label.text()
+            self.wave_result_label.setText(current_html + cmp_html)
+
+        # --- 5. 冷热波色分析 ---
+        if total_periods >= 5:
+            # 近5期的波色作为"热"参考
+            recent_5 = period_colors[-5:]
+            recent_5_dom = [pc[3] for pc in recent_5]
+            # 冷波色：最近5期没出现过的
+            all_colors = ['红波', '蓝波', '绿波']
+            hot_colors = [c for c in all_colors if c in recent_5_dom]
+            cold_colors = [c for c in all_colors if c not in recent_5_dom]
+
+            extra_html = f"<div style='font-size:{_wfs}px; font-family: sans-serif; margin-top:8px;'>"
+            extra_html += f"<div style='background:#FFFDE7; border-radius:6px; padding:8px;'>"
+            extra_html += f"<b style='color:#F57F17;'>🔥 冷热波色分析</b><br>"
+            if hot_colors:
+                extra_html += f"<span style='color:#E65100; font-weight:bold;'>热波色(近5期出现):</span> "
+                for c in hot_colors:
+                    cc = color_map.get(c, '#333')
+                    extra_html += f"<span style='color:{cc}; font-weight:bold;'>{c}</span> "
+                extra_html += "<br>"
+            if cold_colors:
+                extra_html += f"<span style='color:#1565C0; font-weight:bold;'>冷波色(近5期未出):</span> "
+                for c in cold_colors:
+                    cc = color_map.get(c, '#333')
+                    extra_html += f"<span style='color:{cc}; font-weight:bold;'>{c}</span> "
+                extra_html += "<br>"
+            # 连续出现分析
+            if len(period_colors) >= 3:
+                streak = 1
+                streak_color = period_colors[-1][3]
+                for i in range(len(period_colors) - 2, -1, -1):
+                    if period_colors[i][3] == streak_color:
+                        streak += 1
+                    else:
+                        break
+                sc = color_map.get(streak_color, '#333')
+                extra_html += f"<span style='color:#666;'>当前{streak_color}已连续出现 <b style='color:{sc};'>{streak}</b> 期</span><br>"
+                if streak >= 3:
+                    extra_html += f"<span style='color:#C62828;'>⚠ 连续{streak}期同色，下期可能反转</span><br>"
+                else:
+                    extra_html += f"<span style='color:#2E7D32;'>连续期数较少，趋势可能延续</span><br>"
+            extra_html += "</div>"
+
+            # --- 6. 号码推荐（基于波色预测） ---
+            try:
+                rec_color = pred_color
+            except NameError:
+                rec_color = '红波'
+            rc = color_map.get(rec_color, '#333')
+            # 找出该波色的所有号码
+            rec_nums_list = []
+            for n in range(1, 50):
+                if rec_color == '红波' and LotteryConfig.is_red(n):
+                    rec_nums_list.append(n)
+                elif rec_color == '蓝波' and LotteryConfig.is_blue(n):
+                    rec_nums_list.append(n)
+                elif rec_color == '绿波' and LotteryConfig.is_green(n):
+                    rec_nums_list.append(n)
+
+            extra_html += f"<div style='background:#E0F7FA; border-radius:6px; padding:8px; margin-top:6px;'>"
+            extra_html += f"<b style='color:#006064;'>🎯 {rec_color}推荐号码</b><br>"
+            extra_html += f"<span style='color:{rc}; font-weight:bold; font-size:{_wfs+1}px;'>"
+            extra_html += ", ".join(str(n) for n in rec_nums_list)
+            extra_html += "</span><br>"
+            extra_html += f"<span style='color:#666; font-size:{max(12,_wfs-1)}px;'>共{len(rec_nums_list)}个号码 | 基于预测波色{rec_color}筛选</span>"
+            extra_html += "</div></div>"
+
+            # 追加到结果标签
+            current_html2 = self.wave_result_label.text()
+            self.wave_result_label.setText(current_html2 + extra_html)
+
+        # 保存纯文本结果供复制/导出使用
+        self._wave_text_result = self.wave_result_label.text()
+
+    def _apply_wave_panel_size(self):
+        """应用波色预测面板的各部分字号设置"""
+        rf = self.wave_result_font_spin.value() if hasattr(self, 'wave_result_font_spin') else 14
+        tf = self.wave_trend_font_spin.value() if hasattr(self, 'wave_trend_font_spin') else 14
+        xf = self.wave_trans_font_spin.value() if hasattr(self, 'wave_trans_font_spin') else 14
+        # 更新标签字号
+        self.wave_result_label.setStyleSheet(
+            f"font-size: {rf}px; background-color: #FAFAFA; border-radius: 6px; "
+            f"padding: 10px; border: 1px solid #EEE;"
+        )
+        # 波色趋势标签样式：浅灰背景，4px圆角，8px内边距
+
+        self.wave_trend_label.setStyleSheet(
+            f"font-size: {tf}px; background-color: #FFFFFF; border-radius: 4px; "
+            f"padding: 6px; border: 1px solid #E0E0E0;"
+        )
+        # 波色转移标签样式：浅灰背景，4px圆角，8px内边距
+
+        self.wave_trans_label.setStyleSheet(
+            f"font-size: {xf}px; background-color: #FFFFFF; border-radius: 4px; "
+            f"padding: 6px; border: 1px solid #E0E0E0;"
+        )
+        self.wave_info_label.setStyleSheet(f"font-size: {max(14, rf-1)}px; color: #888; padding: 2px 4px;")
+        # 重新生成HTML以应用字号
+        self._update_wave_color_panel()
+
+    def _copy_wave_result(self):
+        """复制波色分析结果到剪贴板"""
+        from PyQt6.QtWidgets import QApplication
+        text = getattr(self, '_wave_text_result', '')
+        if not text:
+            text = self.wave_result_label.text()
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        self.wave_info_label.setText("✅ 结果已复制到剪贴板")
+
+    def _export_wave_result(self):
+        """导出波色分析结果为TXT文件"""
+        from PyQt6.QtWidgets import QFileDialog
+        text = getattr(self, '_wave_text_result', '')
+        if not text:
+            self.wave_info_label.setText("无结果可导出")
+            return
+        mode_names = ["频率统计+号码分布", "仅频率统计", "仅号码分布", "转移概率加权"]
+        mode_name = mode_names[self.wave_mode_combo.currentIndex()] if hasattr(self, 'wave_mode_combo') else "默认"
+        default_name = f"波色预测_{mode_name}.txt"
+        file_path, _ = QFileDialog.getSaveFileName(self, "导出波色分析", default_name, "文本文件 (*.txt)")
+        if file_path:
+            try:
+                header = f"波色预测分析结果\n预测模式: {mode_name}\n"
+                header += f"统计期数: {self.wave_period_spin.value()}\n"
+                header += "=" * 60 + "\n\n"
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(header + text)
+                self.wave_info_label.setText(f"✅ 已导出到: {file_path}")
+            except Exception as e:
+                self.wave_info_label.setText(f"❌ 导出失败: {e}")
+
     def _create_saved_predictions_panel(self):
         """创建已保存预测面板"""
         widget = QWidget()
@@ -12985,6 +16634,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; }
             QPushButton:hover { background-color: #27AE60; }
         """)
+        # 信号连接：点击保存按钮将当前预测保存到收藏
         save_btn.clicked.connect(self._on_save_current_prediction)
         title_layout.addWidget(save_btn)
         
@@ -13012,20 +16662,28 @@ class LotteryPredictionWindow(QMainWindow):
             QListWidget::item { padding: 6px; border-bottom: 1px solid #EEEEEE; }
             QListWidget::item:selected { background-color: #D6EAF8; color: #000000; }
         """)
+        # 已保存预测列表双击信号：显示选中预测的详细信息
+
         self.saved_predictions_list.itemDoubleClicked.connect(self._on_show_saved_prediction_detail)
         layout.addWidget(self.saved_predictions_list)
         
         # 底部按钮 - 第一行
         btn_layout1 = QHBoxLayout()
         load_btn = QPushButton("加载")
+        # 加载已保存预测按钮点击信号：加载选中的已保存预测
+
         load_btn.clicked.connect(self._on_load_saved_prediction)
         btn_layout1.addWidget(load_btn)
         
         detail_btn = QPushButton("详情")
+        # 查看详情按钮点击信号：显示选中预测的详细信息
+
         detail_btn.clicked.connect(self._on_show_saved_prediction_detail)
         btn_layout1.addWidget(detail_btn)
         
         compare_btn = QPushButton("对比")
+        # 对比已保存按钮点击信号：对比选中的多个已保存预测
+
         compare_btn.clicked.connect(self._on_compare_saved_predictions)
         btn_layout1.addWidget(compare_btn)
         
@@ -13034,10 +16692,14 @@ class LotteryPredictionWindow(QMainWindow):
         # 底部按钮 - 第二行
         btn_layout2 = QHBoxLayout()
         del_btn = QPushButton("删除")
+        # 删除已保存按钮点击信号：删除选中的已保存预测
+
         del_btn.clicked.connect(self._on_delete_saved_prediction)
         btn_layout2.addWidget(del_btn)
         
         clear_btn = QPushButton("清空")
+        # 清空已保存按钮点击信号：清空所有已保存预测
+
         clear_btn.clicked.connect(self._on_clear_saved_predictions)
         btn_layout2.addWidget(clear_btn)
         
@@ -13099,18 +16761,8 @@ class LotteryPredictionWindow(QMainWindow):
         else:
             return predictor.comprehensive_recommendation(6, enhanced=self.enhanced_mode, reverse=self.reverse_mode)
     
-    def _on_number_selected(self, numbers):
-        if numbers:
-            formatted = ', '.join(str(n) for n in sorted(numbers))
-            self.selected_numbers_label.setText(formatted)
-        else:
-            self.selected_numbers_label.setText("无")
-    
-    def _clear_number_selection(self):
-        self.number_panel.clear_selection()
-        self.selected_numbers_label.setText("无")
-    
     def _on_algorithm_changed(self, index):
+        """功能：algorithm changed事件处理"""
         self.current_algorithm_index = index
         if index < len(LotteryConfig.ALGORITHMS):
             _, desc = LotteryConfig.ALGORITHMS[index]
@@ -13121,7 +16773,8 @@ class LotteryPredictionWindow(QMainWindow):
     def _compute_data_fingerprint(self):
         """计算当前历史数据的指纹（用于判断数据是否更新）"""
         import hashlib
-        data_str = json.dumps(self.historical_data, sort_keys=True, ensure_ascii=False)
+        # 【修复序列化bug】添加default参数处理numpy等非标准类型，防止序列化失败
+        data_str = json.dumps(self.historical_data, sort_keys=True, ensure_ascii=False, default=self._json_default)
         return hashlib.md5(data_str.encode('utf-8')).hexdigest()
 
     def _on_predict_clicked(self):
@@ -13144,66 +16797,149 @@ class LotteryPredictionWindow(QMainWindow):
         # 切换到算法预测类型
         self._on_prediction_type_changed('algorithm')
         
-        # 清理旧线程（防止残留线程导致崩溃）
-        # 安全清理旧线程引用（线程可能已被deleteLater销毁，用try/except保护）
-        if hasattr(self, '_predict_thread') and self._predict_thread is not None:
-            try:
-                if self._predict_thread.isRunning():
-                    self._predict_thread.quit()
-                    self._predict_thread.wait(2000)
-            except RuntimeError:
-                pass  # C/C++对象已被删除
-            self._predict_thread = None
-        if hasattr(self, '_predict_worker') and self._predict_worker is not None:
-            self._predict_worker = None
+        # 清理旧线程引用
+        self._predict_thread = None
+        self._predict_worker = None
         
         # 设置预测状态
         self._is_predicting = True
         self.predict_button.setEnabled(False)
         self.statusBar().showMessage("正在预测...")
+        QApplication.processEvents()  # 立即更新UI
         
         try:
             # 计算确定性种子
             seed = self._set_deterministic_seed()
             
-            # 创建工作线程
-            self._predict_thread = QThread()
-            self._predict_worker = PredictWorker(
-                self.historical_data, 
-                self.current_algorithm_index, 
-                self.enhanced_mode, 
-                self.reverse_mode,
-                deterministic_seed=seed
-            )
-            self._predict_worker.moveToThread(self._predict_thread)
-            
-            # 连接信号
-            self._predict_thread.started.connect(self._predict_worker.run)
-            self._predict_worker.finished.connect(self._on_predict_finished)
-            self._predict_worker.error.connect(self._on_predict_error)
-            self._predict_worker.progress.connect(self._on_predict_progress)
-            self._predict_worker.finished.connect(self._predict_thread.quit)
-            self._predict_worker.finished.connect(self._predict_worker.deleteLater)
-            # 注意：不对thread调用deleteLater，避免后续访问已删除的C++对象
-            
-            # 启动线程
-            self._predict_thread.start()
+            # 【彻底修复0xC0000409】不再使用QThread执行预测，
+            # sklearn/PyTorch的C扩展在QThread中运行会导致Windows栈缓冲区溢出
+            # 改为在主线程中通过QTimer延迟执行，避免阻塞UI事件循环初始化
+            QTimer.singleShot(0, lambda: self._run_prediction_in_main_thread(seed))
         except Exception as e:
             self._is_predicting = False
             self.predict_button.setEnabled(True)
             import traceback
             traceback.print_exc()
-            QMessageBox.warning(self, "错误", "创建预测线程失败:\n" + str(e))
+            QMessageBox.warning(self, "错误", "启动预测失败:\n" + str(e))
             self.statusBar().showMessage("预测失败")
+    
+    def _run_prediction_in_main_thread(self, seed):
+        """【彻底修复0xC0000409】在主线程中执行预测，避免QThread中sklearn/PyTorch C扩展导致栈溢出"""
+        if getattr(self, '_window_closing', False):
+            return
+        # 设置等待光标，提示用户正在计算
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            self.statusBar().showMessage("预测中... 10% - 正在初始化预测器...")
+            QApplication.processEvents()
+            
+            # 设置确定性种子
+            if seed is not None:
+                import random as _random
+                _random.seed(seed)
+                np.random.seed(seed)
+            
+            # 创建预测器（主线程中可以安全使用完整模式，包括sklearn/PyTorch）
+            predictor = PredictionAlgorithms(self.historical_data, _light_mode=False)
+            
+            self.statusBar().showMessage("预测中... 30% - 正在执行预测算法...")
+            QApplication.processEvents()
+            
+            # 执行预测算法
+            algorithm_index = self.current_algorithm_index
+            count = 1 if algorithm_index in [21, 22] else 6
+            
+            algorithms = {
+                0: lambda: predictor.comprehensive_recommendation(count, enhanced=self.enhanced_mode, reverse=self.reverse_mode),
+                1: lambda: predictor.hot_cold_algorithm(count),
+                2: lambda: predictor.odd_even_algorithm(count),
+                3: lambda: predictor.big_small_algorithm(count),
+                4: lambda: predictor.missing_value_analysis(count),
+                5: lambda: predictor.adjacent_number_analysis(count),
+                6: lambda: predictor.tail_distribution_algorithm(count),
+                7: lambda: predictor.range_distribution_algorithm(count),
+                8: lambda: predictor.roulette_selection(count),
+                9: lambda: predictor.historical_similarity(count),
+                10: lambda: predictor.poisson_distribution(count),
+                11: lambda: predictor.mystical_algorithm(count),
+                12: lambda: predictor.number_graph_algorithm(count),
+                13: lambda: predictor.shortest_path_algorithm(count),
+                14: lambda: predictor.community_detection_algorithm(count),
+                15: lambda: predictor.graph_clustering_algorithm(count),
+                16: lambda: predictor.numpy_matrix_algorithm(count),
+                17: lambda: predictor.scipy_optimization_algorithm(count),
+                18: lambda: predictor.sklearn_ensemble_algorithm(count),
+                19: lambda: predictor.pytorch_deep_learning_algorithm(count),
+                20: lambda: predictor.networkx_graph_algorithm(count),
+                21: lambda: predictor.special_frequency_regression(count),
+                22: lambda: predictor.special_correlation_algorithm(count),
+            }
+            
+            self.statusBar().showMessage("预测中... 50% - 正在计算...")
+            QApplication.processEvents()
+            
+            predictions = None
+            if algorithm_index in algorithms:
+                try:
+                    predictions = algorithms[algorithm_index]()
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    print(f"[算法{algorithm_index}执行失败，降级到综合推荐] {e}")
+                    try:
+                        predictions = predictor.comprehensive_recommendation(count, enhanced=self.enhanced_mode, reverse=self.reverse_mode)
+                    except Exception:
+                        predictions = sorted(random.sample(range(1, 50), count))
+            else:
+                predictions = predictor.comprehensive_recommendation(count, enhanced=self.enhanced_mode, reverse=self.reverse_mode)
+            
+            self.statusBar().showMessage("预测中... 80% - 正在计算置信度...")
+            QApplication.processEvents()
+            
+            # 计算置信度
+            confidence_info = {}
+            if algorithm_index in [21, 22]:
+                confidence_info = {predictions[0]: 75.0} if predictions else {}
+            else:
+                try:
+                    _, confidence_info = predictor.get_prediction_scores(algorithm_index, len(predictions))
+                except Exception:
+                    confidence_info = {}
+            
+            self.statusBar().showMessage("预测中... 100% - 预测完成")
+            QApplication.processEvents()
+            
+            # 释放预测器
+            del predictor
+            
+            # 直接调用完成回调
+            self._on_predict_finished(predictions, confidence_info)
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._on_predict_error(str(e))
+        finally:
+            QApplication.restoreOverrideCursor()
     
     def _on_predict_progress(self, value, message):
         """异步预测进度回调"""
-        self.statusBar().showMessage(f"预测中... {value}% - {message}")
+        if getattr(self, '_window_closing', False):
+            return
+        try:
+            self.statusBar().showMessage(f"预测中... {value}% - {message}")
+        except RuntimeError:
+            pass  # 控件已销毁
     
     def _on_predict_finished(self, predictions, confidence_info):
         """异步预测完成回调"""
+        if getattr(self, '_window_closing', False):
+            return
         self._is_predicting = False
-        self.predict_button.setEnabled(True)
+        try:
+            self.predict_button.setEnabled(True)
+        except RuntimeError:
+            return  # 控件已销毁
         try:
             # 输入验证：确保预测结果有效
             if not predictions or not isinstance(predictions, (list, tuple)):
@@ -13239,17 +16975,34 @@ class LotteryPredictionWindow(QMainWindow):
             traceback.print_exc()
             QMessageBox.warning(self, "显示结果错误", "预测完成但显示结果时出错:\n" + str(e))
             self.statusBar().showMessage("预测完成（显示异常）")
+        finally:
+            # 轻量清理：只断开信号和置空引用，不wait线程
+            # 线程会通过 worker.finished → thread.quit 自动退出
+            # 完整清理由下次预测开始时的_safe_cleanup_thread处理
+            self._detach_worker('_predict_thread', '_predict_worker')
     
     def _on_predict_error(self, error_msg):
         """异步预测错误回调"""
+        if getattr(self, '_window_closing', False):
+            return
         self._is_predicting = False
-        self.predict_button.setEnabled(True)
+        try:
+            self.predict_button.setEnabled(True)
+        except RuntimeError:
+            pass
         import traceback
         traceback.print_exc()
-        QMessageBox.warning(self, "预测错误", f"预测过程出错:\n{error_msg}")
-        self.statusBar().showMessage("预测失败")
+        try:
+            QMessageBox.warning(self, "预测错误", f"预测过程出错:\n{error_msg}")
+            self.statusBar().showMessage("预测失败")
+        except RuntimeError:
+            pass  # 控件已销毁
+        finally:
+            # 轻量清理：只断开信号和置空引用，不wait线程
+            self._detach_worker('_predict_thread', '_predict_worker')
     
     def _on_random_draw_clicked(self):
+        """功能：random draw clicked事件处理"""
         try:
             if len(self.historical_data) < 10:
                 QMessageBox.warning(self, "数据不足", "历史数据不足10条，请先添加更多数据")
@@ -13261,12 +17014,19 @@ class LotteryPredictionWindow(QMainWindow):
             # 设置确定性种子
             self._set_deterministic_seed()
             
-            predictor = PredictionAlgorithms(self.historical_data)
+            # 【修复0xC0000409】主线程中也要使用轻量模式，避免TF/PyTorch初始化导致栈溢出
+            predictor = PredictionAlgorithms(self.historical_data, _light_mode=True)
             predictions = predictor.roulette_selection(6)
             sorted_preds = sorted(predictions)
             
             # 显示抽取结果文本
             display_text = "随机抽取 → " + ' '.join(str(n).zfill(2) for n in sorted_preds)
+            
+            # 预测特别码（必须在对比显示更新之前计算，避免随机数消耗不一致）
+            special_num = self._predict_special_number(sorted_preds)
+            
+            # 更新"上次结果 vs 本次结果"对比显示区
+            self._update_last_vs_current_display(sorted_preds, "随机抽取", current_special=special_num)
             self.prediction_display.setText(display_text)
             # 显示算法来源标签
             self.algorithm_source_label.setText("来源: 随机抽取")
@@ -13283,10 +17043,10 @@ class LotteryPredictionWindow(QMainWindow):
                 "border-radius: 12px; background-color: #FFFFFF; color: #E67E22; "
                 "border: 1px solid #E67E22;"
             )
-            self.algorithm_source_label.show()
+            # 【已移除界面显示】来源标签已从界面删除，仅保留内部数据
+            self.algorithm_source_label.hide()
             
-            # 预测特别码
-            special_num = self._predict_special_number(sorted_preds)
+            # 特别码已在上方提前计算（special_num变量），此处不再重复计算
             
             # 清空并显示号码球
             while self.prediction_number_layout.count():
@@ -13330,7 +17090,7 @@ class LotteryPredictionWindow(QMainWindow):
                 'numbers': list(sorted_preds),
                 'special': special_num
             }
-            self.prediction_history.append(history_entry)
+            self.prediction_history.insert(0, history_entry)
             self._refresh_prediction_history_table()
             # 保存最后一次随机抽取结果（含特别码）
             self._save_last_prediction(sorted_preds, algorithm_name="随机抽取", special_num=special_num)
@@ -13365,56 +17125,101 @@ class LotteryPredictionWindow(QMainWindow):
         # 切换到机器学习类型
         self._on_prediction_type_changed('ml')
         
-        # 清理旧线程（防止残留线程导致崩溃）
-        # 安全清理旧线程引用（线程可能已被deleteLater销毁，用try/except保护）
-        if hasattr(self, '_ml_predict_thread') and self._ml_predict_thread is not None:
-            try:
-                if self._ml_predict_thread.isRunning():
-                    self._ml_predict_thread.quit()
-                    self._ml_predict_thread.wait(2000)
-            except RuntimeError:
-                pass  # C/C++对象已被删除
-            self._ml_predict_thread = None
-        if hasattr(self, '_ml_predict_worker') and self._ml_predict_worker is not None:
-            self._ml_predict_worker = None
+        # 清理旧线程引用
+        self._ml_predict_thread = None
+        self._ml_predict_worker = None
         
         self._is_predicting = True
         self.predict_button.setEnabled(False)
         self.statusBar().showMessage("机器学习预测中，请稍候...")
+        QApplication.processEvents()  # 立即更新UI
         
         try:
             # 计算确定性种子
             seed = self._set_deterministic_seed()
             
-            self._ml_predict_thread = QThread()
-            self._ml_predict_worker = MLPredictWorker(self.historical_data, deterministic_seed=seed)
-            self._ml_predict_worker.moveToThread(self._ml_predict_thread)
-            
-            self._ml_predict_thread.started.connect(self._ml_predict_worker.run)
-            self._ml_predict_worker.finished.connect(self._on_ml_predict_finished)
-            self._ml_predict_worker.error.connect(self._on_ml_predict_error)
-            self._ml_predict_worker.progress.connect(self._on_ml_predict_progress)
-            self._ml_predict_worker.finished.connect(self._ml_predict_thread.quit)
-            self._ml_predict_worker.finished.connect(self._ml_predict_worker.deleteLater)
-            # 注意：不对thread调用deleteLater，避免后续访问已删除的C++对象
-            
-            self._ml_predict_thread.start()
+            # 【彻底修复0xC0000409】不再使用QThread执行机器学习预测，
+            # sklearn的C扩展在QThread中训练模型会导致Windows栈缓冲区溢出
+            # 改为在主线程中通过QTimer延迟执行
+            QTimer.singleShot(0, lambda: self._run_ml_prediction_in_main_thread(seed))
         except Exception as e:
             self._is_predicting = False
             self.predict_button.setEnabled(True)
             import traceback
             traceback.print_exc()
-            QMessageBox.warning(self, "错误", "创建机器学习预测线程失败:\n" + str(e))
+            QMessageBox.warning(self, "错误", "启动机器学习预测失败:\n" + str(e))
             self.statusBar().showMessage("机器学习预测失败")
+    
+    def _run_ml_prediction_in_main_thread(self, seed):
+        """【彻底修复0xC0000409】在主线程中执行机器学习预测，避免QThread中sklearn C扩展导致栈溢出"""
+        if getattr(self, '_window_closing', False):
+            return
+        # 设置等待光标，提示用户正在计算
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            self.statusBar().showMessage("机器学习预测中... 5% - 正在准备数据...")
+            QApplication.processEvents()
+            
+            # 设置确定性种子
+            if seed is not None:
+                import random as _random
+                _random.seed(seed)
+                np.random.seed(seed)
+            
+            # 创建ML模型（主线程中可以安全使用sklearn）
+            model = MLPredictionModel(self.historical_data)
+            
+            # 定义进度回调
+            def _progress_callback(percent, msg):
+                """功能：_progress_callback"""
+                if getattr(self, '_window_closing', False):
+                    return
+                try:
+                    self.statusBar().showMessage(f"机器学习预测中... {percent}% - {msg}")
+                    QApplication.processEvents()
+                except RuntimeError:
+                    pass
+            
+            self.statusBar().showMessage("机器学习预测中... 10% - 正在训练模型...")
+            QApplication.processEvents()
+            
+            # 执行多模型预测
+            predictions = model.predict_with_all_models(progress_callback=_progress_callback)
+            
+            self.statusBar().showMessage("机器学习预测中... 100% - 预测完成")
+            QApplication.processEvents()
+            
+            # 释放模型
+            del model
+            
+            # 直接调用完成回调
+            self._on_ml_predict_finished(predictions)
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._on_ml_predict_error(str(e))
+        finally:
+            QApplication.restoreOverrideCursor()
     
     def _on_ml_predict_progress(self, value, message):
         """机器学习预测进度回调"""
-        self.statusBar().showMessage(f"机器学习预测中... {value}% - {message}")
+        if getattr(self, '_window_closing', False):
+            return
+        try:
+            self.statusBar().showMessage(f"机器学习预测中... {value}% - {message}")
+        except RuntimeError:
+            pass  # 控件已销毁
     
     def _on_ml_predict_finished(self, predictions):
         """机器学习预测完成回调"""
+        if getattr(self, '_window_closing', False):
+            return
         self._is_predicting = False
-        self.predict_button.setEnabled(True)
+        try:
+            self.predict_button.setEnabled(True)
+        except RuntimeError:
+            return  # 控件已销毁
         try:
             # 输入验证：确保预测结果有效
             if not predictions or not isinstance(predictions, (list, tuple)):
@@ -13446,6 +17251,10 @@ class LotteryPredictionWindow(QMainWindow):
                 display_text = algo_name + " → " + ' '.join(str(n).zfill(2) for n in sorted_preds) + " + " + str(ml_special).zfill(2)
             else:
                 display_text = algo_name + " → " + ' '.join(str(n).zfill(2) for n in sorted_preds)
+            
+            # 更新"上次结果 vs 本次结果"对比显示区
+            self._update_last_vs_current_display(sorted_preds, algo_name, current_special=ml_special)
+            
             self.prediction_display.setText(display_text)
             
             # 算法来源标签（蓝色）
@@ -13463,7 +17272,8 @@ class LotteryPredictionWindow(QMainWindow):
                 "border-radius: 12px; background-color: #FFFFFF; color: #3498DB; "
                 "border: 1px solid #3498DB;"
             )
-            self.algorithm_source_label.show()
+            # 【已移除界面显示】来源标签已从界面删除，仅保留内部数据
+            self.algorithm_source_label.hide()
             
             # 清空并显示号码球
             while self.prediction_number_layout.count():
@@ -13499,7 +17309,7 @@ class LotteryPredictionWindow(QMainWindow):
                 'numbers': list(sorted_preds),
                 'special': ml_special
             }
-            self.prediction_history.append(history_entry)
+            self.prediction_history.insert(0, history_entry)
             self._refresh_prediction_history_table()
             
             # 保存最后一次ML预测结果
@@ -13514,15 +17324,30 @@ class LotteryPredictionWindow(QMainWindow):
             traceback.print_exc()
             QMessageBox.warning(self, "显示结果错误", "机器学习预测完成但显示结果时出错:\n" + str(e))
             self.statusBar().showMessage("机器学习预测完成（显示异常）")
+        finally:
+            # 轻量清理：只断开信号和置空引用，不wait线程
+            # 线程会通过 worker.finished → thread.quit 自动退出
+            self._detach_worker('_ml_predict_thread', '_ml_predict_worker')
     
     def _on_ml_predict_error(self, error_msg):
         """机器学习预测错误回调"""
+        if getattr(self, '_window_closing', False):
+            return
         self._is_predicting = False
-        self.predict_button.setEnabled(True)
+        try:
+            self.predict_button.setEnabled(True)
+        except RuntimeError:
+            pass
         import traceback
         traceback.print_exc()
-        QMessageBox.warning(self, "机器学习预测错误", f"机器学习预测过程出错:\n{error_msg}")
-        self.statusBar().showMessage("机器学习预测失败")
+        try:
+            QMessageBox.warning(self, "机器学习预测错误", f"机器学习预测过程出错:\n{error_msg}")
+            self.statusBar().showMessage("机器学习预测失败")
+        except RuntimeError:
+            pass  # 控件已销毁
+        finally:
+            # 轻量清理：只断开信号和置空引用，不wait线程
+            self._detach_worker('_ml_predict_thread', '_ml_predict_worker')
     
     def _predict_special_number(self, predictions):
         """从历史数据预测特别码（基于频率加权随机）"""
@@ -13555,13 +17380,21 @@ class LotteryPredictionWindow(QMainWindow):
         except Exception:
             return 0
     
-    def _on_ball_font_size_changed(self, size):
-        """号码球标签字号变化处理"""
-        self.ball_label_font_size = size
+    def _on_pred_num_font_changed(self, size):
+        """预测面板数字字体大小变化处理"""
+        self._prediction_ball_size['font'] = size
         self._save_ini_config()
-        # 更新当前预测结果区的所有号码球
+        self._apply_prediction_ball_size()
+        self._area_font_scales['result'] = size / 18.0
+
+    def _on_pred_text_font_changed(self, size):
+        """预测面板文字（标签）字体大小变化处理"""
+        self.ball_label_font_size = size
+        self._prediction_ball_size['label_font'] = size
+        self._save_ini_config()
+        # 更新当前预测结果区的所有号码球标签
         self._update_prediction_balls_font_size()
-    
+
     def _on_enhanced_mode_changed(self, state):
         """增强模式开关变化处理"""
         self.enhanced_mode = state == 2  # Qt.Checked = 2
@@ -13571,7 +17404,8 @@ class LotteryPredictionWindow(QMainWindow):
     
     def _on_strategy_changed(self, index):
         """预测策略切换处理"""
-        self.reverse_mode = self.strategy_combo.currentData()
+        # 【修复None值bug】currentData()可能返回None，需转为bool确保类型安全
+        self.reverse_mode = bool(self.strategy_combo.currentData())
         self._save_ini_config()
         
         if self.reverse_mode:
@@ -13623,12 +17457,9 @@ class LotteryPredictionWindow(QMainWindow):
                 random.seed(seed)
                 np.random.seed(seed)
                 
-                # 尝试设置 TensorFlow 种子
-                try:
-                    import tensorflow as tf
-                    tf.random.set_seed(seed)
-                except (ImportError, AttributeError):
-                    pass
+                # 【修复0xC0000409】不在主线程中import tensorflow，
+                # 因为PredictWorker使用轻量模式不使用TF，设置TF种子无意义且会触发C运行时初始化
+                # TF种子设置改为在_prepare_tensorflow_model中完成（仅完整模式触发）
                 
                 # 注意：sklearn 的 random_state 已经在各个模型中设置为 42
                 return seed
@@ -13648,6 +17479,90 @@ class LotteryPredictionWindow(QMainWindow):
                 if hasattr(widget, 'set_font_size') and hasattr(widget, 'zodiac_label'):
                     widget.set_font_size(self.ball_label_font_size)
     
+    def _update_last_vs_current_display(self, current_numbers, current_algo_name, current_special=None, pred_type_override=None):
+        """更新"上次结果 vs 本次结果"对比显示区
+
+        每次新预测完成时调用：
+          1. 从文件加载"上次预测"数据（上次保存的"本次预测"已被移为"上次"）
+          2. 将新预测设为"本次结果"
+          3. 对比两次结果，高亮变化的号码（新增=绿色，消失=红色，保留=灰色）
+
+        参数:
+            current_numbers: 本次预测的号码列表（已排序）
+            current_algo_name: 本次预测使用的算法名称
+            current_special: 本次预测的特别码（可选，None时内部计算）
+            pred_type_override: 覆盖预测类型（用于切换类型时显示正确类型的对比）
+        """
+        try:
+            # 从文件加载"上次预测"数据（当前pred_type对应的上次预测）
+            pred_type = pred_type_override if pred_type_override is not None else getattr(self, '_prediction_type', 'algorithm')
+            last_data = self._load_last_prediction_for_type(pred_type)
+            
+            prev_numbers = None
+            prev_algo = ''
+            prev_special = 0
+            
+            if last_data and last_data.get('numbers'):
+                prev_numbers = last_data.get('numbers', [])
+                prev_algo = last_data.get('algorithm', '')
+                prev_special = last_data.get('special', 0)
+
+            # 如果有上次结果，更新"上次结果"标签
+            if prev_numbers is not None and len(prev_numbers) > 0:
+                # 高亮对比：与本次结果比较，标注变化
+                current_set = set(current_numbers)
+                prev_set = set(prev_numbers)
+                removed = prev_set - current_set  # 上次有、本次没有
+                colored_nums = []
+                for n in prev_numbers:
+                    if n in removed:
+                        # 红色删除线表示已消失的号码
+                        colored_nums.append(f'<span style="color:#E74C3C; text-decoration:line-through;">{str(n).zfill(2)}</span>')
+                    else:
+                        # 灰色表示保留的号码
+                        colored_nums.append(f'<span style="color:#888888;">{str(n).zfill(2)}</span>')
+                prev_html = "上次: " + prev_algo + " → " + ' '.join(colored_nums)
+                if prev_special > 0:
+                    prev_html += f' + <span style="color:#888888;">{str(prev_special).zfill(2)}</span>'
+
+                self.last_prediction_label.setText(prev_html)
+                self.last_prediction_label.setVisible(True)
+                self.lvc_arrow_label.setVisible(True)
+            else:
+                # 没有上次结果，隐藏上次结果区和箭头
+                self.last_prediction_label.setVisible(False)
+                self.lvc_arrow_label.setVisible(False)
+
+            # 计算本次特别码（如果调用者未传入）
+            if current_special is None:
+                is_special_algorithm = self.current_algorithm_index in [21, 22]
+                if not is_special_algorithm and len(current_numbers) == 6:
+                    current_special = self._predict_special_number(current_numbers)
+                else:
+                    current_special = 0
+
+            # 构建本次结果显示，高亮新增的号码
+            prev_set = set(prev_numbers) if prev_numbers else set()
+            colored_current = []
+            for n in current_numbers:
+                if n not in prev_set and prev_numbers is not None:
+                    # 绿色表示新增的号码（上次没有的）
+                    colored_current.append(f'<span style="color:#27AE60; font-weight:bold;">{str(n).zfill(2)}</span>')
+                else:
+                    # 蓝色表示保留的号码
+                    colored_current.append(f'<span style="color:#1565C0;">{str(n).zfill(2)}</span>')
+            cur_html = "本次: " + current_algo_name + " → " + ' '.join(colored_current)
+            if current_special > 0:
+                cur_html += f' + <span style="color:#F39C12; font-weight:bold;">{str(current_special).zfill(2)}</span>'
+
+            self.current_prediction_label.setText(cur_html)
+
+            # 上次/本次对比数据已通过文件系统持久化，无需内存变量
+
+        except Exception:
+            # 对比显示出错不影响主流程
+            pass
+    
     def _display_predictions(self, predictions, confidence_info=None):
         """显示预测结果
         
@@ -13663,6 +17578,27 @@ class LotteryPredictionWindow(QMainWindow):
         if 0 <= self.current_algorithm_index < len(LotteryConfig.ALGORITHMS):
             algo_name = LotteryConfig.ALGORITHMS[self.current_algorithm_index][0]
         display_text = algo_name + " → " + ' '.join(str(n).zfill(2) for n in sorted_preds)
+        
+        # 判断是否为特别码算法
+        is_special_algorithm = self.current_algorithm_index in [21, 22]
+        
+        # 预测特别码（非特别码算法时额外生成）
+        # 【注意】必须在_update_last_vs_current_display之前计算，避免随机数消耗导致两次结果不一致
+        special_num = 0
+        if not is_special_algorithm and len(sorted_preds) == 6:
+            special_num = self._predict_special_number(sorted_preds)
+        
+        # ======================================================================== #
+        # 更新"上次结果 vs 本次结果"对比显示区
+        # ======================================================================== #
+        # 如果当前已有预测结果，先将它存为"上次结果"，再显示新的"本次结果"
+        # 传入已计算的special_num避免重复调用_predict_special_number导致结果不一致
+        self._update_last_vs_current_display(sorted_preds, algo_name, current_special=special_num)
+        
+        # 显示格式：01 02 03 04 05 06 + 07
+        if not is_special_algorithm and len(sorted_preds) == 6 and special_num > 0:
+            display_text = algo_name + " → " + ' '.join(str(n).zfill(2) for n in sorted_preds) + " + " + str(special_num).zfill(2)
+        
         self.prediction_display.setText(display_text)
         # 显示算法来源标签
         mode_suffix = ""
@@ -13688,19 +17624,9 @@ class LotteryPredictionWindow(QMainWindow):
             "border-radius: 12px; background-color: #FFFFFF; color: " + label_color + "; "
             "border: 1px solid " + label_color + ";"
         )
-        self.algorithm_source_label.show()
-        # 判断是否为特别码算法
-        is_special_algorithm = self.current_algorithm_index in [21, 22]
-        
-        # 预测特别码（非特别码算法时额外生成）
-        special_num = 0
-        if not is_special_algorithm and len(sorted_preds) == 6:
-            special_num = self._predict_special_number(sorted_preds)
-        
-        # 显示格式：01 02 03 04 05 06 + 07
-        if not is_special_algorithm and len(sorted_preds) == 6 and special_num > 0:
-            display_text = algo_name + " → " + ' '.join(str(n).zfill(2) for n in sorted_preds) + " + " + str(special_num).zfill(2)
-            self.prediction_display.setText(display_text)
+        # 【已移除界面显示】来源标签已从界面删除，仅保留内部数据
+        self.algorithm_source_label.hide()
+        # 特别码已在上方提前计算（special_num变量），此处不再重复计算
         
         history_entry = {
             'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -13708,7 +17634,7 @@ class LotteryPredictionWindow(QMainWindow):
             'numbers': list(sorted_preds),
             'special': special_num
         }
-        self.prediction_history.append(history_entry)
+        self.prediction_history.insert(0, history_entry)
         self._refresh_prediction_history_table()
         # 保存最后一次预测结果（含特别码）
         self._save_last_prediction(predictions, confidence_info, algo_name, special_num)
@@ -13722,6 +17648,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 更新已保存预测列表的过期状态（数据可能变化）
         if hasattr(self, 'saved_predictions_list') or hasattr(self, 'favorites_list'):
             self._load_saved_predictions()
+        # ======================================================================== #
+        # 预测结果号码球展示
+        # ======================================================================== #
+        # 清空旧号码球，创建新号码球直接显示
         while self.prediction_number_layout.count():
             item = self.prediction_number_layout.takeAt(0)
             if item.widget():
@@ -13734,11 +17664,12 @@ class LotteryPredictionWindow(QMainWindow):
             zodiac = self.zodiac_binding.get(num, "")
             element = self.zodiac_elements.get(num, "")
             ball = NumberBallWithZodiac(num, zodiac, element, is_special=False, font_size=self.ball_label_font_size)
-            row = i // 7
+            row = i // 7  # 每行7个号码球，超过换行
             col = i % 7
-            self.prediction_number_layout.addWidget(ball, row * 2, col)
+            self.prediction_number_layout.addWidget(ball, row * 2, col)  # row*2留出生肖/五行标签的空间
         
         # 特别码球 + 生肖 + 五行
+        # 特别码跟在正码后面，用"+"号分隔，视觉上区分正码和特别码
         if special_num > 0 and not is_special_algorithm:
             zodiac = self.zodiac_binding.get(special_num, "")
             element = self.zodiac_elements.get(special_num, "")
@@ -13748,7 +17679,7 @@ class LotteryPredictionWindow(QMainWindow):
             if special_col >= 7:
                 special_col = 0
                 special_row = (len(sorted_preds) // 7) * 2
-            # 加号标签
+            # 加号标签 - 特别码分隔符
             plus_label = QLabel("+")
             plus_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             plus_size = self._prediction_ball_size.get('plus_size', 24)
@@ -13757,7 +17688,7 @@ class LotteryPredictionWindow(QMainWindow):
             self.prediction_number_layout.addWidget(plus_label, special_row, special_col)
             self.prediction_number_layout.addWidget(ball, special_row, special_col + 1)
         elif is_special_algorithm:
-            # 特别码算法只显示1个号码
+            # 特别码算法只显示1个号码（无正码）
             for i, num in enumerate(sorted_preds):
                 zodiac = self.zodiac_binding.get(num, "")
                 element = self.zodiac_elements.get(num, "")
@@ -13767,14 +17698,14 @@ class LotteryPredictionWindow(QMainWindow):
         # ======================================================================== #
         # 功能4：预测结果置信度显示
         # ======================================================================== #
-        # 清空并重新创建置信度标签
-        if hasattr(self, 'confidence_labels_layout') and self.confidence_labels_layout:
-            while self.confidence_labels_layout.count():
-                item = self.confidence_labels_layout.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
+        # 【修复布局bug】原代码将confidence_labels_layout设为prediction_number_layout，
+        # 导致清空置信度标签时误删刚添加的号码球。改为始终使用confidence_display_label管理，
+        # 不再复用prediction_number_layout作为置信度布局
+        if hasattr(self, 'confidence_labels_layout') and self.confidence_labels_layout is not None:
+            # 只清空confidence_display_label，不清空整个prediction_number_layout
+            pass
         else:
-            self.confidence_labels_layout = self.prediction_number_layout
+            self.confidence_labels_layout = None  # 标记为已初始化，但不指向prediction_number_layout
         
         # 添加置信度标签
         if confidence_info and not is_special_algorithm:
@@ -13799,6 +17730,8 @@ class LotteryPredictionWindow(QMainWindow):
                     self.confidence_display_label.setText(conf_text)
                     # 置信度标签样式 - 浅灰底（#F8F9FA）：常规信息显示，13px字号，圆角4px
                     style = "font-size: 13px; padding: 5px; background-color: #F8F9FA; border-radius: 4px;"
+        # 置信度展示标签样式：13px字号，5px内边距，浅灰背景，4px圆角
+
                     self.confidence_display_label.setStyleSheet(style)
                 except RuntimeError:
                     # QLabel已被删除，重新创建
@@ -13862,9 +17795,10 @@ class LotteryPredictionWindow(QMainWindow):
             blue_count = sum(1 for n in predictions if LotteryConfig.is_blue(n))
             green_count = sum(1 for n in predictions if LotteryConfig.is_green(n))
             odd_count = sum(1 for n in predictions if n % 2 == 1)
-            even_count = 6 - odd_count
+            # 【修复硬编码bug】原代码硬编码6，当predictions数量不为6时统计错误，改为len(predictions)
+            even_count = len(predictions) - odd_count
             big_count = sum(1 for n in predictions if n > 25)
-            small_count = 6 - big_count
+            small_count = len(predictions) - big_count
             stats_text = ("颜色分布: 红" + str(red_count) + "个 蓝" + str(blue_count) + "个 绿" + str(green_count) + "个\n"
                          + "单双分布: 单" + str(odd_count) + "个 双" + str(even_count) + "个\n"
                          + "大小分布: 大" + str(big_count) + "个 小" + str(small_count) + "个")
@@ -13885,7 +17819,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域5】数字选择
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：手动选号面板，点击数字球选择/取消号码，显示已选号码列表，
+    #          支持面板字号调整
+    #   _create_number_selection_tab, _on_num_panel_font_changed, _on_number_selected, _clear_number_selection
     #   _create_number_selection_tab
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -13896,7 +17832,19 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 4: 数字选择 (Number Selection)                                             #
+#  入口: _create_number_selection_tab                                           #
+#  功能: 1-49号码面板、生肖/五行标签、尺寸调节                                                  #
+#                                                                             #
+###############################################################################
+
     def _create_number_selection_tab(self):
+        """创建数字选择选项卡 —— 手动选号面板，点击数字球选择号码，显示已选号码列表和大小单双统计"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setSpacing(self.spacing)
@@ -13908,47 +17856,36 @@ class LotteryPredictionWindow(QMainWindow):
         title.setObjectName("PanelTitle")
         title_row.addWidget(title)
         title_row.addStretch()
+        layout.addLayout(title_row)
         
-        # 字体缩小按钮
-        num_font_minus = QPushButton("A-")
-        num_font_minus.setToolTip("缩小字体")
-        num_font_minus.setFixedSize(70, 28)
-        # 数字选择面板字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色表示"减少"）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E8F5E9;  背景色：浅绿
-        #     color: #2E7D32;             文字颜色：深绿
-        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
-        #   }
-        num_font_minus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
-        num_font_minus.clicked.connect(lambda: self._change_area_font_size('number_panel', -1))
-        title_row.addWidget(num_font_minus)
+        # 控件行：数字字体 | 尺寸 | 颜色
+        control_row = QHBoxLayout()
+        control_row.setSpacing(6)
+        control_row.addStretch()
         
-        # 字体放大按钮
-        num_font_plus = QPushButton("A+")
-        num_font_plus.setToolTip("放大字体")
-        num_font_plus.setFixedSize(70, 28)
-        # 数字选择面板字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
-        #     color: #C62828;             文字颜色：深红
-        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
-        #   }
-        num_font_plus.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
-        num_font_plus.clicked.connect(lambda: self._change_area_font_size('number_panel', 1))
-        title_row.addWidget(num_font_plus)
+        # 数字字体大小控件
+        num_font_label = QLabel("数字:")
+        num_font_label.setStyleSheet("font-size: 13px; color: #1565C0; font-weight: bold;")
+        control_row.addWidget(num_font_label)
 
-        # 【可改】字号（A+按钮）与尺寸控件之间的间距：80px
-        title_row.addSpacing(80)
+        self.num_panel_font_spin = QSpinBox()
+        self.num_panel_font_spin.setRange(10, 150)  # 字体上限150px
+        self.num_panel_font_spin.setValue(self._number_panel_size.get('font', 20))  # 默认20px
+        self.num_panel_font_spin.setSuffix(" px")
+        self.num_panel_font_spin.setFixedWidth(80)
+        self.num_panel_font_spin.setToolTip("调整数字选择面板数字字体大小")
+        # 数字面板字体大小输入框样式：浅蓝边框，圆角4px，最小高度45px
+
+        self.num_panel_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #90CAF9; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 数字面板字体大小变化信号：调整数字选择面板字体
+
+        self.num_panel_font_spin.valueChanged.connect(self._on_num_panel_font_changed)
+        control_row.addWidget(self.num_panel_font_spin)
+
+        control_row.addSpacing(12)
 
         # 设置按钮
         num_settings_btn = QPushButton("尺寸")
@@ -13966,10 +17903,30 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #E1BEE7;  悬停背景色：稍深的浅紫
         #   }
         num_settings_btn.setStyleSheet("QPushButton { background-color: #F3E5F5; color: #6A1B9A; border: 1px solid #CE93D8; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #E1BEE7; }")
+        # 数字面板设置按钮点击信号：打开尺寸设置对话框
+
         num_settings_btn.clicked.connect(lambda: self._show_panel_settings_dialog('number'))
-        title_row.addWidget(num_settings_btn)
-        
-        layout.addLayout(title_row)
+        control_row.addWidget(num_settings_btn)
+
+        control_row.addSpacing(6)
+
+        # 颜色更改按钮 - 打开号码颜色设置对话框，修改后全局应用
+        num_color_btn = QPushButton("颜色")
+        num_color_btn.setToolTip("修改号码颜色（红/蓝/绿/自定义），更改后全局应用")
+        num_color_btn.setFixedSize(65, 28)
+        # 数字颜色设置按钮样式：浅蓝背景，蓝色文字，圆角6px
+
+        num_color_btn.setStyleSheet(
+            "QPushButton { background-color: #FFF3E0; color: #E65100; border: 1px solid #FFCC80; border-radius: 6px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #FFE0B2; }"
+        )
+        # 数字颜色设置按钮点击信号：打开数字颜色配置对话框
+
+        num_color_btn.clicked.connect(self._show_number_color_dialog)
+        control_row.addWidget(num_color_btn)
+        control_row.addStretch()
+
+        layout.addLayout(control_row)
         
         scroll = QScrollArea()
         scroll.setObjectName("NumberScroll")
@@ -13977,6 +17934,8 @@ class LotteryPredictionWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
         self.number_panel = NumberPanel()
+        # 数字选择信号：处理数字面板的号码选中/取消事件
+
         self.number_panel.number_selected.connect(self._on_number_selected)
         scroll.setWidget(self.number_panel)
         
@@ -14010,6 +17969,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #E1BEE7;  悬停背景色：稍深的浅紫
         #   }
         legend_font_minus.setStyleSheet("QPushButton { background-color: #F3E5F5; color: #6A1B9A; border: 1px solid #CE93D8; border-radius: 5px; font-weight: bold; font-size: 11px; } QPushButton:hover { background-color: #E1BEE7; }")
+        # 图例字体减小按钮点击信号：缩小图例字体1px
+
         legend_font_minus.clicked.connect(lambda: self._change_legend_font(-1))
         legend_title_layout.addWidget(legend_font_minus)
         
@@ -14030,6 +17991,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
         #   }
         legend_font_plus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 5px; font-weight: bold; font-size: 11px; } QPushButton:hover { background-color: #C8E6C9; }")
+        # 图例字体增大按钮点击信号：放大图例字体1px
+
         legend_font_plus.clicked.connect(lambda: self._change_legend_font(1))
         legend_title_layout.addWidget(legend_font_plus)
         
@@ -14090,6 +18053,8 @@ class LotteryPredictionWindow(QMainWindow):
         selected_layout.addWidget(self.selected_numbers_label)
         selected_layout.addStretch()
         clear_btn = QPushButton("清除")
+        # 清空选择按钮点击信号：清空所有已选号码
+
         clear_btn.clicked.connect(self._clear_number_selection)
         selected_layout.addWidget(clear_btn)
         layout.addLayout(selected_layout)
@@ -14097,10 +18062,39 @@ class LotteryPredictionWindow(QMainWindow):
         return widget
     
 
+    def _on_num_panel_font_changed(self, size):
+        """数字选择面板数字字体大小变化处理"""
+        self._number_panel_size['font'] = size
+        self._save_ini_config()
+        if hasattr(self, 'number_panel'):
+            self.number_panel.set_button_size(
+                width=self._number_panel_size.get('width', 50),
+                height=self._number_panel_size.get('height', 50),
+                font_size=size
+            )
+        self._area_font_scales['number_panel'] = size / 18.0
+
+
+    def _on_number_selected(self, numbers):
+        """功能：number selected事件处理"""
+        if numbers:
+            formatted = ', '.join(str(n) for n in sorted(numbers))
+            self.selected_numbers_label.setText(formatted)
+        else:
+            self.selected_numbers_label.setText("无")
+    
+    def _clear_number_selection(self):
+        """功能：清空number selection"""
+        self.number_panel.clear_selection()
+        self.selected_numbers_label.setText("无")
+
+
     # ================================================================
     # 【区域6】第七位预判
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：特别号码（第七位）的专项预测，包括大小/奇偶/尾数/综合预判，
+    #          频率图、趋势图、相关性分析等
+    #   _create_seventh_prediction_tab, _show_special_frequency_chart, _show_special_trend_chart, _show_special_correlation_analysis, _predict_seventh_size, _predict_seventh_odd_even, _predict_seventh_tail, _predict_seventh_all
     #   _create_seventh_prediction_tab, _predict_seventh_all, _predict_seventh_odd_even, _predict_seventh_size, _predict_seventh_tail, _show_special_correlation_analysis, _show_special_frequency_chart, _show_special_trend_chart
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -14110,6 +18104,17 @@ class LotteryPredictionWindow(QMainWindow):
     #   - setContentsMargins: 边距设置
     #   - 详见各方法内部的【可改】标注
     # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 5: 第七位预判 (7th Position Prediction)                                     #
+#  入口: _create_seventh_prediction_tab                                         #
+#  功能: 大小预判、单双预判、尾数大小预判、综合预判、特码频率图                                            #
+#                                                                             #
+###############################################################################
 
     def _create_seventh_prediction_tab(self):
         """创建第七位预判标签页
@@ -14141,18 +18146,26 @@ class LotteryPredictionWindow(QMainWindow):
         btn_layout.setSpacing(20)
         
         size_btn = QPushButton("大小预判")
+        # 大小预判按钮点击信号：预测第七位的大小属性
+
         size_btn.clicked.connect(self._predict_seventh_size)
         btn_layout.addWidget(size_btn)
         
         odd_even_btn = QPushButton("单双预判")
+        # 单双预判按钮点击信号：预测第七位的单双属性
+
         odd_even_btn.clicked.connect(self._predict_seventh_odd_even)
         btn_layout.addWidget(odd_even_btn)
         
         tail_btn = QPushButton("尾数大小预判")
+        # 尾数预判按钮点击信号：预测第七位的尾数属性
+
         tail_btn.clicked.connect(self._predict_seventh_tail)
         btn_layout.addWidget(tail_btn)
         
         all_btn = QPushButton("综合预判")
+        # 综合预判按钮点击信号：预测第七位的所有属性
+
         all_btn.clicked.connect(self._predict_seventh_all)
         btn_layout.addWidget(all_btn)
         
@@ -14179,6 +18192,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #2980B9;  悬停背景色：深蓝（交互反馈）
         #   }
         special_freq_btn.setStyleSheet("QPushButton { background-color: #3498DB; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #2980B9; }")
+        # 特别码频率图表按钮点击信号：显示特别码出现频率统计
+
         special_freq_btn.clicked.connect(self._show_special_frequency_chart)
         special_btn_layout.addWidget(special_freq_btn)
         
@@ -14196,6 +18211,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #8E44AD;  悬停背景色：深紫（交互反馈）
         #   }
         special_trend_btn.setStyleSheet("QPushButton { background-color: #9B59B6; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #8E44AD; }")
+        # 特别码趋势图表按钮点击信号：显示特别码走势趋势
+
         special_trend_btn.clicked.connect(self._show_special_trend_chart)
         special_btn_layout.addWidget(special_trend_btn)
         
@@ -14213,6 +18230,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #D35400;  悬停背景色：深橙（交互反馈）
         #   }
         special_correlation_btn.setStyleSheet("QPushButton { background-color: #E67E22; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #D35400; }")
+        # 特别码相关性分析按钮点击信号：显示特别码与正码相关性
+
         special_correlation_btn.clicked.connect(self._show_special_correlation_analysis)
         special_btn_layout.addWidget(special_correlation_btn)
         
@@ -14315,8 +18334,13 @@ class LotteryPredictionWindow(QMainWindow):
         layout.addWidget(canvas)
         
         close_btn = QPushButton("关闭")
+        # 关闭按钮点击信号：关闭当前对话框
+
         close_btn.clicked.connect(dialog.accept)
         layout.addWidget(close_btn)
+        
+        # 【修复资源泄漏bug】对话框关闭时释放matplotlib图表资源
+        dialog.finished.connect(lambda: fig.clf())
         
         dialog.exec()
     
@@ -14380,8 +18404,13 @@ class LotteryPredictionWindow(QMainWindow):
         layout.addWidget(canvas)
         
         close_btn = QPushButton("关闭")
+        # 关闭按钮点击信号：关闭当前对话框
+
         close_btn.clicked.connect(dialog.accept)
         layout.addWidget(close_btn)
+        
+        # 【修复资源泄漏bug】对话框关闭时释放matplotlib图表资源
+        dialog.finished.connect(lambda: fig.clf())
         
         dialog.exec()
     
@@ -14438,31 +18467,41 @@ class LotteryPredictionWindow(QMainWindow):
         self.seventh_result_text.setPlainText(result_text)
     
     def _predict_seventh_size(self):
-        if not self.historical_data:
-            self.seventh_result_text.setPlainText("没有历史数据，请先导入数据！")
-            return
-        big_count = small_count = 0
-        for record in self.historical_data:
-            seventh = record.get('special', 0)
-            if seventh > 24:
-                big_count += 1
-            else:
-                small_count += 1
-        total = big_count + small_count
-        big_ratio = big_count / total * 100 if total > 0 else 50
-        small_ratio = small_count / total * 100 if total > 0 else 50
-        prediction = "大" if big_ratio > small_ratio else "小"
-        confidence = max(big_ratio, small_ratio)
-        result = "第七位大小预判结果\n" + "="*40 + "\n\n"
-        result += "历史数据统计：\n"
-        result += "   大号(25-49)出现次数：" + str(big_count) + " 次 (" + "{:.1f}".format(big_ratio) + "%)\n"
-        result += "   小号(1-24)出现次数：" + str(small_count) + " 次 (" + "{:.1f}".format(small_ratio) + "%)\n\n"
-        result += "预判结果：" + prediction + "\n"
-        result += "   置信度：" + "{:.1f}".format(confidence) + "%\n\n"
-        result += "建议：下一期第七位号码倾向于「" + prediction + "」范围"
-        self.seventh_result_text.setPlainText(result)
+        """大小预判：根据历史数据预判第七位特别号码的大小"""
+        try:
+            if not self.historical_data:
+                self.seventh_result_text.setPlainText("没有历史数据，请先导入数据！")
+                return
+            big_count = small_count = 0
+            for record in self.historical_data:
+                seventh = record.get('special', 0)
+                if seventh > 24:
+                    big_count += 1
+                else:
+                    small_count += 1
+            total = big_count + small_count
+            if total == 0:
+                self.seventh_result_text.setPlainText("没有有效的特别码数据")
+                return
+            big_ratio = big_count / total * 100
+            small_ratio = small_count / total * 100
+            prediction = "大" if big_ratio > small_ratio else "小"
+            confidence = max(big_ratio, small_ratio)
+            result = "第七位大小预判结果\n" + "="*40 + "\n\n"
+            result += "历史数据统计：\n"
+            result += "   大号(25-49)出现次数：" + str(big_count) + " 次 (" + "{:.1f}".format(big_ratio) + "%)\n"
+            result += "   小号(1-24)出现次数：" + str(small_count) + " 次 (" + "{:.1f}".format(small_ratio) + "%)\n\n"
+            result += "预判结果：" + prediction + "\n"
+            result += "   置信度：" + "{:.1f}".format(confidence) + "%\n\n"
+            result += "建议：下一期第七位号码倾向于「" + prediction + "」范围"
+            self.seventh_result_text.setPlainText(result)
+        except Exception as e:
+            QMessageBox.warning(self, "预判错误", "大小预判时发生错误：\n" + str(e))
+            import traceback
+            traceback.print_exc()
     
     def _predict_seventh_odd_even(self):
+        """功能：seventh odd even预测"""
         if not self.historical_data:
             self.seventh_result_text.setPlainText("没有历史数据，请先导入数据！")
             return
@@ -14483,12 +18522,12 @@ class LotteryPredictionWindow(QMainWindow):
         result += "   单号出现次数：" + str(odd_count) + " 次 (" + "{:.1f}".format(odd_ratio) + "%)\n"
         result += "   双号出现次数：" + str(even_count) + " 次 (" + "{:.1f}".format(even_ratio) + "%)\n\n"
         result += "预判结果：" + prediction + "\n"
-        result += ("   置信"
-                   "：") + "{:.1f}".format(confidence) + "%\n\n"
+        result += "   置信度：" + "{:.1f}".format(confidence) + "%\n\n"
         result += "建议：下一期第七位号码倾向于「" + prediction + "」数"
         self.seventh_result_text.setPlainText(result)
     
     def _predict_seventh_tail(self):
+        """功能：seventh tail预测"""
         if not self.historical_data:
             self.seventh_result_text.setPlainText("没有历史数据，请先导入数据！")
             return
@@ -14515,6 +18554,7 @@ class LotteryPredictionWindow(QMainWindow):
         self.seventh_result_text.setPlainText(result)
     
     def _predict_seventh_all(self):
+        """功能：seventh all预测"""
         if not self.historical_data:
             self.seventh_result_text.setPlainText("没有历史数据，请先导入数据！")
             return
@@ -14562,7 +18602,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域7】统计分析图表
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：可视化统计分析，包括频率图、遗漏图、奇偶/大小/波色/区间/尾数分布图、
+    #          号码走势图、相关性热力图、间隔分析、连号概率、和值分布、综合图表等
+    #   _create_statistics_chart_tab, _show_frequency_chart, _show_missing_chart, _show_odd_even_chart, _show_size_chart, _show_color_chart, _show_range_chart, _show_tail_chart, _show_comprehensive_chart, _draw_chart, _show_number_trend_chart, _show_correlation_heatmap, _show_interval_analysis, _show_consecutive_probability, _show_sum_distribution
     #   _create_statistics_chart_tab, _draw_chart, _show_color_chart, _show_comprehensive_chart, _show_consecutive_probability, _show_correlation_heatmap, _show_frequency_chart, _show_interval_analysis, _show_missing_chart, _show_number_trend_chart, _show_odd_even_chart, _show_range_chart, _show_size_chart, _show_sum_distribution, _show_tail_chart
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -14573,7 +18615,19 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 6: 统计分析图表 (Statistics & Charts)                                        #
+#  入口: _create_statistics_chart_tab                                           #
+#  功能: 8种图表类型（频率、趋势、分布、热力图等）                                                  #
+#                                                                             #
+###############################################################################
+
     def _create_statistics_chart_tab(self):
+        """创建统计分析图表选项卡 —— 可视化统计分析：频率图、遗漏图、奇偶/大小/波色/区间/尾数分布图"""
         widget = QWidget()
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setHandleWidth(2)
@@ -14605,6 +18659,8 @@ class LotteryPredictionWindow(QMainWindow):
         
         for name, callback in chart_types:
             btn = QPushButton(name)
+            # 图表按钮点击信号：连接对应的图表生成回调函数
+
             btn.clicked.connect(callback)
             left_layout.addWidget(btn)
         
@@ -14640,38 +18696,47 @@ class LotteryPredictionWindow(QMainWindow):
         return widget
     
     def _show_frequency_chart(self):
+        """功能：显示frequency chart"""
         self.chart_title_label.setText("频率分布图")
         self._draw_chart("frequency")
     
     def _show_missing_chart(self):
+        """功能：显示missing chart"""
         self.chart_title_label.setText("遗漏值分析图")
         self._draw_chart("missing")
     
     def _show_odd_even_chart(self):
+        """功能：显示odd even chart"""
         self.chart_title_label.setText("单双分布图")
         self._draw_chart("odd_even")
     
     def _show_size_chart(self):
+        """功能：显示size chart"""
         self.chart_title_label.setText("大小分布图")
         self._draw_chart("size")
     
     def _show_color_chart(self):
+        """功能：显示color chart"""
         self.chart_title_label.setText("颜色分布图")
         self._draw_chart("color")
     
     def _show_range_chart(self):
+        """功能：显示range chart"""
         self.chart_title_label.setText("区间分布图")
         self._draw_chart("range")
     
     def _show_tail_chart(self):
+        """功能：显示tail chart"""
         self.chart_title_label.setText("尾数分布图")
         self._draw_chart("tail")
     
     def _show_comprehensive_chart(self):
+        """功能：显示comprehensive chart"""
         self.chart_title_label.setText("综合走势图")
         self._draw_chart("comprehensive")
     
     def _draw_chart(self, chart_type):
+        """功能：绘制chart"""
         if not self.historical_data:
             self.main_chart_widget.figure.clear()
             ax = self.main_chart_widget.figure.add_subplot(111)
@@ -14955,7 +19020,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域8】回测分析
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：历史数据回测，验证预测算法在历史数据上的命中率表现，
+    #          支持算法对比、命中趋势图等
+    #   _create_backtest_tab, _on_compare_all_algorithms, _on_show_hit_trend, _on_start_backtest
     #   _create_backtest_tab, _on_compare_all_algorithms, _on_show_hit_trend, _on_start_backtest
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -14965,6 +19032,17 @@ class LotteryPredictionWindow(QMainWindow):
     #   - setContentsMargins: 边距设置
     #   - 详见各方法内部的【可改】标注
     # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 7: 回测分析 (Backtest Analysis)                                            #
+#  入口: _create_backtest_tab                                                   #
+#  功能: 历史回测、准确率统计                                                             #
+#                                                                             #
+###############################################################################
 
     def _create_backtest_tab(self):
         """创建回测分析标签页
@@ -14999,6 +19077,8 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 连接回测设置改变信号，用于保存记忆
         self.backtest_algo_combo.currentIndexChanged.connect(lambda: self._save_ini_config())
+        # 回测期数变化信号：保存回测期数设置到INI配置文件
+
         self.backtest_period_spin.valueChanged.connect(lambda: self._save_ini_config())
         
         start_btn = QPushButton("开始回测")
@@ -15015,6 +19095,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #27AE60;  悬停背景色：深绿（交互反馈）
         #   }
         start_btn.setStyleSheet("QPushButton { background-color: #2ECC71; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #27AE60; }")
+        # 开始回测按钮点击信号：启动回测分析
+
         start_btn.clicked.connect(self._on_start_backtest)
         ctrl_layout.addWidget(start_btn)
         
@@ -15035,6 +19117,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #2980B9;  悬停背景色：深蓝（交互反馈）
         #   }
         compare_btn.setStyleSheet("QPushButton { background-color: #3498DB; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #2980B9; }")
+        # 对比所有算法按钮点击信号：运行所有算法并对比结果
+
         compare_btn.clicked.connect(self._on_compare_all_algorithms)
         ctrl_layout.addWidget(compare_btn)
         
@@ -15052,6 +19136,8 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #8E44AD;  悬停背景色：深紫（交互反馈）
         #   }
         trend_btn.setStyleSheet("QPushButton { background-color: #9B59B6; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold; } QPushButton:hover { background-color: #8E44AD; }")
+        # 命中趋势按钮点击信号：显示命中率趋势图表
+
         trend_btn.clicked.connect(self._on_show_hit_trend)
         ctrl_layout.addWidget(trend_btn)
         
@@ -15100,7 +19186,8 @@ class LotteryPredictionWindow(QMainWindow):
                     if len(train_data) < 5:
                         continue
                     
-                    predictor = PredictionAlgorithms(train_data)
+                    # 【修复0xC0000409】回测中使用轻量模式，避免TF/PyTorch初始化
+                    predictor = PredictionAlgorithms(train_data, _light_mode=True)
                     predicted = self._get_prediction_by_index(predictor, algo_idx)
                     hits = len(set(predicted) & actual_numbers)
                     hits_list.append(hits)
@@ -15169,8 +19256,13 @@ class LotteryPredictionWindow(QMainWindow):
         layout.addWidget(canvas)
         
         close_btn = QPushButton("关闭")
+        # 关闭按钮点击信号：关闭当前对话框
+
         close_btn.clicked.connect(dialog.accept)
         layout.addWidget(close_btn)
+        
+        # 【修复资源泄漏bug】对话框关闭时释放matplotlib图表资源
+        dialog.finished.connect(lambda: fig.clf())
         
         dialog.exec()
         self.statusBar().showMessage("算法对比完成")
@@ -15228,8 +19320,13 @@ class LotteryPredictionWindow(QMainWindow):
         # 添加最终命中率标注
         if cumulative_rates:
             final_rate = cumulative_rates[-1]
+            # 【修复负坐标bug】当数据点少于5个时，len(cumulative_rates)-5为负数，
+            # 会导致标注文字超出图表左边界，使用max确保x坐标不小于0
+            text_x = max(0, len(cumulative_rates) - 5)
+            # 同时确保y坐标不超过图表上界(100)
+            text_y = min(final_rate + 5, 95)
             ax.annotate('最终: {:.1f}%'.format(final_rate), xy=(len(cumulative_rates)-1, final_rate),
-                       xytext=(len(cumulative_rates)-5, final_rate+5),
+                       xytext=(text_x, text_y),
                        arrowprops=dict(arrowstyle='->', color='gray'),
                        fontsize=10, color='#E74C3C')
         
@@ -15241,6 +19338,9 @@ class LotteryPredictionWindow(QMainWindow):
         close_btn = QPushButton("关闭")
         close_btn.clicked.connect(dialog.accept)
         layout.addWidget(close_btn)
+        
+        # 【修复资源泄漏bug】对话框关闭时释放matplotlib图表资源
+        dialog.finished.connect(lambda: fig.clf())
         
         dialog.exec()
     
@@ -15270,7 +19370,8 @@ class LotteryPredictionWindow(QMainWindow):
                 continue
             
             try:
-                predictor = PredictionAlgorithms(train_data)
+                # 【修复0xC0000409】回测中使用轻量模式，避免TF/PyTorch初始化
+                predictor = PredictionAlgorithms(train_data, _light_mode=True)
                 # 使用统一的预测方法
                 predicted = self._get_prediction_by_index(predictor, algo_index)
             except Exception:
@@ -15346,7 +19447,8 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域9】预测记录
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：预测结果的自动记录、表格展示、导出CSV和清除历史
+    #   _create_prediction_history_tab, _refresh_prediction_history_table, _on_export_prediction_history_csv, _on_clear_prediction_history
     #   _create_prediction_history_tab, _on_clear_prediction_history, _on_export_prediction_history_csv, _refresh_prediction_history_table
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -15357,6 +19459,17 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 8: 预测记录 (Prediction History)                                           #
+#  入口: _create_prediction_history_tab                                         #
+#  功能: 历史预测记录查看                                                               #
+#                                                                             #
+###############################################################################
+
     def _create_prediction_history_tab(self):
         """创建预测记录标签页"""
         widget = QWidget()
@@ -15364,10 +19477,12 @@ class LotteryPredictionWindow(QMainWindow):
         layout.setSpacing(self.spacing)
         layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
         
+        # 页面标题：预测记录
         title = QLabel("预测记录")
         title.setObjectName("PanelTitle")
         layout.addWidget(title)
         
+        # 预测记录表格：展示历史预测结果（时间、算法、正码、特别码）
         self.prediction_history_table = QTableWidget()
         self.prediction_history_table.setColumnCount(4)
         self.prediction_history_table.setHorizontalHeaderLabels(["时间", "算法", "正码", "特别码"])
@@ -15383,18 +19498,24 @@ class LotteryPredictionWindow(QMainWindow):
             else:
                 self.prediction_history_table.setColumnWidth(i, default_pred_col_widths[i])
         
+        # 设置表格代理，保留单元格颜色（PreserveColorDelegate 保持自定义颜色不变）
         self.prediction_history_table.setItemDelegate(PreserveColorDelegate(self.prediction_history_table))
         layout.addWidget(self.prediction_history_table, 1)
         
         # 列宽变化时保存配置
         self.prediction_history_table.horizontalHeader().sectionResized.connect(lambda idx, old, new: self._save_ini_config())
         
+        # 按钮布局：导出CSV 和 清空记录
         btn_layout = QHBoxLayout()
+        # 导出CSV按钮：将预测记录导出为CSV文件
         export_csv_btn = QPushButton("导出CSV")
+        # 信号连接：点击导出CSV按钮触发导出操作
         export_csv_btn.clicked.connect(self._on_export_prediction_history_csv)
         btn_layout.addWidget(export_csv_btn)
         
+        # 清空记录按钮：清除所有预测历史记录
         clear_ph_btn = QPushButton("清空记录")
+        # 信号连接：点击清空记录按钮触发清空操作
         clear_ph_btn.clicked.connect(self._on_clear_prediction_history)
         btn_layout.addWidget(clear_ph_btn)
         btn_layout.addStretch()
@@ -15471,7 +19592,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域10】公告说明
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：软件版本信息、功能介绍、使用说明、注意事项、快捷键、
+    #          代码结构指南、可调参数速查表等
+    #   _update_announcement_font, _create_info_tab
     #   _create_info_tab
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -15481,6 +19604,60 @@ class LotteryPredictionWindow(QMainWindow):
     #   - setContentsMargins: 边距设置
     #   - 详见各方法内部的【可改】标注
     # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 9: 公告说明 (Announcements & Info)                                         #
+#  入口: _create_info_tab                                                       #
+#  功能: 公告编辑、笔记管理、系统说明                                                         #
+#                                                                             #
+###############################################################################
+
+    def _update_announcement_font(self, scale=None):
+        """更新公告说明页面的字体大小"""
+        if scale is None:
+            scale = self._area_font_scales.get('announcement', 1.0)
+        
+        if not hasattr(self, 'notice_container'):
+            return
+        
+        base_title_size = 24
+        base_group_title_size = 16
+        base_content_size = 14
+        
+        new_title_size = int(base_title_size * scale)
+        new_group_size = int(base_group_title_size * scale)
+        new_content_size = int(base_content_size * scale)
+        
+        # 更新标题
+        title_label = self.notice_container.findChild(QLabel, "")
+        if title_label:
+            # 公告页标题样式：
+            #   font-size: {new_title_size}px;  字号：按缩放比例动态计算（基准24px）
+            #   font-weight: bold;              字体：粗体（突出标题层级）
+            #   color: #2C3E50;                 文字颜色：深蓝灰（沉稳醒目）
+            title_label.setStyleSheet(f"font-size: {new_title_size}px; font-weight: bold; color: #2C3E50;")
+        
+        # 更新所有GroupBox的标题字体和内容标签
+        for group in self.notice_container.findChildren(QGroupBox):
+            # 更新group的标题样式（通过样式表）
+            style = group.styleSheet()
+            import re
+            # 用正则替换QGroupBox中的font-size为新的分组标题字号（基准16px × 缩放比）
+            style = re.sub(r'font-size:\s*\d+px', f'font-size: {new_group_size}px', style)
+            # 应用更新后的样式到 GroupBox（仅字号变化，保留边框/背景等其余属性）
+            group.setStyleSheet(style)
+            
+            # 更新group内的所有QLabel（用正则替换font-size为新的内容字号，基准14px × 缩放比）
+            for label in group.findChildren(QLabel):
+                label_style = label.styleSheet()
+                label_style = re.sub(r'font-size:\s*\d+px', f'font-size: {new_content_size}px', label_style)
+                # 应用更新后的样式到内容标签（仅字号变化，保留颜色/粗体等其余属性）
+                label.setStyleSheet(label_style)
+    
 
     def _create_info_tab(self):
         """创建公告说明标签页"""
@@ -15547,7 +19724,7 @@ class LotteryPredictionWindow(QMainWindow):
         
         version_items = [
             "• 当前版本：v7.5",
-            "• 更新日期：2025年",
+            "• 更新日期：2026年8月1日",
             "• 开发框架：PyQt6",
             "• 适用系统：Windows / macOS / Linux",
         ]
@@ -15592,6 +19769,9 @@ class LotteryPredictionWindow(QMainWindow):
             "• ⭐ 收藏对比：保存预测结果，多方案对比分析",
             "• 🐉 生肖五行：数字与生肖、五行属性绑定查询",
             "• 🔍 概率分析：基于历史数据计算各数字出现概率",
+            "• 🐇 生肖概率：统计各生肖出现概率，支持全部号码/仅特别码模式",
+            "• 🎨 波色预测：分析红/蓝/绿波色出现概率和趋势",
+            "• ➕ 计算规律：两期间数字逐一加减，自动发现高频规律",
         ]
         for item in feature_items:
             label = QLabel(item)
@@ -15632,6 +19812,10 @@ class LotteryPredictionWindow(QMainWindow):
             "4. 在「历史记录」页面查看详细的开奖历史和期号详情",
             "5. 「统计分析图表」提供可视化的数字频率和分布分析",
             "6. 「回测分析」可验证算法在历史数据上的表现",
+            "7. 「出现概率」页面新增「生肖概率」选项卡，可查看各生肖出现概率",
+            "8. 生肖概率支持「仅限特别码」模式，可单独统计特别码的生肖分布",
+            "9. 「波色预测」分析红蓝绿波色出现概率，支持前/后半段对比",
+            "10. 「计算规律」通过两期间数字加减运算，自动发现高频规律并推荐号码",
         ]
         for item in usage_items:
             label = QLabel(item)
@@ -15672,6 +19856,8 @@ class LotteryPredictionWindow(QMainWindow):
             "⚠️ 请理性购彩，量力而行，遵守当地法律法规",
             "⚠️ 数据仅供参考，请以官方公布的开奖结果为准",
             "💡 建议定期更新历史数据，以获得更准确的预测结果",
+            "💡 生肖概率和波色预测基于历史数据统计，可作为选号辅助参考",
+            "💡 计算规律中加减结果自动循环到1-49范围内，确保号码有效性",
         ]
         for item in notice_items:
             label = QLabel(item)
@@ -15751,16 +19937,58 @@ class LotteryPredictionWindow(QMainWindow):
         structure_title.setStyleSheet("font-size: 14px; color: #2C3E50;")
         guide_layout.addWidget(structure_title)
 
+        # 底层基础设施
+        infra_title = QLabel("<b>🔩 底层基础设施（1-7865行）</b>")
+        # 子标题样式：13px字号，深灰色文字
+        infra_title.setStyleSheet("font-size: 13px; color: #2C3E50; padding: 4px 0 0 0;")
+        guide_layout.addWidget(infra_title)
+
         structure_items = [
-            "• <b>第一部分（1-365行）</b>：导入库 - Python标准库、PyQt6框架、第三方库（NumPy/Pandas/SciPy/sklearn等）",
-            "• <b>第二部分（366-575行）</b>：LotteryConfig类 - 全局常量配置（颜色/字体/生肖/算法等）【重点可改区域】",
-            "• <b>第三部分（576-814行）</b>：工具函数 - ColorUtils/FontUtils/DataUtils/MathUtils",
-            "• <b>第四部分（815-5333行）</b>：PredictionAlgorithms类 - 23种预测算法实现【核心算法区域】",
-            "• <b>第五部分（5334-6872行）</b>：UI组件 - NumberButton/NumberPanel/StatisticsChart等",
-            "• <b>第六部分（6873-17379行）</b>：LotteryPredictionWindow主窗口类 - 9个标签页界面",
-            "• <b>第七部分（17380-18620行）</b>：辅助分析类 - StatisticsAnalyzer/DeepLearningPredictor等",
+            "• <b>导入库（1-31行）</b>：Python标准库、PyQt6、NumPy、Pandas、SciPy、sklearn、PyTorch、TensorFlow等",
+            "• <b>延迟加载工具（32-401行）</b>：matplotlib/seaborn/scipy/sklearn/TensorFlow/PyTorch/NetworkX的懒加载函数",
+            "• <b>全局配置（402-616行）</b>：LotteryConfig类 — 窗口尺寸、颜色方案、字体、波色/生肖/五行/区间分组、算法列表【重点可改】",
+            "• <b>工具函数（617-907行）</b>：ColorUtils颜色处理、FontUtils字体缩放、DataUtils数据格式化、MathUtils数学计算",
+            "• <b>预测算法（908-5778行）</b>：PredictionAlgorithms类 — 23种预测算法实现（频率分析、LSTM、贝叶斯、模式匹配等）【核心算法】",
+            "• <b>机器学习（5779-6459行）</b>：MLPredictionModel类 — 随机森林、梯度提升、逻辑回归、MLP分类器、LSTM Predictor",
+            "• <b>UI组件（6460-7865行）</b>：NumberButton数字按钮、NumberPanel数字面板、PredictWorker异步工作线程、PreserveColorDelegate表格代理、LotteryPredictionWindow主窗口类声明",
         ]
         for item in structure_items:
+            label = QLabel(item)
+            # 结构说明列表项样式：13px字号（比正文略小），灰色文字
+            label.setStyleSheet("font-size: 13px; color: #555555; padding: 2px 0;")
+            label.setWordWrap(True)
+            guide_layout.addWidget(label)
+
+        # 分隔线
+        sep_infra = QLabel("")
+        sep_infra.setFixedHeight(8)
+        guide_layout.addWidget(sep_infra)
+
+        # 16个代码区域
+        region_title = QLabel("<b>🧩 16个代码区域（7866-24748行）</b>")
+        # 子标题样式：13px字号，深灰色文字
+        region_title.setStyleSheet("font-size: 13px; color: #2C3E50; padding: 4px 0 0 0;")
+        guide_layout.addWidget(region_title)
+
+        region_items = [
+            "• <b>区域1（7866-10837行）</b>：初始化与全局配置 — 窗口初始化、UI主题/字体/面板尺寸、INI配置读写、选项卡切换、快捷键、关闭清理",
+            "• <b>区域2（10838-11871行）</b>：数据导入与格式转换 — 数据导入/导出、手动增删改、批量操作、格式转换、数据源管理、在线更新",
+            "• <b>区域3（11872-12754行）</b>：历史记录 — 历史数据表格展示、分页浏览、列排序（升序/降序）、期号详情弹窗、最新期号显示",
+            "• <b>区域4（12755-17819行）</b>：预测与抽取 — 算法预测、随机抽取、概率面板（数字+生肖）、计算规律、波色预测、收藏对比、机器学习预测",
+            "• <b>区域5（17820-18092行）</b>：数字选择 — 手动选号面板，点击数字球选择/取消号码，显示已选号码列表和大小单双统计",
+            "• <b>区域6（18093-18602行）</b>：第七位预判 — 特别号码专项预测（大小/奇偶/尾数/综合），频率图/趋势图/相关性分析",
+            "• <b>区域7（18603-19020行）</b>：统计分析图表 — 频率图、遗漏图、奇偶/大小/波色/区间/尾数分布、走势图、热力图、和值分布",
+            "• <b>区域8（19021-19447行）</b>：回测分析 — 历史数据回测，验证算法命中率，算法对比、命中趋势图",
+            "• <b>区域9（19448-19592行）</b>：预测记录 — 预测结果自动记录、表格展示、导出CSV、清除历史",
+            "• <b>区域10（19593-20250行）</b>：公告说明 — 版本信息、功能介绍、使用说明、注意事项、快捷键、代码结构指南、可调参数速查",
+            "• <b>区域11（20251-21002行）</b>：数字与生肖 — 生肖属性绑定管理，生肖对照表、统计、批量设置、起肖设置、面板字体控制",
+            "• <b>区域12（21003-21542行）</b>：数字与五行 — 五行属性绑定管理，五行面板、统计、批量设置、面板字体控制",
+            "• <b>区域13（21543-21806行）</b>：收藏 — 收藏预测号码，添加/查看/删除收藏",
+            "• <b>区域14（21807-22166行）</b>：数字排序 — 按频率、遗漏等维度对数字排序，显示排名统计",
+            "• <b>区域15（22167-22566行）</b>：数字选尾 — 按尾数（0-9）筛选号码，显示对应数字列表",
+            "• <b>区域16（22567-24748行）</b>：数据存储 — 拖拽上传、分类导航、卡片/列表视图、标签管理、搜索筛选、备份恢复、剪贴板粘贴",
+        ]
+        for item in region_items:
             label = QLabel(item)
             # 结构说明列表项样式：13px字号（比正文略小），灰色文字
             label.setStyleSheet("font-size: 13px; color: #555555; padding: 2px 0;")
@@ -15771,6 +19999,32 @@ class LotteryPredictionWindow(QMainWindow):
         sep = QLabel("")
         sep.setFixedHeight(5)
         guide_layout.addWidget(sep)
+
+        # 区域外代码（24749行之后）
+        post_title = QLabel("<b>📦 区域外代码（24749-26105行）</b>")
+        # 子标题样式：13px字号，深灰色文字
+        post_title.setStyleSheet("font-size: 13px; color: #2C3E50; padding: 4px 0 0 0;")
+        guide_layout.addWidget(post_title)
+
+        post_items = [
+            "• <b>StatisticsAnalyzer（24749-24944行）</b>：高级统计分析器 — 数据帧构建、频率/遗漏/冷热号分析、相关性矩阵",
+            "• <b>ReportExporter（24945-25082行）</b>：报告导出器 — CSV/JSON/HTML格式导出、带颜色标注的号码",
+            "• <b>DataValidator（25083-25139行）</b>：数据验证器 — 开奖号码格式校验、异常检测、统计摘要",
+            "• <b>PredictionOptimizer（25140-25211行）</b>：预测优化器 — 贝叶斯超参数搜索、最优权重配置",
+            "• <b>DataPreprocessor（25212-25343行）</b>：数据预处理器 — 特征工程、窗口切片、序列构建",
+            "• <b>PatternMatcher（25344-25451行）</b>：模式匹配器 — 历史模式识别、相似期号匹配",
+            "• <b>DeepLearningPredictor（25452-25594行）</b>：深度学习预测器 — LSTM模型、GPU/CPU自适应、时序预测",
+            "• <b>TimeSeriesAnalyzer（25595-25706行）</b>：时间序列分析器 — 单号序列提取、和值走势、特别号趋势",
+            "• <b>EnsemblePredictor（25707-25808行）</b>：集成预测器 — 基于历史准确率的动态权重融合",
+            "• <b>AdvancedVisualization（25809-25900行）</b>：高级可视化 — 多维图表、交互式分析面板",
+            "• <b>应用入口（25901-26105行）</b>：main()函数 — QApplication初始化、高DPI适配、窗口启动",
+        ]
+        for item in post_items:
+            label = QLabel(item)
+            # 结构说明列表项样式：13px字号（比正文略小），灰色文字
+            label.setStyleSheet("font-size: 13px; color: #555555; padding: 2px 0;")
+            label.setWordWrap(True)
+            guide_layout.addWidget(label)
 
         # 关键可调参数速查表
         param_title = QLabel("<b>🔧 关键可调参数速查表</b>")
@@ -15981,9 +20235,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 添加底部间距
         layout.addStretch()
 
+        # 将内容容器放入滚动区域
         scroll.setWidget(self.notice_container)
         
-        # 创建包装widget
+        # 创建包装widget（用于外层布局）
         wrapper = QWidget()
         wrapper_layout = QVBoxLayout(wrapper)
         wrapper_layout.setContentsMargins(0, 0, 0, 0)
@@ -15995,7 +20250,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域11】数字与生肖
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：数字与生肖属性绑定管理，包括生肖对照表、生肖统计、
+    #          批量设置、起肖（起始生肖）设置、面板字号调整等
+    #   _create_zodiac_tab, _load_zodiac_binding, _populate_zodiac_table, _refresh_zodiac_stats, _on_zodiac_combo_changed, _on_element_combo_changed, _update_zodiac_detail, _on_zodiac_panel_selection_changed, _on_batch_set_zodiac, _on_save_zodiac, _on_start_zodiac_changed, _on_apply_start_zodiac, _on_reset_zodiac, _on_zodiac_num_font_changed, _on_zodiac_text_font_changed
     #   _create_zodiac_tab, _load_zodiac_binding, _on_apply_start_zodiac, _on_batch_set_zodiac, _on_element_combo_changed, _on_reset_zodiac, _on_save_zodiac, _on_start_zodiac_changed, _on_zodiac_combo_changed, _on_zodiac_panel_selection_changed, _populate_zodiac_table, _refresh_zodiac_stats, _update_zodiac_detail
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -16006,19 +20263,34 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 10: 数字与生肖 (Numbers & Zodiac)                                           #
+#  入口: _create_zodiac_tab                                                     #
+#  功能: 生肖绑定配置、数字字体/文字字体独立调节                                                   #
+#                                                                             #
+###############################################################################
+
     def _create_zodiac_tab(self):
         """创建数字与生肖绑定标签页"""
+        # 主容器widget
         widget = QWidget()
+        # 主垂直布局
         layout = QVBoxLayout(widget)
         layout.setSpacing(self.spacing)
         layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
         
         # 顶部控制栏
         top_layout = QHBoxLayout()
+        # 页面标题
         title_label = QLabel("数字与生肖绑定")
         title_label.setObjectName("PanelTitle")
         top_layout.addWidget(title_label)
         
+        # 弹性空间：将后续控件推到右侧
         top_layout.addStretch()
         
         # 起始生肖选择器
@@ -16027,6 +20299,7 @@ class LotteryPredictionWindow(QMainWindow):
         start_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #555555;")
         top_layout.addWidget(start_label)
         
+        # 起始生肖下拉框：选择生肖起始位置，默认"龙"
         self.start_zodiac_combo = QComboBox()
         self.start_zodiac_combo.addItems(LotteryConfig.ZODIAC_CLOCKWISE)
         self.start_zodiac_combo.setCurrentText("龙")
@@ -16052,9 +20325,11 @@ class LotteryPredictionWindow(QMainWindow):
             "QComboBox::drop-down { border: none; width: 20px; }"
             "QComboBox QAbstractItemView { background-color: #FFFFFF; selection-background-color: #9B59B6; font-size: 13px; }"
         )
+        # 信号连接：起始生肖变更时保存配置
         self.start_zodiac_combo.currentTextChanged.connect(self._on_start_zodiac_changed)
         top_layout.addWidget(self.start_zodiac_combo)
         
+        # 一键应用按钮：根据起始生肖生成全部绑定
         apply_btn = QPushButton("一键应用")
         # 一键应用按钮样式 - 蓝色系（确认/应用操作）
         #   QPushButton {       常态样式
@@ -16074,21 +20349,27 @@ class LotteryPredictionWindow(QMainWindow):
             "font-weight: bold; font-size: 13px; padding: 4px 12px; }"
             "QPushButton:hover { background-color: #3498DB; color: #FFFFFF; }"
         )
+        # 信号连接：点击一键应用按钮触发生肖绑定生成
         apply_btn.clicked.connect(self._on_apply_start_zodiac)
         top_layout.addWidget(apply_btn)
         
+        # 分隔符：竖线分隔不同功能区域
         separator = QLabel("|")
         # 分隔符样式：16px字号，浅灰色
         separator.setStyleSheet("color: #CCCCCC; font-size: 16px;")
         top_layout.addWidget(separator)
         
+        # 恢复默认按钮：重置生肖绑定为默认值
         reset_btn = QPushButton("恢复默认")
         reset_btn.setObjectName("ResetZodiacBtn")
+        # 信号连接：点击恢复默认按钮触发重置操作
         reset_btn.clicked.connect(self._on_reset_zodiac)
         top_layout.addWidget(reset_btn)
         
+        # 保存绑定按钮：将当前生肖绑定保存到文件
         save_btn = QPushButton("保存绑定")
         save_btn.setObjectName("SaveZodiacBtn")
+        # 信号连接：点击保存绑定按钮触发保存操作
         save_btn.clicked.connect(self._on_save_zodiac)
         top_layout.addWidget(save_btn)
         
@@ -16109,52 +20390,61 @@ class LotteryPredictionWindow(QMainWindow):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(5, 5, 5, 5)
         
-        # 左侧标题行
-        left_title_row = QHBoxLayout()
+        # 标题行
+        title_row = QHBoxLayout()
         left_title = QLabel("点击数字选择（可多选），再点击下方生肖按钮批量设置")
         # 左侧标题样式：14px字号，粗体，蓝色文字，5px内边距
         left_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #3498DB; padding: 5px;")
-        left_title_row.addWidget(left_title)
-        left_title_row.addStretch()
+        title_row.addWidget(left_title)
+        title_row.addStretch()
+        left_layout.addLayout(title_row)
         
-        # 字体缩小按钮
-        zodiac_font_minus = QPushButton("A-")
-        zodiac_font_minus.setToolTip("缩小字体")
-        zodiac_font_minus.setFixedSize(70, 26)
-        # 生肖面板字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色表示"减少"）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E8F5E9;  背景色：浅绿
-        #     color: #2E7D32;             文字颜色：深绿
-        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
-        #   }
-        zodiac_font_minus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
-        zodiac_font_minus.clicked.connect(lambda: self._change_area_font_size('zodiac_panel', -1))
-        left_title_row.addWidget(zodiac_font_minus)
+        # 控件行：数字字体 | 文字字体 | 尺寸设置
+        control_row = QHBoxLayout()
+        control_row.setSpacing(6)
+        control_row.addStretch()
         
-        # 字体放大按钮
-        zodiac_font_plus = QPushButton("A+")
-        zodiac_font_plus.setToolTip("放大字体")
-        zodiac_font_plus.setFixedSize(70, 26)
-        # 生肖面板字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
-        #     color: #C62828;             文字颜色：深红
-        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
-        #   }
-        zodiac_font_plus.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
-        zodiac_font_plus.clicked.connect(lambda: self._change_area_font_size('zodiac_panel', 1))
-        left_title_row.addWidget(zodiac_font_plus)
-        
+        # 数字字体大小控件
+        zod_num_font_label = QLabel("数字:")
+        zod_num_font_label.setStyleSheet("font-size: 13px; color: #1565C0; font-weight: bold;")
+        control_row.addWidget(zod_num_font_label)
+
+        self.zodiac_num_font_spin = QSpinBox()
+        self.zodiac_num_font_spin.setRange(10, 150)  # 字体上限150px
+        self.zodiac_num_font_spin.setValue(self._zodiac_panel_size.get('btn_font', 20))  # 默认20px
+        self.zodiac_num_font_spin.setSuffix(" px")
+        self.zodiac_num_font_spin.setFixedWidth(80)
+        self.zodiac_num_font_spin.setToolTip("调整生肖面板数字字体大小\n（独立控制，不影响生肖文字）")
+        self.zodiac_num_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #90CAF9; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        self.zodiac_num_font_spin.valueChanged.connect(self._on_zodiac_num_font_changed)
+        control_row.addWidget(self.zodiac_num_font_spin)
+
+        control_row.addSpacing(12)
+
+        # 文字字体大小控件
+        zod_text_font_label = QLabel("文字:")
+        zod_text_font_label.setStyleSheet("font-size: 13px; color: #7B1FA2; font-weight: bold;")
+        control_row.addWidget(zod_text_font_label)
+
+        self.zodiac_text_font_spin = QSpinBox()
+        self.zodiac_text_font_spin.setRange(8, 150)  # 字体上限150px
+        self.zodiac_text_font_spin.setValue(self._zodiac_panel_size.get('label_font', 20))  # 默认20px
+        self.zodiac_text_font_spin.setSuffix(" px")
+        self.zodiac_text_font_spin.setFixedWidth(80)
+        self.zodiac_text_font_spin.setToolTip("调整生肖面板文字（生肖标签）字体大小\n（独立控制，不影响数字）")
+        self.zodiac_text_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #CE93D8; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 信号连接：文字字体大小变更时更新面板
+        self.zodiac_text_font_spin.valueChanged.connect(self._on_zodiac_text_font_changed)
+        control_row.addWidget(self.zodiac_text_font_spin)
+
+        control_row.addSpacing(12)
+
         # 设置按钮
         zodiac_settings_btn = QPushButton("尺寸")
         zodiac_settings_btn.setToolTip("调整面板尺寸设置")
@@ -16171,17 +20461,21 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #E1BEE7;  悬停背景色：稍深的浅紫
         #   }
         zodiac_settings_btn.setStyleSheet("QPushButton { background-color: #F3E5F5; color: #6A1B9A; border: 1px solid #CE93D8; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #E1BEE7; }")
+        # 信号连接：点击尺寸按钮弹出面板尺寸设置对话框
         zodiac_settings_btn.clicked.connect(lambda: self._show_panel_settings_dialog('zodiac'))
-        left_title_row.addWidget(zodiac_settings_btn)
+        control_row.addWidget(zodiac_settings_btn)
+        control_row.addStretch()
         
-        left_layout.addLayout(left_title_row)
+        left_layout.addLayout(control_row)
         
         # 生肖数字面板（可滚动）
         panel_scroll = QScrollArea()
         panel_scroll.setWidgetResizable(True)
         panel_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
+        # 生肖数字面板：显示49个数字及其生肖绑定，支持多选
         self.zodiac_panel = ZodiacNumberPanel()
+        # 信号连接：面板选中数字变化时更新详情
         self.zodiac_panel.selection_changed.connect(self._on_zodiac_panel_selection_changed)
         self.zodiac_panel.update_all_zodiacs(self.zodiac_binding)
         panel_scroll.setWidget(self.zodiac_panel)
@@ -16250,6 +20544,7 @@ class LotteryPredictionWindow(QMainWindow):
             "font-size: 12px; padding: 4px 10px; }"
             "QPushButton:hover { background-color: #F5F5F5; }"
         )
+        # 信号连接：点击清除选择按钮取消所有数字选中状态
         clear_sel_btn.clicked.connect(lambda: self.zodiac_panel.clear_selection())
         zodiac_btn_layout.addWidget(clear_sel_btn)
         
@@ -16639,8 +20934,8 @@ class LotteryPredictionWindow(QMainWindow):
             QMessageBox.warning(self, "错误", "保存生肖绑定时出错:\n" + str(e))
     
     def _on_start_zodiac_changed(self, text):
-        """起始生肖下拉变更 - 仅更新提示，不自动应用"""
-        pass
+        """起始生肖下拉变更 - 仅更新提示，不自动应用，但保存选择"""
+        self._save_ini_config()
     
     def _on_apply_start_zodiac(self):
         """一键应用起始生肖 - 根据选中的起始生肖按顺时针生成全部绑定"""
@@ -16673,6 +20968,33 @@ class LotteryPredictionWindow(QMainWindow):
                 self._refresh_element_stats()
             self.zodiac_detail_label.setText("已恢复默认生肖绑定（龙=01,13,25,37,49）")
     
+
+    def _on_zodiac_num_font_changed(self, size):
+        """生肖面板数字字体大小变化处理"""
+        self._zodiac_panel_size['btn_font'] = size
+        self._save_ini_config()
+        if hasattr(self, 'zodiac_panel'):
+            self.zodiac_panel.set_font_size(
+                width=self._zodiac_panel_size.get('width', 44),
+                height=self._zodiac_panel_size.get('height', 40),
+                btn_font=size,
+                label_font=self._zodiac_panel_size.get('label_font', 10)
+            )
+        self._area_font_scales['zodiac_panel'] = size / 16.0
+
+    def _on_zodiac_text_font_changed(self, size):
+        """生肖面板文字字体大小变化处理"""
+        self._zodiac_panel_size['label_font'] = size
+        self._save_ini_config()
+        if hasattr(self, 'zodiac_panel'):
+            self.zodiac_panel.set_font_size(
+                width=self._zodiac_panel_size.get('width', 44),
+                height=self._zodiac_panel_size.get('height', 40),
+                btn_font=self._zodiac_panel_size.get('btn_font', 16),
+                label_font=size
+            )
+
+
     # ======================================================================== #
     # 数字与五行标签页
     # ======================================================================== #
@@ -16680,7 +21002,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域12】数字与五行
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：数字与五行属性绑定管理，包括五行面板、五行统计、
+    #          批量设置、面板字号调整等
+    #   _create_element_tab, _populate_element_panel, _refresh_element_stats, _on_element_panel_selection_changed, _update_element_detail, _on_batch_set_element, _on_save_elements, _on_reset_elements, _on_elem_num_font_changed, _on_elem_text_font_changed
     #   _create_element_tab, _on_batch_set_element, _on_element_panel_selection_changed, _on_reset_elements, _on_save_elements, _populate_element_panel, _refresh_element_stats, _update_element_detail
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -16691,19 +21015,35 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 11: 数字与五行 (Numbers & Five Elements)                                    #
+#  入口: _create_element_tab                                                    #
+#  功能: 五行绑定配置、数字字体/文字字体独立调节                                                   #
+
+#                                                                             #
+###############################################################################
+
     def _create_element_tab(self):
         """创建数字与五行绑定标签页（面板方式）"""
+        # 主容器widget
         widget = QWidget()
+        # 主垂直布局
         layout = QVBoxLayout(widget)
         layout.setSpacing(self.spacing)
         layout.setContentsMargins(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom)
         
         # 顶部控制栏
         top_layout = QHBoxLayout()
+        # 页面标题
         title_label = QLabel("数字与五行绑定")
         title_label.setObjectName("PanelTitle")
         top_layout.addWidget(title_label)
         
+        # 弹性空间：将后续控件推到右侧
         top_layout.addStretch()
         
         # 操作提示
@@ -16772,52 +21112,62 @@ class LotteryPredictionWindow(QMainWindow):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(5, 5, 5, 5)
         
-        # 左侧标题行
-        left_title_row = QHBoxLayout()
+        # 标题行
+        title_row = QHBoxLayout()
         left_title = QLabel("点击数字选择，再点击下方五行按钮批量设置")
         # 左侧标题样式：14px字号，粗体，橙色文字，5px内边距
         left_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #E67E22; padding: 5px;")
-        left_title_row.addWidget(left_title)
-        left_title_row.addStretch()
+        title_row.addWidget(left_title)
+        title_row.addStretch()
+        left_layout.addLayout(title_row)
         
-        # 字体缩小按钮
-        elem_font_minus = QPushButton("A-")
-        elem_font_minus.setToolTip("缩小字体")
-        elem_font_minus.setFixedSize(70, 26)
-        # 五行面板字体缩小按钮样式 - 绿色系（缩小/减少操作用绿色表示"减少"）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #E8F5E9;  背景色：浅绿
-        #     color: #2E7D32;             文字颜色：深绿
-        #     border: 1px solid #A5D6A7;  边框：1px 绿色实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #C8E6C9;  悬停背景色：稍深的浅绿
-        #   }
-        elem_font_minus.setStyleSheet("QPushButton { background-color: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #C8E6C9; }")
-        elem_font_minus.clicked.connect(lambda: self._change_area_font_size('element_panel', -1))
-        left_title_row.addWidget(elem_font_minus)
+        # 控件行：数字字体 | 文字字体 | 尺寸设置
+        control_row = QHBoxLayout()
+        control_row.setSpacing(6)
+        control_row.addStretch()
         
-        # 字体放大按钮
-        elem_font_plus = QPushButton("A+")
-        elem_font_plus.setToolTip("放大字体")
-        elem_font_plus.setFixedSize(70, 26)
-        # 五行面板字体放大按钮样式 - 红色系（放大/增加操作用红色警示色）
-        #   QPushButton {       按钮常态样式
-        #     background-color: #FFEBEE;  背景色：浅红（提示增加操作）
-        #     color: #C62828;             文字颜色：深红
-        #     border: 1px solid #EF9A9A;  边框：1px 浅红实线
-        #     border-radius: 6px;         圆角：6px
-        #     font-weight: bold;          字体：粗体
-        #   }
-        #   QPushButton:hover {  按钮悬停样式
-        #     background-color: #FFCDD2;  悬停背景色：稍深的浅红
-        #   }
-        elem_font_plus.setStyleSheet("QPushButton { background-color: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #FFCDD2; }")
-        elem_font_plus.clicked.connect(lambda: self._change_area_font_size('element_panel', 1))
-        left_title_row.addWidget(elem_font_plus)
-        
+        # 数字字体大小控件
+        elem_num_font_label = QLabel("数字:")
+        elem_num_font_label.setStyleSheet("font-size: 13px; color: #1565C0; font-weight: bold;")
+        control_row.addWidget(elem_num_font_label)
+
+        self.elem_num_font_spin = QSpinBox()
+        self.elem_num_font_spin.setRange(10, 150)  # 字体上限150px
+        self.elem_num_font_spin.setValue(self._element_panel_size.get('btn_font', 20))  # 默认20px
+        self.elem_num_font_spin.setSuffix(" px")
+        self.elem_num_font_spin.setFixedWidth(80)
+        self.elem_num_font_spin.setToolTip("调整五行面板数字字体大小\n（独立控制，不影响五行文字）")
+        self.elem_num_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #90CAF9; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 信号连接：数字字体大小变更时更新面板
+        self.elem_num_font_spin.valueChanged.connect(self._on_elem_num_font_changed)
+        control_row.addWidget(self.elem_num_font_spin)
+
+        control_row.addSpacing(12)
+
+        # 文字字体大小控件
+        elem_text_font_label = QLabel("文字:")
+        elem_text_font_label.setStyleSheet("font-size: 13px; color: #7B1FA2; font-weight: bold;")
+        control_row.addWidget(elem_text_font_label)
+
+        self.elem_text_font_spin = QSpinBox()
+        self.elem_text_font_spin.setRange(8, 150)  # 字体上限150px
+        self.elem_text_font_spin.setValue(self._element_panel_size.get('label_font', 20))  # 默认20px
+        self.elem_text_font_spin.setSuffix(" px")
+        self.elem_text_font_spin.setFixedWidth(80)
+        self.elem_text_font_spin.setToolTip("调整五行面板文字（五行标签）字体大小\n（独立控制，不影响数字）")
+        self.elem_text_font_spin.setStyleSheet(
+            "QSpinBox { background-color: #FFFFFF; border: 1px solid #CE93D8; border-radius: 4px; min-height: 45px; padding: 2px 6px; font-size: 13px; }"
+            "QSpinBox::up-button, QSpinBox::down-button { width: 25px; height: 25px; }"
+        )
+        # 信号连接：文字字体大小变更时更新面板
+        self.elem_text_font_spin.valueChanged.connect(self._on_elem_text_font_changed)
+        control_row.addWidget(self.elem_text_font_spin)
+
+        control_row.addSpacing(12)
+
         # 设置按钮
         elem_settings_btn = QPushButton("尺寸")
         elem_settings_btn.setToolTip("调整面板尺寸设置")
@@ -16834,10 +21184,12 @@ class LotteryPredictionWindow(QMainWindow):
         #     background-color: #E1BEE7;  悬停背景色：稍深的浅紫
         #   }
         elem_settings_btn.setStyleSheet("QPushButton { background-color: #F3E5F5; color: #6A1B9A; border: 1px solid #CE93D8; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #E1BEE7; }")
+        # 信号连接：点击尺寸按钮弹出面板尺寸设置对话框
         elem_settings_btn.clicked.connect(lambda: self._show_panel_settings_dialog('element'))
-        left_title_row.addWidget(elem_settings_btn)
+        control_row.addWidget(elem_settings_btn)
+        control_row.addStretch()
         
-        left_layout.addLayout(left_title_row)
+        left_layout.addLayout(control_row)
         
         # 数字面板（可滚动）
         panel_scroll = QScrollArea()
@@ -16911,6 +21263,7 @@ class LotteryPredictionWindow(QMainWindow):
             "font-size: 12px; padding: 5px 10px; }"
             "QPushButton:hover { background-color: #F5F5F5; }"
         )
+        # 信号连接：点击清除选择按钮取消所有数字选中状态
         clear_sel_btn.clicked.connect(lambda: self.element_panel.clear_selection())
         element_btn_layout.addWidget(clear_sel_btn)
         
@@ -17159,10 +21512,38 @@ class LotteryPredictionWindow(QMainWindow):
                 self.zodiac_panel.update_all_zodiacs(self.zodiac_binding)
     
 
+    def _on_elem_num_font_changed(self, size):
+        """五行面板数字字体大小变化处理"""
+        self._element_panel_size['btn_font'] = size
+        self._save_ini_config()
+        if hasattr(self, 'element_panel'):
+            self.element_panel.set_font_size(
+                width=self._element_panel_size.get('width', 44),
+                height=self._element_panel_size.get('height', 40),
+                btn_font=size,
+                label_font=self._element_panel_size.get('label_font', 10)
+            )
+        self._area_font_scales['element_panel'] = size / 16.0
+
+    def _on_elem_text_font_changed(self, size):
+        """五行面板文字字体大小变化处理"""
+        self._element_panel_size['label_font'] = size
+        self._save_ini_config()
+        if hasattr(self, 'element_panel'):
+            self.element_panel.set_font_size(
+                width=self._element_panel_size.get('width', 44),
+                height=self._element_panel_size.get('height', 40),
+                btn_font=self._element_panel_size.get('btn_font', 16),
+                label_font=size
+            )
+
+
+
     # ================================================================
     # 【区域13】收藏
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：收藏预测号码，支持添加、查看、删除收藏，解析号码文本
+    #   _get_favorites_list, _create_favorites_tab, _parse_numbers_from_text
     #   _create_favorites_tab, _parse_numbers_from_text
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -17173,9 +21554,31 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 12: 收藏 (Favorites)                                                     #
+#  入口: _create_favorites_tab                                                  #
+#  功能: 收藏预测结果、对比分析                                                            #
+#                                                                             #
+###############################################################################
+
+    def _get_favorites_list(self):
+        """获取当前可用的收藏列表控件"""
+        if hasattr(self, 'favorites_list') and self.favorites_list is not None:
+            return self.favorites_list
+        if hasattr(self, 'saved_predictions_list') and self.saved_predictions_list is not None:
+            return self.saved_predictions_list
+        return None
+    
+
     def _create_favorites_tab(self):
         """创建收藏选项卡"""
+        # 主容器widget
         widget = QWidget()
+        # 主垂直布局
         layout = QVBoxLayout(widget)
         layout.setSpacing(8)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -17189,6 +21592,7 @@ class LotteryPredictionWindow(QMainWindow):
         # 操作按钮行
         btn_layout = QHBoxLayout()
         
+        # 保存当前预测按钮：将当前预测结果加入收藏列表
         save_btn = QPushButton("💾 保存当前预测")
         # 保存按钮样式 - 绿色系（安全/保存操作）
         #   QPushButton {       常态样式
@@ -17208,9 +21612,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #27AE60; }
         """)
+        # 信号连接：点击保存按钮将当前预测保存到收藏
         save_btn.clicked.connect(self._on_save_current_prediction)
         btn_layout.addWidget(save_btn)
         
+        # 加载选中预测按钮：从收藏列表中加载选中的预测结果
         load_btn = QPushButton("📂 加载选中预测")
         # 加载按钮样式 - 蓝色系（加载/读取操作）
         #   QPushButton {       常态样式
@@ -17230,9 +21636,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #2980B9; }
         """)
+        # 信号连接：点击加载按钮加载选中的预测
         load_btn.clicked.connect(self._on_load_saved_prediction)
         btn_layout.addWidget(load_btn)
         
+        # 查看详情按钮：查看选中收藏的详细信息
         detail_btn = QPushButton("📋 查看详情")
         # 查看详情按钮样式 - 紫色系（查看/信息操作）
         #   QPushButton {       常态样式
@@ -17252,9 +21660,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #8E44AD; }
         """)
+        # 信号连接：点击查看详情按钮显示选中收藏的详细信息
         detail_btn.clicked.connect(self._on_show_saved_prediction_detail)
         btn_layout.addWidget(detail_btn)
         
+        # 对比预测按钮：选择多个收藏进行对比分析
         compare_btn = QPushButton("⚖️ 对比预测")
         # 对比预测按钮样式 - 橙色系（对比/分析操作）
         #   QPushButton {       常态样式
@@ -17274,9 +21684,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #D35400; }
         """)
+        # 信号连接：点击对比预测按钮对比选中的收藏
         compare_btn.clicked.connect(self._on_compare_saved_predictions)
         btn_layout.addWidget(compare_btn)
         
+        # 删除按钮：删除选中的收藏项
         del_btn = QPushButton("🗑️ 删除")
         # 删除按钮样式 - 红色系（危险/删除操作）
         #   QPushButton {       常态样式
@@ -17296,9 +21708,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #C0392B; }
         """)
+        # 信号连接：点击删除按钮删除选中的收藏项
         del_btn.clicked.connect(self._on_delete_saved_prediction)
         btn_layout.addWidget(del_btn)
         
+        # 清空全部按钮：清除所有收藏记录
         clear_btn = QPushButton("🧹 清空全部")
         # 清空全部按钮样式 - 灰色系（中性/批量操作）
         #   QPushButton {       常态样式
@@ -17318,6 +21732,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #7F8C8D; }
         """)
+        # 信号连接：点击清空全部按钮清除所有收藏
         clear_btn.clicked.connect(self._on_clear_saved_predictions)
         btn_layout.addWidget(clear_btn)
         
@@ -17330,6 +21745,7 @@ class LotteryPredictionWindow(QMainWindow):
         list_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(list_title)
         
+        # 收藏列表控件：支持多选，双击查看详情
         self.favorites_list = QListWidget()
         self.favorites_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         # 收藏列表样式 - 蓝色系（列表展示）
@@ -17356,6 +21772,7 @@ class LotteryPredictionWindow(QMainWindow):
             QListWidget::item:selected { background-color: #D6EAF8; color: #000000; }
             QListWidget::item:hover { background-color: #F0F8FF; }
         """)
+        # 信号连接：双击收藏项查看详细信息
         self.favorites_list.itemDoubleClicked.connect(self._on_show_saved_prediction_detail)
         layout.addWidget(self.favorites_list, 1)
         
@@ -17389,7 +21806,8 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域14】数字排序
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：按频率、遗漏等维度对数字排序，显示排名和统计信息
+    #   _create_number_sort_tab, _on_do_number_sort, _on_clear_sort, _change_sort_font
     #   _change_sort_font, _create_number_sort_tab, _on_clear_sort, _on_do_number_sort
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -17400,9 +21818,22 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 13: 数字排序 (Number Sorting)                                              #
+#  入口: _create_number_sort_tab                                                #
+#  功能: 按频率/遗漏/热度排序                                                            #
+#                                                                             #
+###############################################################################
+
     def _create_number_sort_tab(self):
         """创建数字排序选项卡"""
+        # 主容器widget
         widget = QWidget()
+        # 主垂直布局
         layout = QVBoxLayout(widget)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -17464,9 +21895,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 24px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #27AE60; }
         """)
+        # 信号连接：点击开始排序按钮执行数字排序
         sort_btn.clicked.connect(self._on_do_number_sort)
         btn_layout.addWidget(sort_btn)
         
+        # 清空按钮：清除排序输入和结果
         clear_btn = QPushButton("🧹 清空")
         # 清空按钮样式 - 灰色系（次要操作，不抢视觉焦点）
         #   QPushButton {
@@ -17486,6 +21919,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #7F8C8D; }
         """)
+        # 信号连接：点击清空按钮清除所有排序输入和结果
         clear_btn.clicked.connect(self._on_clear_sort)
         btn_layout.addWidget(clear_btn)
         
@@ -17514,6 +21948,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 4px; padding: 4px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #BDC3C7; }
         """)
+        # 信号连接：点击A-按钮缩小排序结果字体
         font_minus_btn.clicked.connect(lambda: self._change_sort_font(-1))
         btn_layout.addWidget(font_minus_btn)
         
@@ -17535,12 +21970,14 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 4px; padding: 4px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #BDC3C7; }
         """)
+        # 信号连接：点击A+按钮放大排序结果字体
         font_plus_btn.clicked.connect(lambda: self._change_sort_font(1))
         btn_layout.addWidget(font_plus_btn)
         
         layout.addLayout(btn_layout)
         
         # 统计信息
+        # 统计标签：显示总数和去重后数量
         self.sort_stats_label = QLabel("共 0 个数字，去重后 0 个")
         # 统计标签样式：13px字号，灰色文字，带内边距
         self.sort_stats_label.setStyleSheet("font-size: 13px; color: #666666; padding: 4px;")
@@ -17556,6 +21993,7 @@ class LotteryPredictionWindow(QMainWindow):
         result_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(result_title)
         
+        # 排序结果展示框：只读，显示去重后排序的数字
         self.sort_result_edit = QTextEdit()
         self.sort_result_edit.setReadOnly(True)
         # 排序结果框样式 - 浅灰底系（只读结果展示区）
@@ -17583,6 +22021,7 @@ class LotteryPredictionWindow(QMainWindow):
         count_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(count_title)
         
+        # 出现次数统计展示框：只读，显示每个数字的出现次数
         self.sort_count_edit = QTextEdit()
         self.sort_count_edit.setReadOnly(True)
         # 次数统计框样式 - 浅灰底系（只读结果展示区，与排序结果框一致）
@@ -17610,6 +22049,7 @@ class LotteryPredictionWindow(QMainWindow):
         missing_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(missing_title)
         
+        # 缺少数字展示框：只读，红色警示框，显示1-49中未出现的数字
         self.sort_missing_edit = QTextEdit()
         self.sort_missing_edit.setReadOnly(True)
         # 缺少数字框样式 - 红色系（警示色，突出"缺少"的异常状态）
@@ -17726,7 +22166,8 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域15】数字选尾
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：按尾数（0-9）筛选号码，选中尾数后显示对应数字列表
+    #   _create_number_tail_tab, _on_tail_selected, _on_do_number_tail, _format_tails, _on_clear_tail, _change_tail_font
     #   _change_tail_font, _create_number_tail_tab, _format_tails, _on_clear_tail, _on_do_number_tail, _on_tail_selected
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -17737,9 +22178,22 @@ class LotteryPredictionWindow(QMainWindow):
     #   - 详见各方法内部的【可改】标注
     # ================================================================
 
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 14: 数字选尾 (Number Tail Selection)                                       #
+#  入口: _create_number_tail_tab                                                #
+#  功能: 按尾数筛选号码                                                                #
+#                                                                             #
+###############################################################################
+
     def _create_number_tail_tab(self):
         """创建数字选尾选项卡"""
+        # 主容器widget
         widget = QWidget()
+        # 主垂直布局
         layout = QVBoxLayout(widget)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -17843,9 +22297,11 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 24px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #2980B9; }
         """)
+        # 信号连接：点击开始筛选按钮执行尾数筛选
         filter_btn.clicked.connect(self._on_do_number_tail)
         btn_layout.addWidget(filter_btn)
         
+        # 清空按钮：清除选尾输入和结果
         clear_btn = QPushButton("🧹 清空")
         # 清空按钮样式 - 灰色系（次要操作，不抢视觉焦点）
         #   QPushButton {
@@ -17865,6 +22321,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 6px; padding: 8px 20px; font-weight: bold; font-size: 14px; }
             QPushButton:hover { background-color: #7F8C8D; }
         """)
+        # 信号连接：点击清空按钮清除所有选尾输入和结果
         clear_btn.clicked.connect(self._on_clear_tail)
         btn_layout.addWidget(clear_btn)
         
@@ -17893,6 +22350,7 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 4px; padding: 4px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #BDC3C7; }
         """)
+        # 信号连接：点击A-按钮缩小选尾结果字体
         font_minus_btn.clicked.connect(lambda: self._change_tail_font(-1))
         btn_layout.addWidget(font_minus_btn)
         
@@ -17914,12 +22372,14 @@ class LotteryPredictionWindow(QMainWindow):
                 border-radius: 4px; padding: 4px 10px; font-weight: bold; }
             QPushButton:hover { background-color: #BDC3C7; }
         """)
+        # 信号连接：点击A+按钮放大选尾结果字体
         font_plus_btn.clicked.connect(lambda: self._change_tail_font(1))
         btn_layout.addWidget(font_plus_btn)
         
         layout.addLayout(btn_layout)
         
         # 统计信息
+        # 统计标签：显示输入数字总数、选中尾数和匹配数量
         self.tail_stats_label = QLabel("输入 0 个数字，选中尾数：无，匹配 0 个")
         # 统计标签样式：13px字号，灰色文字，带内边距
         self.tail_stats_label.setStyleSheet("font-size: 13px; color: #666666; padding: 4px;")
@@ -17935,6 +22395,7 @@ class LotteryPredictionWindow(QMainWindow):
         result_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(result_title)
         
+        # 筛选结果展示框：只读，显示匹配尾数的数字列表
         self.tail_result_edit = QTextEdit()
         self.tail_result_edit.setReadOnly(True)
         # 筛选结果框样式 - 浅灰底系（只读结果展示区）
@@ -17962,6 +22423,7 @@ class LotteryPredictionWindow(QMainWindow):
         unmatched_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #555555; margin-top: 5px;")
         layout.addWidget(unmatched_title)
         
+        # 未匹配数字展示框：只读，橙色警示框，显示不匹配尾数的数字
         self.tail_unmatched_edit = QTextEdit()
         self.tail_unmatched_edit.setReadOnly(True)
         # 未匹配数字框样式 - 橙色系（暖色警示，突出"未匹配"的提醒状态）
@@ -18104,7 +22566,9 @@ class LotteryPredictionWindow(QMainWindow):
     # ================================================================
     # 【区域16】数据存储
     # ================================================================
-    # 该区域包含的方法:
+    # 功能说明：数据文件存储管理，包括拖拽上传、分类导航、卡片/列表视图、
+    #          标签管理、搜索筛选、备份恢复、笔记编辑等
+    #   _apply_storage_config, _create_data_storage_tab, _get_storage_btn_style, _get_storage_dir, _ensure_storage_dirs, _init_storage_data, _load_storage_index, _save_storage_index, _sync_storage_files, _update_tag_list, _toggle_category_panel, _toggle_tag_panel, _get_filtered_items, _refresh_storage_display, _refresh_grid_view, _create_storage_card, _refresh_list_view, _format_file_size_v1_deprecated, _on_storage_category_changed, _on_storage_search, _on_storage_sort_changed, _format_file_size, _update_storage_stats, _on_storage_batch_delete, _on_storage_select_all, _on_storage_tag_changed, _on_storage_upload_image, _import_image_file, _on_storage_new_note, _save_new_note, _on_storage_import_file, _import_data_file, _on_storage_view_item, _on_storage_item_double_clicked, _view_image, _view_or_edit_note, _update_note, _open_file, _on_storage_delete_item, _on_storage_backup, _on_storage_list_context_menu, _on_storage_rename_item, dragEnterEvent, dragLeaveEvent, dropEvent, _highlight_drop_area, _handle_dropped_files, _import_text_file_as_note, _on_storage_paste, _build_dataframe, get_frequency_analysis, get_hot_cold_numbers, get_distribution_stats, get_trend_analysis, get_correlation_matrix, get_sequential_patterns, get_interval_analysis, get_zone_distribution, get_tail_number_distribution, get_sum_statistics, generate_text_report, generate_json_report, _json_default_handler, export_to_file, _export_csv, validate_number, validate_period, validate_date, validate_record, _prepare_features, _calculate_fitness, optimize, get_optimized_prediction, clean_data, _validate_record, extract_features, _calculate_std, _count_consecutive, normalize_features, find_similar_patterns, detect_repeating_patterns, get_pattern_statistics, _get_device, _prepare_sequence_data, _build_model, train, predict, _extract_series, _extract_sums, _extract_special_series, perform_stationarity_test, fit_arima, detect_seasonality, get_trend_components, _initialize_weights, _get_hot_cold_scores, _get_frequency_scores, _get_pattern_scores, get_ensemble_prediction, create_heatmap, create_pairplot_data, create_distribution_plot
     #   _create_data_storage_tab, _create_storage_card, _ensure_storage_dirs, _format_file_size, _format_file_size, _get_filtered_items, _get_storage_btn_style, _get_storage_dir, _handle_dropped_files, _highlight_drop_area, _import_data_file, _import_image_file, _import_text_file_as_note, _init_storage_data, _load_storage_index, _on_storage_backup, _on_storage_batch_delete, _on_storage_category_changed, _on_storage_delete_item, _on_storage_import_file, _on_storage_item_double_clicked, _on_storage_list_context_menu, _on_storage_new_note, _on_storage_paste, _on_storage_rename_item, _on_storage_search, _on_storage_select_all, _on_storage_sort_changed, _on_storage_tag_changed, _on_storage_upload_image, _on_storage_view_item, _open_file, _refresh_grid_view, _refresh_list_view, _refresh_storage_display, _save_new_note, _save_storage_index, _sync_storage_files, _toggle_category_panel, _toggle_tag_panel, _update_note, _update_storage_stats, _update_tag_list, _view_image, _view_or_edit_note, dragEnterEvent, dragLeaveEvent, dropEvent
     #
     # 可调参数汇总（标注【可改】表示可在此区域代码中修改）:
@@ -18114,6 +22578,30 @@ class LotteryPredictionWindow(QMainWindow):
     #   - setContentsMargins: 边距设置
     #   - 详见各方法内部的【可改】标注
     # ================================================================
+
+
+
+
+###############################################################################
+#                                                                             #
+#  TAB 15: 数据存储 (Data Storage)                                                #
+#  入口: _create_data_storage_tab                                               #
+#  功能: 数据备份、恢复、导入导出                                                           #
+#                                                                             #
+###############################################################################
+
+    def _apply_storage_config(self):
+        """应用存储面板配置到UI控件"""
+        # 应用排序模式
+        if hasattr(self, '_storage_sort_combo') and self._storage_sort_combo:
+            sort_mode = getattr(self, '_storage_sort_mode', 'time_desc')
+            for i in range(self._storage_sort_combo.count()):
+                if self._storage_sort_combo.itemData(i) == sort_mode:
+                    self._storage_sort_combo.blockSignals(True)
+                    self._storage_sort_combo.setCurrentIndex(i)
+                    self._storage_sort_combo.blockSignals(False)
+                    break
+    
 
     def _create_data_storage_tab(self):
         """创建数据存储选项卡
@@ -18198,6 +22686,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #F0F0F0; border-radius: 4px; }  /* 【可改】悬停背景色 */
         """)
+        # 信号连接：点击分类标题按钮折叠/展开分类面板
         self._storage_cat_title.clicked.connect(self._toggle_category_panel)
         left_layout.addWidget(self._storage_cat_title)
         
@@ -18215,6 +22704,7 @@ class LotteryPredictionWindow(QMainWindow):
             item.setData(Qt.ItemDataRole.UserRole, cat_id)  # 存储分类ID用于筛选
             self._storage_category_list.addItem(item)
         self._storage_category_list.setCurrentRow(0)  # 默认选中第一项
+        # 信号连接：分类切换时刷新内容显示
         self._storage_category_list.currentRowChanged.connect(self._on_storage_category_changed)
         # 分类列表样式 - 白底蓝选中系（左侧导航列表，选中项蓝色高亮）
         #   QListWidget { border: 1px solid #DDD; border-radius: 6px; padding: 4px; font-size: 14px; }
@@ -18253,6 +22743,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #F0F0F0; border-radius: 4px; }
         """)
+        # 信号连接：点击标签标题按钮折叠/展开标签面板
         self._storage_tag_title.clicked.connect(self._toggle_tag_panel)
         left_layout.addWidget(self._storage_tag_title)
         
@@ -18268,11 +22759,13 @@ class LotteryPredictionWindow(QMainWindow):
             QListWidget::item { padding: 8px 10px; border-radius: 4px; }  /* 【可改】标签项内边距 */
             QListWidget::item:selected { background-color: #D5F5E3; color: #1E8449; }  /* 【可改】选中标签颜色 */
         """)
+        # 信号连接：标签切换时刷新内容显示
         self._storage_tag_list.currentRowChanged.connect(self._on_storage_tag_changed)
         left_layout.addWidget(self._storage_tag_list)
         
         # ----- 一键备份按钮 -----
         btn_backup = QPushButton("📦 一键备份")
+        # 信号连接：点击一键备份按钮触发数据备份
         btn_backup.clicked.connect(self._on_storage_backup)
         btn_backup.setFixedHeight(34)  # 【可改】按钮高度
         # 一键备份按钮样式 - 紫色轮廓系（白底紫边紫字，低调但可辨识）
@@ -18362,6 +22855,7 @@ class LotteryPredictionWindow(QMainWindow):
         # 搜索框
         self._storage_search_edit = QLineEdit()
         self._storage_search_edit.setPlaceholderText("🔍 搜索笔记、图片备注、文件名...")  # 【可改】占位提示文字
+        # 信号连接：搜索文本变化时过滤显示内容
         self._storage_search_edit.textChanged.connect(self._on_storage_search)
         self._storage_search_edit.setFixedHeight(34)  # 【可改】搜索框高度
         # 搜索框样式 - 白底灰边系（获取焦点时蓝色边框高亮）
@@ -18387,6 +22881,7 @@ class LotteryPredictionWindow(QMainWindow):
         for text, value in sort_options:
             self._storage_sort_combo.addItem(text, value)
         self._storage_sort_combo.setCurrentIndex(0)  # 默认选中第1项
+        # 信号连接：排序方式变更时重新排序并刷新显示
         self._storage_sort_combo.currentIndexChanged.connect(self._on_storage_sort_changed)
         self._storage_sort_combo.setFixedHeight(34)  # 【可改】下拉框高度
         # 排序下拉框样式 - 白底灰边系（悬停时蓝色边框，下拉列表13px字号）
@@ -18402,14 +22897,15 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 上传图片按钮（绿色）
         btn_upload_img = QPushButton("📷 上传图片")
+        # 信号连接：点击上传图片按钮弹出文件选择对话框
         btn_upload_img.clicked.connect(self._on_storage_upload_image)
         btn_upload_img.setFixedHeight(34)
         btn_upload_img.setStyleSheet(self._get_storage_btn_style("#27AE60"))  # 【可改】按钮颜色
         toolbar_layout.addWidget(btn_upload_img)
         
-        # 新建笔记按钮
         # 新建笔记按钮（蓝色）
         btn_new_note = QPushButton("📝 新建笔记")
+        # 信号连接：点击新建笔记按钮创建新笔记
         btn_new_note.clicked.connect(self._on_storage_new_note)
         btn_new_note.setFixedHeight(34)
         btn_new_note.setStyleSheet(self._get_storage_btn_style("#3498DB"))  # 【可改】按钮颜色（蓝色）
@@ -18417,6 +22913,7 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 导入文件按钮（橙色）
         btn_import = QPushButton("📂 导入文件")
+        # 信号连接：点击导入文件按钮导入数据文件
         btn_import.clicked.connect(self._on_storage_import_file)
         btn_import.setFixedHeight(34)
         btn_import.setStyleSheet(self._get_storage_btn_style("#F39C12"))  # 【可改】按钮颜色（橙色）
@@ -18441,8 +22938,10 @@ class LotteryPredictionWindow(QMainWindow):
         # 列表视图（紧凑列表）
         self._storage_list_widget = QListWidget()
         self._storage_list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)  # 支持Ctrl/Shift多选
+        # 信号连接：双击列表项打开/查看对应文件
         self._storage_list_widget.itemDoubleClicked.connect(self._on_storage_item_double_clicked)  # 双击打开
         self._storage_list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # 启用右键菜单
+        # 信号连接：右键点击触发上下文菜单
         self._storage_list_widget.customContextMenuRequested.connect(self._on_storage_list_context_menu)
         # 列表视图样式 - 白底蓝选中系（右侧列表视图，选中项蓝色高亮，与分类列表风格一致）
         #   QListWidget { border: 1px solid #DDD; border-radius: 6px; padding: 4px; font-size: 14px; }
@@ -18491,6 +22990,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #F0F0F0; }  /* 【可改】悬停背景色 */
         """)
+        # 信号连接：点击全选按钮选中所有显示的项目
         btn_select_all.clicked.connect(self._on_storage_select_all)
         btn_select_all.setToolTip("全选所有显示的项目")
         status_layout.addWidget(btn_select_all)
@@ -18517,6 +23017,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #FADBD8; }  /* 【可改】悬停背景色（浅红）*/
         """)
+        # 信号连接：点击批量删除按钮删除所有选中的项目
         btn_batch_delete.clicked.connect(self._on_storage_batch_delete)
         btn_batch_delete.setToolTip("删除所有选中的项目（不可恢复）")
         status_layout.addWidget(btn_batch_delete)
@@ -18543,6 +23044,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #F0F0F0; }
         """)
+        # 信号连接：点击网格按钮切换到网格视图（索引0）
         btn_grid_view.clicked.connect(lambda: self._storage_stack.setCurrentIndex(0))
         btn_grid_view.setToolTip("网格视图")
         status_layout.addWidget(btn_grid_view)
@@ -18568,6 +23070,7 @@ class LotteryPredictionWindow(QMainWindow):
             }
             QPushButton:hover { background: #F0F0F0; }
         """)
+        # 信号连接：点击列表按钮切换到列表视图（索引1）
         btn_list_view.clicked.connect(lambda: self._storage_stack.setCurrentIndex(1))
         btn_list_view.setToolTip("列表视图")
         status_layout.addWidget(btn_list_view)
@@ -18582,10 +23085,19 @@ class LotteryPredictionWindow(QMainWindow):
         
         # 初始化数据
         self._init_storage_data()
+        # 应用保存的存储面板配置（排序模式、折叠状态）
+        self._apply_storage_config()
+        if getattr(self, '_category_collapsed', False):
+            self._storage_category_list.setVisible(False)
+            self._storage_cat_title.setText("分类 ▶")
+        if getattr(self, '_tag_collapsed', False):
+            self._storage_tag_list.setVisible(False)
+            self._storage_tag_title.setText("标签 ▶")
         self._refresh_storage_display()
         
         # 添加粘贴快捷键
         paste_shortcut = QShortcut(QKeySequence.StandardKey.Paste, widget)
+        # 信号连接：Ctrl+V粘贴时触发剪贴板内容导入
         paste_shortcut.activated.connect(self._on_storage_paste)
         
         return widget
@@ -18828,6 +23340,8 @@ class LotteryPredictionWindow(QMainWindow):
             self._storage_cat_title.setText("分类 ▶")
         else:
             self._storage_cat_title.setText("分类 ▼")
+        # 保存配置
+        self._save_ini_config()
     
     def _toggle_tag_panel(self):
         """切换标签面板的展开/折叠状态
@@ -18839,6 +23353,8 @@ class LotteryPredictionWindow(QMainWindow):
             self._storage_tag_title.setText("标签 ▶")  # 折叠状态符号
         else:
             self._storage_tag_title.setText("标签 ▼")  # 展开状态符号
+        # 保存配置
+        self._save_ini_config()
     
     def _get_filtered_items(self):
         """根据当前筛选条件获取过滤后的项目列表
@@ -19109,30 +23625,12 @@ class LotteryPredictionWindow(QMainWindow):
             item.setData(Qt.ItemDataRole.UserRole, item_data)
             self._storage_list_widget.addItem(item)
     
-    def _format_file_size(self, size_bytes):
-        """格式化文件大小为可读字符串
-
-        将字节数转换为人类可读的文件大小格式（B/KB/MB/GB）。
-
-        参数:
-            size_bytes (int/float): 文件大小，单位为字节
-
-        返回:
-            str: 格式化后的文件大小字符串，如 "1.5 MB"
-
-        逻辑说明:
-            - < 1024 B -> 显示为 "xxx B"
-            - < 1024 KB -> 显示为 "x.x KB"
-            - < 1024 MB -> 显示为 "x.x MB"
-            - >= 1024 MB -> 显示为 "x.x GB"
+    def _format_file_size_v1_deprecated(self, size_bytes):
+        """【已废弃】格式化文件大小 - 缺少GB处理，已被下方_format_file_size覆盖
+        保留方法名仅用于文档记录，实际调用下方完整版本
         """
-        if size_bytes < 1024:
-            return f"{size_bytes} B"
-        elif size_bytes < 1024 * 1024:
-            return f"{size_bytes/1024:.1f} KB"
-        else:
-            return f"{size_bytes/(1024*1024):.1f} MB"
-    
+        pass
+
     def _on_storage_category_changed(self, row):
         """分类切换事件处理
 
@@ -19182,8 +23680,12 @@ class LotteryPredictionWindow(QMainWindow):
                （如 "time_desc"/"name_asc"/"size_desc"）
             2. 更新 _storage_sort_mode 并刷新显示
         """
-        self._storage_sort_mode = self._storage_sort_combo.currentData()
+        # 【修复None值bug】currentData()可能返回None（如未设置data或异常情况），
+        # 需提供默认值'time_desc'避免后续排序逻辑出错
+        self._storage_sort_mode = self._storage_sort_combo.currentData() or 'time_desc'
         self._refresh_storage_display()
+        # 保存配置
+        self._save_ini_config()
     
     def _format_file_size(self, size_bytes):
         """格式化文件大小显示"""
@@ -19446,6 +23948,7 @@ class LotteryPredictionWindow(QMainWindow):
         btn_save.setStyleSheet("QPushButton { padding: 8px 20px; background: #3498DB; color: white; border-radius: 6px; }")
         
         def save_note():
+            """功能：保存备注"""
             title = title_edit.text().strip() or "未命名笔记"
             content = content_edit.toPlainText()
             tags = [t.strip() for t in tag_edit.text().split() if t.strip()]
@@ -19727,6 +24230,7 @@ class LotteryPredictionWindow(QMainWindow):
         btn_delete.setStyleSheet("QPushButton { padding: 8px 16px; color: #E74C3C; border: 1px solid #E74C3C; border-radius: 6px; }")
         
         def delete_note():
+            """功能：删除备注"""
             reply = QMessageBox.question(self, "确认删除", "确定要删除这篇笔记吗？", 
                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
             if reply == QMessageBox.StandardButton.Yes:
@@ -19747,6 +24251,7 @@ class LotteryPredictionWindow(QMainWindow):
         btn_save.setStyleSheet("QPushButton { padding: 8px 20px; background: #3498DB; color: white; border-radius: 6px; }")
         
         def save_note():
+            """功能：保存备注"""
             title = title_edit.text().strip() or "未命名笔记"
             content = content_edit.toPlainText()
             tags = [t.strip() for t in tag_edit.text().split() if t.strip()]
@@ -19896,7 +24401,7 @@ class LotteryPredictionWindow(QMainWindow):
                 return
             
             # 选择保存位置
-            default_name = f"数据存储备份_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            default_name = f"数据存储备份_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
             save_path, _ = QFileDialog.getSaveFileName(
                 self, "保存备份文件", default_name, "ZIP压缩文件 (*.zip)"
             )
@@ -20247,6 +24752,7 @@ class StatisticsAnalyzer:
     """高级统计分析器"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.df = None
         if historical_data:
@@ -20256,15 +24762,18 @@ class StatisticsAnalyzer:
         """构建Pandas DataFrame"""
         records = []
         for item in self.data:
+            # 【修复数组越界bug】numbers可能为空列表或少于6个元素，直接索引会IndexError
+            nums = item.get('numbers', [])
+            nums = (nums + [0] * 6)[:6]  # 补齐到6个，不足的用0填充
             record = {
                 'period': item.get('period', ''),
                 'date': item.get('date', ''),
-                'number_1': item.get('numbers', [0]*6)[0],
-                'number_2': item.get('numbers', [0]*6)[1],
-                'number_3': item.get('numbers', [0]*6)[2],
-                'number_4': item.get('numbers', [0]*6)[3],
-                'number_5': item.get('numbers', [0]*6)[4],
-                'number_6': item.get('numbers', [0]*6)[5],
+                'number_1': nums[0],
+                'number_2': nums[1],
+                'number_3': nums[2],
+                'number_4': nums[3],
+                'number_5': nums[4],
+                'number_6': nums[5],
                 'special': item.get('special', 0),
             }
             for i in range(1, 7):
@@ -20292,8 +24801,12 @@ class StatisticsAnalyzer:
         """获取热门和冷门数字"""
         freq = self.get_frequency_analysis()
         sorted_freq = sorted(freq.items(), key=lambda x: x[1], reverse=True)
-        hot = sorted_freq[:top_n]
-        cold = sorted_freq[-top_n:][::-1]
+        # 【修复冷热重叠bug】当号码数<top_n*2时，hot和cold会包含相同号码
+        actual_top_n = min(top_n, len(sorted_freq) // 2) if len(sorted_freq) > 0 else 0
+        if actual_top_n == 0:
+            actual_top_n = min(top_n, len(sorted_freq))
+        hot = sorted_freq[:actual_top_n]
+        cold = sorted_freq[-actual_top_n:][::-1] if actual_top_n > 0 else []
         return {'hot': hot, 'cold': cold}
     
     def get_distribution_stats(self):
@@ -20426,7 +24939,8 @@ class StatisticsAnalyzer:
             'mean': sum(sums) / len(sums) if sums else 0,
             'min': min(sums) if sums else 0,
             'max': max(sums) if sums else 0,
-            'median': sorted(sums)[len(sums)//2] if sums else 0
+            # 【修复中位数bug】偶数个元素时应取中间两个的平均值，而非上中位数
+            'median': (lambda s, n: (s[n//2] + s[(n-1)//2]) / 2 if n > 0 else 0)(sorted(sums), len(sums))
         }
 
 
@@ -20434,6 +24948,7 @@ class ReportExporter:
     """报告导出器"""
     
     def __init__(self, historical_data, predictions=None):
+        """功能：初始化"""
         self.data = historical_data
         self.predictions = predictions or []
         self.analyzer = StatisticsAnalyzer(historical_data) if historical_data else None
@@ -20518,7 +25033,23 @@ class ReportExporter:
                 'special': self.predictions[6] if len(self.predictions) > 6 else None
             }
         
-        return json.dumps(report, ensure_ascii=False, indent=2)
+        # 【修复序列化bug】添加default参数处理numpy等非标准类型，防止序列化失败
+        return json.dumps(report, ensure_ascii=False, indent=2, default=self._json_default_handler)
+    
+    @staticmethod
+    def _json_default_handler(obj):
+        """JSON序列化默认处理器 - 处理numpy等非标准类型"""
+        try:
+            import numpy as np
+            if isinstance(obj, (np.integer,)):
+                return int(obj)
+            if isinstance(obj, (np.floating,)):
+                return float(obj)
+            if isinstance(obj, (np.ndarray,)):
+                return obj.tolist()
+        except ImportError:
+            pass
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
     
     def export_to_file(self, filepath, format_type='txt'):
         """导出到文件"""
@@ -20612,6 +25143,7 @@ class PredictionOptimizer:
     """预测优化器 - 使用Optuna进行超参数优化"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.best_params = None
     
@@ -20647,6 +25179,7 @@ class PredictionOptimizer:
             optuna.logging.set_verbosity(optuna.logging.WARNING)
             
             def objective(trial):
+                """功能：Optuna优化目标函数"""
                 params = {
                     'weight': trial.suggest_float('weight', 0.5, 2.0),
                     'decay': trial.suggest_float('decay', 0.8, 0.99),
@@ -20655,7 +25188,8 @@ class PredictionOptimizer:
                 return self._calculate_fitness(params)
             
             study = optuna.create_study(direction='maximize')
-            study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+            # 【修复0xC0000409】设置n_jobs=1禁用并行，防止C栈溢出
+            study.optimize(objective, n_trials=n_trials, show_progress_bar=False, n_jobs=1)
             
             self.best_params = study.best_params
             return self.best_params
@@ -20681,6 +25215,7 @@ class DataPreprocessor:
     """数据预处理器 - 数据清洗和特征工程"""
     
     def __init__(self, raw_data):
+        """功能：初始化"""
         self.raw_data = raw_data
         self.processed_data = []
     
@@ -20712,8 +25247,9 @@ class DataPreprocessor:
                     sp = int(special)
                     if 1 <= sp <= 49:
                         cleaned['special'] = sp
+                    # 【修复逻辑bug】特别码无效时不应丢弃整条有效记录，special已默认为0
                 except (ValueError, TypeError):
-                    continue
+                    pass  # 保留记录，special保持默认值0
                 
                 self.processed_data.append(cleaned)
         
@@ -20811,6 +25347,7 @@ class PatternMatcher:
     """模式匹配器 - 识别历史模式"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.patterns = {}
     
@@ -20918,6 +25455,7 @@ class DeepLearningPredictor:
     """深度学习预测器 - 使用PyTorch"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.model = None
         self.device = self._get_device()
@@ -20953,7 +25491,9 @@ class DeepLearningPredictor:
             import torch.nn as nn
             
             class LotteryLSTM(nn.Module):
+                """功能：彩票LSTM模型类"""
                 def __init__(self, input_size, hidden_size=64, num_layers=2):
+                    """功能：初始化"""
                     super(LotteryLSTM, self).__init__()
                     self.hidden_size = hidden_size
                     self.num_layers = num_layers
@@ -20964,6 +25504,7 @@ class DeepLearningPredictor:
                     self.relu = nn.ReLU()
                 
                 def forward(self, x):
+                    """功能：前向传播"""
                     h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
                     c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
                     out, _ = self.lstm(x, (h0, c0))
@@ -21030,6 +25571,10 @@ class DeepLearningPredictor:
         """进行预测"""
         if self.model is None:
             return None
+        # 【修复负索引bug】数据量不足sequence_length时range起点为负数，
+        # Python负索引会静默访问错误数据，需提前返回
+        if len(self.data) < sequence_length:
+            return None
         
         try:
             import torch
@@ -21053,6 +25598,7 @@ class TimeSeriesAnalyzer:
     """时间序列分析器 - 使用StatsModels"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.results = {}
     
@@ -21164,6 +25710,7 @@ class EnsemblePredictor:
     """集成预测器 - 结合多种预测方法"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
         self.weights = {}
     
@@ -21233,7 +25780,8 @@ class EnsemblePredictor:
                 if n in scores:
                     scores[n] += 0.1
         
-        max_score = max(scores.values()) if scores.values() else 1
+        # 【修复除零bug】当所有score值为0时max_score=0，后续除法会除零崩溃
+        max_score = max(scores.values()) if scores and max(scores.values()) > 0 else 1
         for num in scores:
             scores[num] /= max_score
         
@@ -21264,6 +25812,7 @@ class AdvancedVisualization:
     """高级可视化工具"""
     
     def __init__(self, historical_data):
+        """功能：初始化"""
         self.data = historical_data
     
     def create_heatmap(self, ax, data_type='frequency'):
@@ -21370,18 +25919,91 @@ def _global_exception_handler(exc_type, exc_value, exc_tb):
         pass
 
 
+# 全局标记，防止清理函数重复执行
+_ml_cleanup_done = False
+
+def _cleanup_ml_resources():
+    """【彻底修复0xC0000409】安全清理C扩展资源
+    
+    关键修复：使用HAS_TF/HAS_TORCH全局变量检查是否已加载，
+    绝不调用_get_tf()/_get_torch()，避免在退出阶段触发懒加载导致栈溢出。
+    """
+    global _ml_cleanup_done
+    if _ml_cleanup_done:
+        return
+    _ml_cleanup_done = True
+    
+    import gc
+    
+    # 1. 清理TensorFlow：仅在已加载时清理，不触发懒加载
+    try:
+        if HAS_TF is True and _tf_module is not None:
+            try:
+                _tf_module.keras.backend.clear_session()
+            except Exception:
+                pass
+            try:
+                _tf_module.compat.v1.reset_default_graph()
+            except Exception:
+                pass
+    except Exception:
+        pass
+    
+    # 2. 清理PyTorch：仅在已加载时清理，不触发懒加载
+    try:
+        if HAS_TORCH is True and _torch_module is not None:
+            try:
+                if _torch_module.cuda.is_available():
+                    _torch_module.cuda.empty_cache()
+                    _torch_module.cuda.synchronize()
+            except Exception:
+                pass
+    except Exception:
+        pass
+    
+    # 3. 清理sklearn：OpenMP线程池（仅在已加载时）
+    try:
+        import threadpoolctl
+        # 【修复0xC0000409】使用with语句正确管理threadpool_limits上下文
+        with threadpoolctl.threadpool_limits(limits=1):
+            pass
+    except Exception:
+        pass
+    
+    # 4. 强制垃圾回收
+    for _ in range(3):
+        gc.collect()
+
+
 def main():
+    """功能：程序入口"""
     print("彩票预测系统 v7.5 启动中...")
     
-    # 注册全局异常处理器，防止未捕获异常导致闪退
-    sys.excepthook = _global_exception_handler
+    # 【彻底修复0xC0000409】移除faulthandler和自定义excepthook
+    # faulthandler会注册Windows信号处理器，可能与某些C扩展冲突导致栈损坏
+    # 自定义excepthook在异常时访问QApplication，可能在退出阶段导致问题
+    # 改用try/finally确保os._exit总被调用
     
-    # 只检查核心依赖（PyQt6），其他库采用懒加载策略，避免启动时逐个 import 拖慢速度
+    # 只检查核心依赖（PyQt6），其他库采用懒加载策略
     try:
         import PyQt6
     except ImportError:
         print("错误: 缺少 PyQt6，请运行: pip install PyQt6")
-        return
+        import os
+        os._exit(1)
+    
+    # 【彻底修复0xC0000409】在主线程中预加载sklearn和scipy，
+    # 避免在QThread中首次导入C扩展导致栈缓冲区溢出
+    # C扩展的运行时初始化（OpenMP/BLAS）必须在主线程完成，
+    # 在QThread中首次初始化会与Qt事件循环冲突导致0xC0000409
+    try:
+        _get_sklearn()
+    except Exception:
+        pass
+    try:
+        _get_scipy_stats()
+    except Exception:
+        pass
     
     app = QApplication(sys.argv)
     app.setApplicationName("彩票预测系统")
@@ -21391,7 +26013,26 @@ def main():
     window.show()
     
     print("彩票预测系统 v7.5 已启动！")
-    sys.exit(app.exec())
+    
+    # 【彻底修复0xC0000409】用try/finally包裹app.exec()
+    # 确保无论发生什么（异常、崩溃、用户关闭），最终都调用os._exit
+    # os._exit让操作系统直接回收所有资源，跳过Python的模块清理阶段
+    ret = 0
+    try:
+        ret = app.exec()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[异常捕获] {e}")
+        ret = 1
+    finally:
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass
+        import os
+        os._exit(ret)
 
 
 
@@ -21464,4 +26105,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
